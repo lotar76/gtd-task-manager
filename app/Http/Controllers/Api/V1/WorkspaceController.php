@@ -82,7 +82,7 @@ class WorkspaceController extends Controller
         $this->authorize('view', $workspace);
 
         $members = $workspace->members()->withPivot('role')->get();
-        
+
         // Добавляем владельца в список, если его там нет
         $owner = $workspace->owner;
         if ($owner && !$members->contains('id', $owner->id)) {

@@ -87,7 +87,7 @@ const handleSaveTask = async (taskData) => {
       await tasksStore.updateTask(selectedTask.value.id, taskData)
     } else {
       // Создание новой задачи
-      await tasksStore.createTask(taskData)
+    await tasksStore.createTask(taskData)
     }
     showTaskModal.value = false
     selectedTask.value = null

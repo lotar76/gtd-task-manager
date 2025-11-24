@@ -64,9 +64,9 @@ const handleToggleComplete = async (task) => {
     if (task.status === 'completed') {
       await tasksStore.updateTask(task.id, { status: 'inbox' })
     } else {
-      await tasksStore.completeTask(task.id)
+  await tasksStore.completeTask(task.id)
     }
-    loadTasks()
+  loadTasks()
   } catch (error) {
     console.error('Error toggling task:', error)
   }

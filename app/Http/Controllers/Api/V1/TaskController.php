@@ -309,8 +309,8 @@ class TaskController extends Controller
         }
 
         try {
-            $task = $this->taskService->updateTask($task, $validated);
-            return ApiResponse::success($task, 'Задача обновлена');
+        $task = $this->taskService->updateTask($task, $validated);
+        return ApiResponse::success($task, 'Задача обновлена');
         } catch (\Exception $e) {
             \Log::error('Error updating task: ' . $e->getMessage(), [
                 'task_id' => $task->id,

@@ -75,7 +75,7 @@
                       <button
                         @click="handleViewMembers(ws)"
                         class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                      >
+            >
                         Участники
                       </button>
                       <button
@@ -412,8 +412,8 @@ const userInitials = computed(() => {
 
 const selectWorkspace = async (workspace) => {
   selectedWorkspaceId.value = workspace.id
-  workspaceStore.setCurrentWorkspace(workspace)
-  await tasksStore.fetchCounts()
+    workspaceStore.setCurrentWorkspace(workspace)
+    await tasksStore.fetchCounts()
   
   // Сохраняем текущую GTD-папку при переключении workspace
   const currentPath = router.currentRoute.value.path

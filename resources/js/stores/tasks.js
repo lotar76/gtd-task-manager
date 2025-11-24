@@ -171,12 +171,12 @@ export const useTasksStore = defineStore('tasks', () => {
     
     try {
       const response = await api.put(`/v1/workspaces/${workspaceId.value}/tasks/${taskId}`, dataToSend)
-      const index = tasks.value.findIndex(t => t.id === taskId)
-      if (index !== -1) {
-        tasks.value[index] = response.data
-      }
-      await fetchCounts()
-      return response.data
+    const index = tasks.value.findIndex(t => t.id === taskId)
+    if (index !== -1) {
+      tasks.value[index] = response.data
+    }
+    await fetchCounts()
+    return response.data
     } catch (error) {
       console.error('Update task error:', error.response?.data)
       throw error

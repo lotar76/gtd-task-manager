@@ -114,7 +114,7 @@ class TaskService
     {
         // Используем workspace_id из формы, если передан, иначе из URL
         if (!isset($data['workspace_id'])) {
-            $data['workspace_id'] = $workspace->id;
+        $data['workspace_id'] = $workspace->id;
         }
         
         $data['created_by'] = $userId;
@@ -126,7 +126,7 @@ class TaskService
 
         // Определяем workspace для позиции
         $targetWorkspace = Workspace::find($data['workspace_id']);
-        
+
         // Автоматическая позиция
         if (!isset($data['position'])) {
             $data['position'] = $targetWorkspace->tasks()->max('position') + 1;

@@ -76,24 +76,24 @@
             }"
           >
             <div class="flex flex-col h-full">
-              <div class="flex justify-between items-start mb-1">
-                <span
+            <div class="flex justify-between items-start mb-1">
+              <span
                   class="text-xs sm:text-sm font-medium"
-                  :class="{
-                    'text-gray-400': !day.currentMonth,
-                    'text-primary-700': day.isToday,
-                    'text-gray-900': day.currentMonth && !day.isToday
-                  }"
-                >
-                  {{ day.day }}
-                </span>
-                <span
-                  v-if="day.taskCount > 0"
+                :class="{
+                  'text-gray-400': !day.currentMonth,
+                  'text-primary-700': day.isToday,
+                  'text-gray-900': day.currentMonth && !day.isToday
+                }"
+              >
+                {{ day.day }}
+              </span>
+              <span
+                v-if="day.taskCount > 0"
                   class="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-semibold bg-primary-600 text-white rounded-full"
-                >
-                  {{ day.taskCount }}
-                </span>
-              </div>
+              >
+                {{ day.taskCount }}
+              </span>
+            </div>
             </div>
           </div>
         </div>
@@ -105,7 +105,7 @@
         <div class="hidden lg:block">
           <!-- Days Header -->
           <div class="grid grid-cols-7 border-b border-gray-200">
-            <div
+              <div
               v-for="day in weekDays"
               :key="day"
               class="text-center py-3 text-sm font-medium text-gray-700 border-r border-gray-200 last:border-r-0"
@@ -140,14 +140,14 @@
               <div class="space-y-2">
                 <div
                   v-for="task in day.tasks"
-                  :key="task.id"
-                  @click="handleTaskClick(task)"
+                :key="task.id"
+                @click="handleTaskClick(task)"
                   class="p-2 rounded cursor-pointer text-xs touch-manipulation"
-                  :class="{
+                :class="{
                     'bg-primary-100 text-primary-700 border-l-2 border-primary-500': task.status !== 'completed',
-                    'bg-gray-100 text-gray-500 line-through': task.status === 'completed'
-                  }"
-                >
+                  'bg-gray-100 text-gray-500 line-through': task.status === 'completed'
+                }"
+              >
                   <div class="font-medium truncate">{{ task.title }}</div>
                   <div v-if="task.estimated_time" class="text-[10px] opacity-75 mt-1">
                     {{ formatTime(task.estimated_time) }}
@@ -427,7 +427,7 @@ watch(() => viewMode.value, () => {
 
 const previousPeriod = () => {
   if (viewMode.value === 'month') {
-    currentDate.value = currentDate.value.subtract(1, 'month')
+  currentDate.value = currentDate.value.subtract(1, 'month')
   } else if (viewMode.value === 'week') {
     currentDate.value = currentDate.value.subtract(1, 'week')
   } else {
@@ -438,7 +438,7 @@ const previousPeriod = () => {
 
 const nextPeriod = () => {
   if (viewMode.value === 'month') {
-    currentDate.value = currentDate.value.add(1, 'month')
+  currentDate.value = currentDate.value.add(1, 'month')
   } else if (viewMode.value === 'week') {
     currentDate.value = currentDate.value.add(1, 'week')
   } else {
@@ -533,7 +533,7 @@ watch(() => workspaceStore.currentWorkspace?.id, (newWorkspaceId) => {
 // Загружаем задачи при монтировании
 onMounted(() => {
   if (workspaceStore.currentWorkspace?.id) {
-    loadTasks()
+  loadTasks()
   }
 })
 </script>

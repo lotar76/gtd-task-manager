@@ -123,17 +123,17 @@
 
               <!-- Row: Due Date & Estimated Time -->
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <!-- Due Date -->
-                <div>
-                  <label for="due_date" class="block text-sm font-medium text-gray-700 mb-2">
-                    Срок выполнения
-                  </label>
-                  <input
-                    id="due_date"
-                    v-model="form.due_date"
-                    type="date"
-                    class="input"
-                  />
+              <!-- Due Date -->
+              <div>
+                <label for="due_date" class="block text-sm font-medium text-gray-700 mb-2">
+                  Срок выполнения
+                </label>
+                <input
+                  id="due_date"
+                  v-model="form.due_date"
+                  type="date"
+                  class="input"
+                />
                 </div>
 
                 <!-- Estimated Time -->
