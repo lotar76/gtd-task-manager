@@ -20,7 +20,7 @@ services:
       - "traefik.docker.network=web"
       - "traefik.http.routers.todo-api.rule=Host(`todo.e-api.ru`)"
       - "traefik.http.routers.todo-api.entrypoints=websecure"
-      - "traefik.http.routers.todo-api.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.todo-api.tls.certresolver=myresolver"
       - "traefik.http.services.todo-api.loadbalancer.server.port=9000"
 
 networks:
