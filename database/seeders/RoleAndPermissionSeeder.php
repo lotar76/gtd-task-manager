@@ -18,7 +18,7 @@ class RoleAndPermissionSeeder extends Seeder
         // Сброс кеша ролей и разрешений
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
-        // Создание разрешений
+        // Создание разрешений (идемпотентно)
         $permissions = [
             'files.upload',
             'files.view',
@@ -31,15 +31,17 @@ class RoleAndPermissionSeeder extends Seeder
         ];
 
         foreach ($permissions as $permission) {
-            Permission::create(['name' => $permission]);
+            Permission::firstOrCreate(
+                ['name' => $permission, 'guard_name' => 'web']
+            );
         }
 
-        // Создание ролей и назначение разрешений
-        $adminRole = Role::create(['name' => 'admin']);
-        $adminRole->givePermissionTo(Permission::all());
+        // Создание ролей и назначение разрешений (идемпотентно)
+        $adminRole = Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
+        $adminRole->syncPermissions(Permission::all());
 
-        $userRole = Role::create(['name' => 'user']);
-        $userRole->givePermissionTo([
+        $userRole = Role::firstOrCreate(['name' => 'user', 'guard_name' => 'web']);
+        $userRole->syncPermissions([
             'files.upload',
             'files.view',
             'files.download',
