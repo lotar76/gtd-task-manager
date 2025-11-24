@@ -33,5 +33,6 @@ networks:
   web:
     external: true
     name: web
+    attachable: true
   internal:
     driver: bridge
