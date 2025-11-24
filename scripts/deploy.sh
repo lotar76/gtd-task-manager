@@ -14,7 +14,7 @@ fi
 
 # Включение maintenance режима
 echo "🔧 Включение maintenance режима..."
-docker compose exec -T app php artisan down
+docker-compose -f docker-compose.prod.yml exec -T app php artisan down
 
 # Получение последних изменений
 echo "📥 Получение последних изменений из git..."
@@ -22,30 +22,34 @@ git pull origin main
 
 # Сборка и перезапуск контейнеров
 echo "🐳 Пересборка Docker контейнеров..."
-docker compose up -d --build
+docker-compose -f docker-compose.prod.yml up -d --build
+
+# Настройка прав доступа
+echo "📁 Настройка прав доступа..."
+docker-compose -f docker-compose.prod.yml exec -T --user root app chown -R www-data:www-data /var/www/html
+docker-compose -f docker-compose.prod.yml exec -T --user root app git config --global --add safe.directory /var/www/html
 
 # Установка зависимостей
 echo "📦 Установка зависимостей..."
-docker compose exec -T app composer install --no-dev --optimize-autoloader
+docker-compose -f docker-compose.prod.yml exec -T --user root app composer install --no-dev --optimize-autoloader
+
+# Исправление прав после установки
+docker-compose -f docker-compose.prod.yml exec -T --user root app chown -R www-data:www-data /var/www/html
+docker-compose -f docker-compose.prod.yml exec -T --user root app chmod -R 775 storage bootstrap/cache
 
 # Запуск миграций
 echo "🗄️  Запуск миграций..."
-docker compose exec -T app php artisan migrate --force
+docker-compose -f docker-compose.prod.yml exec -T app php artisan migrate --force
 
 # Очистка и кеширование
 echo "🧹 Очистка и оптимизация..."
-docker compose exec -T app php artisan config:cache
-docker compose exec -T app php artisan route:cache
-docker compose exec -T app php artisan view:cache
-
-# Настройка прав доступа
-echo "🔐 Настройка прав доступа..."
-docker compose exec -T app chmod -R 775 storage bootstrap/cache
-docker compose exec -T app chown -R www-data:www-data storage bootstrap/cache
+docker-compose -f docker-compose.prod.yml exec -T app php artisan config:cache
+docker-compose -f docker-compose.prod.yml exec -T app php artisan route:cache
+docker-compose -f docker-compose.prod.yml exec -T app php artisan view:cache
 
 # Выключение maintenance режима
 echo "✅ Выключение maintenance режима..."
-docker compose exec -T app php artisan up
+docker-compose -f docker-compose.prod.yml exec -T app php artisan up
 
 echo "🎉 Развертывание завершено успешно!"
 

@@ -4,7 +4,7 @@
 
 set -e
 
-echo "🚀 Начало настройки для PRODUCTION (Traefik + e-api.ru)..."
+echo "🚀 Начало настройки для PRODUCTION (Traefik + todo.e-api.ru)..."
 
 # Проверка наличия .env файла
 if [ ! -f .env ]; then
@@ -32,17 +32,30 @@ sleep 5
 # Проверка статуса
 docker-compose -f docker-compose.prod.yml ps
 
+# Настройка прав доступа перед установкой зависимостей
+echo "📁 Настройка прав доступа..."
+docker-compose -f docker-compose.prod.yml exec -T --user root app chown -R www-data:www-data /var/www/html
+docker-compose -f docker-compose.prod.yml exec -T --user root app chmod -R 755 /var/www/html
+docker-compose -f docker-compose.prod.yml exec -T --user root app mkdir -p /var/www/html/vendor
+docker-compose -f docker-compose.prod.yml exec -T --user root app chown -R www-data:www-data /var/www/html/vendor
+
+# Настройка git safe directory (для composer)
+echo "🔧 Настройка git..."
+docker-compose -f docker-compose.prod.yml exec -T --user root app git config --global --add safe.directory /var/www/html
+
 # Установка зависимостей
 echo "📦 Установка Composer зависимостей..."
-docker-compose -f docker-compose.prod.yml exec -T app composer install --no-dev --optimize-autoloader
+docker-compose -f docker-compose.prod.yml exec -T --user root app composer install --no-dev --optimize-autoloader
+
+# Исправление прав после установки зависимостей
+echo "📁 Исправление прав после установки зависимостей..."
+docker-compose -f docker-compose.prod.yml exec -T --user root app chown -R www-data:www-data /var/www/html
+docker-compose -f docker-compose.prod.yml exec -T --user root app chmod -R 755 /var/www/html/storage
+docker-compose -f docker-compose.prod.yml exec -T --user root app chmod -R 755 /var/www/html/bootstrap/cache
 
 # Генерация ключа приложения (если не существует)
 echo "🔑 Генерация ключа приложения..."
 docker-compose -f docker-compose.prod.yml exec -T app php artisan key:generate --force
-
-# Создание директорий storage
-echo "📁 Настройка прав доступа..."
-docker-compose -f docker-compose.prod.yml exec -T app chmod -R 775 storage bootstrap/cache || true
 
 # Запуск миграций
 echo "🗄️  Запуск миграций базы данных..."
@@ -60,10 +73,10 @@ docker-compose -f docker-compose.prod.yml exec -T app php artisan view:cache
 
 echo "✅ Настройка завершена!"
 echo ""
-echo "🌐 API будет доступен по адресу: https://e-api.ru"
+echo "🌐 API будет доступен по адресу: https://todo.e-api.ru"
 echo ""
 echo "⚠️  ВАЖНО: Убедитесь что:"
-echo "  1. DNS записи для e-api.ru указывают на ваш сервер"
+echo "  1. DNS записи для todo.e-api.ru указывают на ваш сервер"
 echo "  2. Traefik запущен и работает"
 echo "  3. Traefik настроен с Let's Encrypt для SSL"
 echo ""
