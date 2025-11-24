@@ -13,33 +13,18 @@ services:
       - APP_ENV=${APP_ENV:-production}
       - APP_DEBUG=${APP_DEBUG:-false}
     networks:
-      - traefik
+      - web
       - internal
     labels:
       - "traefik.enable=true"
-      - "traefik.docker.network=traefik"
-      
-      # HTTP роутер
+      - "traefik.docker.network=web"
       - "traefik.http.routers.todo-api.rule=Host(`todo.e-api.ru`)"
-      - "traefik.http.routers.todo-api.entrypoints=web"
-      - "traefik.http.routers.todo-api.middlewares=redirect-to-https"
-      
-      # HTTPS роутер
-      - "traefik.http.routers.todo-api-secure.rule=Host(`todo.e-api.ru`)"
-      - "traefik.http.routers.todo-api-secure.entrypoints=websecure"
-      - "traefik.http.routers.todo-api-secure.tls=true"
-      - "traefik.http.routers.todo-api-secure.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.todo-api-secure.service=todo-api"
-      
-      # Сервис
+      - "traefik.http.routers.todo-api.entrypoints=websecure"
+      - "traefik.http.routers.todo-api.tls.certresolver=letsencrypt"
       - "traefik.http.services.todo-api.loadbalancer.server.port=9000"
-      
-      # Middleware для редиректа HTTP -> HTTPS
-      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
-      - "traefik.http.middlewares.redirect-to-https.redirectscheme.permanent=true"
 
 networks:
-  traefik:
+  web:
     external: true
   internal:
     driver: bridge

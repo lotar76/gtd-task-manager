@@ -1,19 +1,10 @@
 # Настройка Traefik для Laravel API
 
-## Быстрый старт (готовый docker-compose)
+## Если Traefik уже работает
 
-В репозитории есть каталог `infra/traefik` с минимальной production-конфигурацией Traefik, уже настроенной на резолвер `letsencrypt` (который ожидает `docker-compose.prod.yml`).
-
-```bash
-cd infra/traefik
-cp traefik.env.example .env   # укажите рабочий email для Let's Encrypt
-mkdir -p letsencrypt
-touch letsencrypt/acme.json
-chmod 600 letsencrypt/acme.json
-docker compose up -d
-```
-
-> Если у вас уже есть Traefik, просто убедитесь, что резолвер называется `letsencrypt` либо измените label `traefik.http.routers.todo-api-secure.tls.certresolver`.
+- Используйте существующую внешнюю сеть (`web`)
+- Проверьте, что резолвер называется `letsencrypt`
+- Убедитесь, что общие параметры (entrypoints, TLS) совпадают с labels нашего приложения
 
 ## Если у вас еще нет Traefik
 

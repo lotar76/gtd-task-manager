@@ -103,35 +103,23 @@ docker-compose -f docker-compose.local.yml down -v
 
 ### Требования
 
-1. ✅ Traefik запущен в отдельной сети `traefik`
-2. ✅ DNS запись для `e-api.ru` указывает на ваш сервер
-3. ✅ Порты 80 и 443 открыты
-4. ✅ Traefik настроен с Let's Encrypt
+1. ✅ На сервере уже запущен общий Traefik и доступна внешняя сеть `web`
+2. ✅ В конфигурации Traefik есть сертификатный резолвер `letsencrypt`
+3. ✅ DNS запись для `todo.e-api.ru` указывает на ваш сервер
+4. ✅ Порты 80 и 443 открыты
 
-### Настройка Traefik (если еще не настроен)
+### Настройка Traefik
 
-В репозитории есть готовая конфигурация `infra/traefik/docker-compose.yml` с резолвером `letsencrypt`, который требуется нашему `docker-compose.prod.yml`.
+Traefik уже работает на сервере (общая сеть `web`). Перед деплоем убедитесь:
 
-```bash
-cd infra/traefik
-
-# Скопируйте env и задайте почту для Let's Encrypt
-cp traefik.env.example .env
-nano .env  # укажите ваш email для уведомлений LE
-
-# Подготовьте хранилище сертификатов
-mkdir -p letsencrypt
-touch letsencrypt/acme.json
-chmod 600 letsencrypt/acme.json
-
-# Запуск Traefik
-docker compose up -d
-
-# Проверка
-docker ps | grep traefik
-```
-
-> ⚠️ Если Traefik уже запущен — убедитесь, что в его конфигурации есть `certificatesresolvers.letsencrypt.*`. Иначе роутер `todo-api-secure` не сможет выпустить SSL-сертификат и будет отдавать 404/504.
+- В его конфигурации присутствует сертификатный резолвер `letsencrypt`:
+  ```
+  --certificatesresolvers.letsencrypt.acme.tlschallenge=true
+  --certificatesresolvers.letsencrypt.acme.email=...
+  --certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json
+  ```
+- Наша сеть `web` доступна: `docker network inspect web`
+- В `docker-compose.prod.yml` сервис `app` подключен к сети `web` и использует labels с `certresolver=letsencrypt`
 
 ### Запуск Production
 
@@ -149,8 +137,8 @@ cp .env.production .env
 # 2. Отредактировать .env (если нужно)
 nano .env
 
-# 3. Создать сеть traefik (если не создана)
-docker network create traefik
+# 3. Проверить наличие внешней сети Traefik
+docker network inspect web || docker network create web
 
 # 4. Запуск контейнеров
 docker-compose -f docker-compose.prod.yml up -d --build
