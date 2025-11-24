@@ -31,8 +31,7 @@ services:
 
 networks:
   web:
+    external: true
     name: web
-    driver: bridge
   internal:
-    name: todo_internal
     driver: bridge
