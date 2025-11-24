@@ -20,6 +20,10 @@ docker-compose -f docker-compose.prod.yml exec -T app php artisan down
 echo "📥 Получение последних изменений из git..."
 git pull origin main
 
+# Сборка фронтенда
+echo "🎨 Сборка фронтенда..."
+docker run --rm -v "$(pwd):/app" -w /app node:20-alpine sh -c "npm install && npm run build"
+
 # Сборка и перезапуск контейнеров
 echo "🐳 Пересборка Docker контейнеров..."
 docker-compose -f docker-compose.prod.yml up -d --build

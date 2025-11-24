@@ -21,6 +21,10 @@ if ! docker network inspect traefik &> /dev/null; then
     docker network create traefik
 fi
 
+# Сборка фронтенда
+echo "🎨 Сборка фронтенда..."
+docker run --rm -v "$(pwd):/app" -w /app node:20-alpine sh -c "npm install && npm run build"
+
 # Сборка и запуск контейнеров
 echo "🐳 Сборка и запуск Docker контейнеров (с Traefik)..."
 docker-compose -f docker-compose.prod.yml up -d --build
