@@ -110,60 +110,28 @@ docker-compose -f docker-compose.local.yml down -v
 
 ### Настройка Traefik (если еще не настроен)
 
-На production сервере создайте конфигурацию Traefik:
+В репозитории есть готовая конфигурация `infra/traefik/docker-compose.yml` с резолвером `letsencrypt`, который требуется нашему `docker-compose.prod.yml`.
 
 ```bash
-mkdir -p ~/traefik
-cd ~/traefik
+cd infra/traefik
 
-cat > docker-compose.yml << 'TRAEFIK_EOF'
-version: '3.8'
+# Скопируйте env и задайте почту для Let's Encrypt
+cp traefik.env.example .env
+nano .env  # укажите ваш email для уведомлений LE
 
-services:
-  traefik:
-    image: traefik:v2.10
-    container_name: traefik
-    restart: unless-stopped
-    command:
-      - "--api.dashboard=false"
-      - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
-      - "--entrypoints.web.address=:80"
-      - "--entrypoints.websecure.address=:443"
-      # Let's Encrypt
-      - "--certificatesresolvers.letsencrypt.acme.tlschallenge=true"
-      - "--certificatesresolvers.letsencrypt.acme.email=admin@e-api.ru"
-      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
-      # Редирект HTTP -> HTTPS
-      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
-      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
-      - "--log.level=INFO"
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./letsencrypt:/letsencrypt
-    networks:
-      - traefik
-
-networks:
-  traefik:
-    name: traefik
-    external: false
-TRAEFIK_EOF
-
-# Создание директории для сертификатов
+# Подготовьте хранилище сертификатов
 mkdir -p letsencrypt
 touch letsencrypt/acme.json
 chmod 600 letsencrypt/acme.json
 
 # Запуск Traefik
-docker-compose up -d
+docker compose up -d
 
 # Проверка
 docker ps | grep traefik
 ```
+
+> ⚠️ Если Traefik уже запущен — убедитесь, что в его конфигурации есть `certificatesresolvers.letsencrypt.*`. Иначе роутер `todo-api-secure` не сможет выпустить SSL-сертификат и будет отдавать 404/504.
 
 ### Запуск Production
 
