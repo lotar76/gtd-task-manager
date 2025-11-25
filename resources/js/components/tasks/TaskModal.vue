@@ -321,6 +321,7 @@ const statusOptions = {
   tomorrow: { label: 'Завтра', icon: CalendarIcon },
   waiting: { label: 'Ожидание', icon: ClockIcon },
   someday: { label: 'Когда-нибудь', icon: ArchiveBoxIcon },
+  scheduled: { label: 'Запланировано', icon: CalendarIcon },
 }
 
 const selectStatus = (status) => {
@@ -328,9 +329,15 @@ const selectStatus = (status) => {
   statusDropdownOpen.value = false
   
   // Если выбран статус "Сегодня", автоматически ставим сегодняшнюю дату
-  if (status === 'today' && !form.value.due_date) {
+  if (status === 'today') {
     const today = new Date()
     form.value.due_date = today.toISOString().split('T')[0]
+  }
+  // Если выбран статус "Завтра", автоматически ставим завтрашнюю дату
+  else if (status === 'tomorrow') {
+    const tomorrow = new Date()
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    form.value.due_date = tomorrow.toISOString().split('T')[0]
   }
 }
 
@@ -504,6 +511,29 @@ watch(() => route.path, () => {
 watch(() => currentWorkspace.value?.id, (newWorkspaceId) => {
   if (!props.task && newWorkspaceId) {
     form.value.workspace_id = newWorkspaceId
+  }
+})
+
+// Следим за изменениями due_date и автоматически меняем статус
+watch(() => form.value.due_date, (newDueDate) => {
+  if (!newDueDate || form.value.status === 'completed') return
+  
+  const today = new Date().toISOString().split('T')[0]
+  const tomorrow = new Date()
+  tomorrow.setDate(tomorrow.getDate() + 1)
+  const tomorrowStr = tomorrow.toISOString().split('T')[0]
+  
+  // Если дата = сегодня - меняем статус на today
+  if (newDueDate === today) {
+    form.value.status = 'today'
+  }
+  // Если дата = завтра - меняем статус на tomorrow
+  else if (newDueDate === tomorrowStr) {
+    form.value.status = 'tomorrow'
+  }
+  // Если дата установлена, но не сегодня/завтра - меняем статус на scheduled
+  else if (!['today', 'tomorrow', 'completed'].includes(form.value.status)) {
+    form.value.status = 'scheduled'
   }
 })
 

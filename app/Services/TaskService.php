@@ -145,6 +145,28 @@ class TaskService
     // Обновление задачи
     public function updateTask(Task $task, array $data): Task
     {
+        // Если устанавливается due_date, проверяем нужно ли изменить статус
+        // Но только если статус не меняется явно и задача не завершена
+        if (isset($data['due_date']) && $data['due_date'] && !isset($data['status'])) {
+            $dueDate = \Carbon\Carbon::parse($data['due_date'])->startOfDay();
+            $today = \Carbon\Carbon::today();
+            $tomorrow = \Carbon\Carbon::tomorrow();
+            
+            // Если дата = сегодня и задача не завершена - меняем на today
+            if ($dueDate->isSameDay($today) && $task->status !== 'completed') {
+                $data['status'] = 'today';
+            }
+            // Если дата = завтра и задача не завершена - меняем на tomorrow
+            elseif ($dueDate->isSameDay($tomorrow) && $task->status !== 'completed') {
+                $data['status'] = 'tomorrow';
+            }
+            // Если дата установлена, но не сегодня и не завтра - меняем статус на scheduled
+            elseif ($task->status !== 'completed' && 
+                    !in_array($task->status, ['today', 'tomorrow', 'completed'])) {
+                $data['status'] = 'scheduled';
+            }
+        }
+        
         $task->update($data);
 
         // Привязка тегов
@@ -167,7 +189,18 @@ class TaskService
     // Смена статуса задачи
     public function changeStatus(Task $task, string $status): Task
     {
-        $task->update(['status' => $status]);
+        $updateData = ['status' => $status];
+        
+        // Если статус = 'today' - автоматически устанавливаем дату на сегодня
+        if ($status === 'today') {
+            $updateData['due_date'] = \Carbon\Carbon::today()->format('Y-m-d');
+        }
+        // Если статус = 'tomorrow' - автоматически устанавливаем дату на завтра
+        elseif ($status === 'tomorrow') {
+            $updateData['due_date'] = \Carbon\Carbon::tomorrow()->format('Y-m-d');
+        }
+        
+        $task->update($updateData);
 
         // Если завершена - ставим дату
         if ($status === 'completed' && !$task->completed_at) {
@@ -232,6 +265,7 @@ class TaskService
             'tomorrow' => (clone $query)->where('status', 'tomorrow')->count(),
             'waiting' => (clone $query)->where('status', 'waiting')->count(),
             'someday' => (clone $query)->where('status', 'someday')->count(),
+            'scheduled' => (clone $query)->where('status', 'scheduled')->count(),
         ];
     }
 }

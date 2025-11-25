@@ -6,8 +6,11 @@
       draggable="true"
       @dragstart="handleDragStart($event, task)"
       @dragend="handleDragEnd"
-      class="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-shadow cursor-move"
-      :class="{ 'opacity-50': isDragging && draggedTask?.id === task.id }"
+      class="border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-shadow cursor-move relative overflow-hidden"
+      :class="[
+        { 'opacity-50': isDragging && draggedTask?.id === task.id },
+        getDurationGradientClass(task)
+      ]"
       @click="$emit('task-click', task)"
     >
       <div class="flex items-start space-x-3">
@@ -214,6 +217,64 @@ const getDueDateClass = (task) => {
   }
   
   return 'bg-gray-100 text-gray-600'
+}
+
+// Вычисление продолжительности задачи в часах
+const getTaskDuration = (task) => {
+  if (!task.estimated_time || !task.end_time) {
+    return 0 // Без времени
+  }
+  
+  const startTime = formatTime(task.estimated_time)
+  const endTime = formatTime(task.end_time)
+  
+  if (!startTime || !endTime) {
+    return 0
+  }
+  
+  // Парсим время в формате HH:mm
+  const [startHours, startMinutes] = startTime.split(':').map(Number)
+  const [endHours, endMinutes] = endTime.split(':').map(Number)
+  
+  // Вычисляем разницу в минутах
+  const startTotalMinutes = startHours * 60 + startMinutes
+  const endTotalMinutes = endHours * 60 + endMinutes
+  
+  // Если end_time меньше start_time, значит задача переходит на следующий день
+  let diffMinutes = endTotalMinutes - startTotalMinutes
+  if (diffMinutes < 0) {
+    diffMinutes += 24 * 60 // Добавляем 24 часа
+  }
+  
+  // Конвертируем в часы (с десятичными долями)
+  return diffMinutes / 60
+}
+
+// Получение класса градиента в зависимости от продолжительности
+const getDurationGradientClass = (task) => {
+  if (task.status === 'completed') {
+    return 'bg-white' // Завершенные задачи без градиента
+  }
+  
+  const duration = getTaskDuration(task)
+  
+  // Без времени или до 1 часа - зелёная
+  if (duration === 0 || duration < 1) {
+    return 'bg-gradient-to-l from-white via-green-50 to-green-100'
+  }
+  
+  // 1-2 часа - оранжевая
+  if (duration >= 1 && duration < 2) {
+    return 'bg-gradient-to-l from-white via-orange-50 to-orange-100'
+  }
+  
+  // От 2 часов и более - красная
+  if (duration >= 2) {
+    return 'bg-gradient-to-l from-white via-red-50 to-red-100'
+  }
+  
+  // По умолчанию белый фон
+  return 'bg-white'
 }
 </script>
 

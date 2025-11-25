@@ -38,22 +38,30 @@
                 :key="ws.id"
                 :class="[
                   'flex items-center rounded-lg transition-colors',
-                  selectedWorkspaceId === ws.id
+                  selectedWorkspaceIds.includes(ws.id)
                     ? 'bg-primary-50'
                     : 'hover:bg-gray-50'
                 ]"
               >
-                <button
-                  @click="selectWorkspace(ws)"
-                  :class="[
-                    'flex-1 flex items-center px-3 py-2 text-sm text-left',
-                    selectedWorkspaceId === ws.id
-                      ? 'text-primary-700 font-medium'
-                      : 'text-gray-700'
-                  ]"
-                >
-                  <span class="truncate">{{ ws.name }}</span>
-                </button>
+                <!-- Checkbox для выбора workspace -->
+                <label class="flex-1 flex items-center px-3 py-2 text-sm cursor-pointer">
+                  <input
+                    type="checkbox"
+                    :checked="selectedWorkspaceIds.includes(ws.id)"
+                    @change="toggleWorkspace(ws)"
+                    class="mr-3 h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                  />
+                  <span 
+                    :class="[
+                      'truncate',
+                      selectedWorkspaceIds.includes(ws.id)
+                        ? 'text-primary-700 font-medium'
+                        : 'text-gray-700'
+                    ]"
+                  >
+                    {{ ws.name }}
+                  </span>
+                </label>
                 
                 <!-- Three dots menu -->
                 <div class="relative" @click.stop>
@@ -157,7 +165,7 @@
               </DroppableNavLink>
               
               <!-- Календарь -->
-              <NavLink to="/workspaces/:id/calendar" icon="calendar-days">
+              <NavLink to="/workspaces/:id/calendar" icon="calendar-days" :count="calendarMonthCount">
                 Календарь
               </NavLink>
               
@@ -378,7 +386,6 @@ const { triggerTaskUpdate } = useTaskEvents()
 
 const sidebarOpen = ref(false)
 const showUserMenu = ref(false)
-const selectedWorkspaceId = ref(null)
 const showWorkspaceModal = ref(false)
 const showTaskModal = ref(false)
 const taskError = ref('')
@@ -399,6 +406,23 @@ const workspaces = computed(() => workspaceStore.workspaces)
 const taskCounts = computed(() => tasksStore.counts)
 const currentWorkspace = computed(() => workspaceStore.currentWorkspace)
 const activeProjects = computed(() => projectsStore.activeProjects)
+const selectedWorkspaceIds = computed(() => 
+  workspaceStore.selectedWorkspaces.map(ws => ws.id)
+)
+
+// Счетчик задач в текущем месяце для календаря
+// Используем scheduled задачи (задачи с датой, не today/tomorrow)
+// + today и tomorrow задачи (они тоже отображаются в календаре)
+const calendarMonthCount = computed(() => {
+  if (selectedWorkspaceIds.value.length === 0) return 0
+  
+  const scheduledCount = taskCounts.value.scheduled || 0
+  const todayCount = taskCounts.value.today || 0
+  const tomorrowCount = taskCounts.value.tomorrow || 0
+  
+  // Суммируем все задачи, которые могут быть в календаре
+  return scheduledCount + todayCount + tomorrowCount
+})
 
 const userInitials = computed(() => {
   const name = user.value?.name || ''
@@ -410,34 +434,28 @@ const userInitials = computed(() => {
     .slice(0, 2)
 })
 
-const selectWorkspace = async (workspace) => {
-  selectedWorkspaceId.value = workspace.id
-    workspaceStore.setCurrentWorkspace(workspace)
-    await tasksStore.fetchCounts()
+const toggleWorkspace = async (workspace) => {
+  workspaceStore.toggleSelectedWorkspace(workspace)
+  await tasksStore.fetchCounts()
   
-  // Сохраняем текущую GTD-папку при переключении workspace
+  // Обновляем роутинг
   const currentPath = router.currentRoute.value.path
   const pathSegments = currentPath.split('/')
-  
-  // Извлекаем последний сегмент (inbox, next-actions, today и т.д.)
   const currentFolder = pathSegments[pathSegments.length - 1]
-  
-  // Список валидных GTD-папок
   const validFolders = ['inbox', 'next-actions', 'today', 'waiting', 'someday', 'calendar', 'projects', 'goals']
-  
-  // Если текущая папка валидна, переходим на неё в новом workspace, иначе на inbox
   const targetFolder = validFolders.includes(currentFolder) ? currentFolder : 'inbox'
   
-  router.push(`/workspaces/${workspace.id}/${targetFolder}`)
+  const activeWorkspaceId = workspaceStore.currentWorkspace?.id || workspace.id
+  router.push(`/workspaces/${activeWorkspaceId}/${targetFolder}`)
 }
 
 const handleCreateWorkspace = async (formData) => {
   try {
     const newWorkspace = await workspaceStore.createWorkspace(formData)
     showWorkspaceModal.value = false
-    // При создании нового workspace используем selectWorkspace,
+    // При создании нового workspace используем toggleWorkspace,
     // которая сохранит текущую папку
-    await selectWorkspace(newWorkspace)
+    await toggleWorkspace(newWorkspace)
   } catch (error) {
     console.error('Ошибка создания workspace:', error)
   }
@@ -524,6 +542,13 @@ const handleTaskDropped = async ({ taskId, newStatus }) => {
     if (newStatus === 'today') {
       const today = new Date().toISOString().split('T')[0]
       await tasksStore.updateTask(taskId, { status: 'today', due_date: today })
+    }
+    // Для "tomorrow" устанавливаем статус и дату на завтра
+    else if (newStatus === 'tomorrow') {
+      const tomorrow = new Date()
+      tomorrow.setDate(tomorrow.getDate() + 1)
+      const tomorrowStr = tomorrow.toISOString().split('T')[0]
+      await tasksStore.updateTask(taskId, { status: 'tomorrow', due_date: tomorrowStr })
     } else {
       // Обновляем статус задачи для остальных папок
       await tasksStore.updateTask(taskId, { status: newStatus })
@@ -669,7 +694,6 @@ onMounted(async () => {
   await workspaceStore.fetchWorkspaces()
   
   if (workspaceStore.currentWorkspace) {
-    selectedWorkspaceId.value = workspaceStore.currentWorkspace.id
     await tasksStore.fetchCounts()
     await projectsStore.fetchProjects()
   }
@@ -693,12 +717,25 @@ const handleClickOutsideWorkspaceMenu = () => {
   openWorkspaceMenuId.value = null
 }
 
-watch(() => workspaceStore.currentWorkspace, async (newWorkspace) => {
-  if (newWorkspace) {
-    selectedWorkspaceId.value = newWorkspace.id
-    await tasksStore.fetchCounts()
+watch(() => workspaceStore.selectedWorkspaces, async () => {
+  await tasksStore.fetchCounts()
+  
+  // Перезагружаем текущий список задач если мы на странице задач
+  const currentPath = router.currentRoute.value.path
+  if (currentPath.includes('/inbox')) {
+    await tasksStore.fetchInbox()
+  } else if (currentPath.includes('/next-actions')) {
+    await tasksStore.fetchNextActions()
+  } else if (currentPath.includes('/waiting')) {
+    await tasksStore.fetchWaiting()
+  } else if (currentPath.includes('/someday')) {
+    await tasksStore.fetchSomeday()
+  } else if (currentPath.includes('/today')) {
+    await tasksStore.fetchToday()
+  } else if (currentPath.includes('/tomorrow')) {
+    await tasksStore.fetchTomorrow()
   }
-})
+}, { deep: true })
 </script>
 
 <style scoped>

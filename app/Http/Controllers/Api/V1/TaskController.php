@@ -174,7 +174,7 @@ class TaskController extends Controller
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'status' => 'nullable|in:inbox,next_action,today,tomorrow,waiting,someday,completed',
+            'status' => 'nullable|in:inbox,next_action,today,tomorrow,waiting,someday,scheduled,completed',
             'priority' => 'nullable|in:low,medium,high,urgent',
             'workspace_id' => 'nullable|exists:workspaces,id',
             'project_id' => 'nullable|exists:projects,id',
@@ -265,7 +265,7 @@ class TaskController extends Controller
         $validated = $request->validate([
             'title' => 'sometimes|string|max:255',
             'description' => 'nullable|string',
-            'status' => 'sometimes|in:inbox,next_action,today,tomorrow,waiting,someday,completed',
+            'status' => 'sometimes|in:inbox,next_action,today,tomorrow,waiting,someday,scheduled,completed',
             'priority' => 'sometimes|in:low,medium,high,urgent',
             'project_id' => 'nullable|exists:projects,id',
             'context_id' => 'nullable|exists:contexts,id',
@@ -364,7 +364,7 @@ class TaskController extends Controller
         $this->authorize('update', $task);
 
         $validated = $request->validate([
-            'status' => 'required|in:inbox,next_action,today,tomorrow,waiting,someday,completed',
+            'status' => 'required|in:inbox,next_action,today,tomorrow,waiting,someday,scheduled,completed',
         ]);
 
         $task = $this->taskService->changeStatus($task, $validated['status']);
