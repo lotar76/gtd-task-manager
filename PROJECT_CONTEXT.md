@@ -11,9 +11,10 @@
   - `emptyOutDir: false` - критично! Иначе удаляется `index.php` Laravel
   - `define` для `VITE_API_URL` - переопределяет переменную для production
   
-- **`resources/js/services/api.js`** - использует `import.meta.env.VITE_API_URL || '/api'`
-  - В production должен использоваться относительный путь `/api`
-  - НЕ устанавливать `VITE_API_URL` при production сборке!
+- **`resources/js/services/api.js`** - ⚠️ НЕ МЕНЯТЬ логику проверки MODE
+  - Использует `import.meta.env.MODE === 'production'` для принудительного `/api`
+  - В production ВСЕГДА `/api`, независимо от .env файлов
+  - `VITE_API_URL` используется только для локальной разработки
 
 ### Docker Compose
 - **`docker-compose.prod.yml`** - интеграция с Traefik, не менять без понимания
@@ -61,13 +62,14 @@
 ### Проблема: localhost:9090 в собранном JS
 **Симптомы**: API запросы идут на `http://localhost:9090/api` вместо `/api`
 
-**Причина**: При сборке фронтенда `VITE_API_URL` был установлен в `http://localhost:9090/api` и попал в собранный код
+**Причина**: Vite читает .env файлы автоматически и имеет приоритет над `define` в конфиге. Если в .env есть `VITE_API_URL=http://localhost:9090/api`, он попадает в сборку.
 
 **Решение**: 
-- ✅ В `vite.config.js` принудительно используется `/api` для production режима
-- ✅ `mode === 'production'` гарантирует использование относительного пути
+- ✅ В `resources/js/services/api.js` используется проверка `import.meta.env.MODE === 'production'`
+- ✅ В production mode ВСЕГДА используется `/api`, независимо от .env файлов
+- ✅ `import.meta.env.MODE` устанавливается Vite автоматически и не может быть переопределен через .env
+- ✅ Упрощен `vite.config.js` - убран `define`, логика в коде
 - ✅ Использовать скрипт `scripts/rebuild-frontend.sh` с `--mode production`
-- ✅ Скрипт использует `--env-file /dev/null` чтобы не читать .env файлы
 
 ### Проблема: index.php удаляется при сборке фронта
 **Симптомы**: API перестает работать после `npm run build`
