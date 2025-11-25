@@ -12,7 +12,7 @@ export default defineConfig({
   },
   build: {
     outDir: '../public',
-    emptyOutDir: true,
+    emptyOutDir: false,
     manifest: true,
     rollupOptions: {
       input: resolve(__dirname, 'resources/index.html'),

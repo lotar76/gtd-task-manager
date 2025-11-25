@@ -16,14 +16,25 @@ else
 fi
 
 # Проверка наличия сети traefik
-if ! docker network inspect traefik &> /dev/null; then
-    echo "🌐 Создание Docker сети traefik..."
-    docker network create traefik
+if ! docker network inspect web &> /dev/null; then
+    echo "🌐 Создание Docker сети web..."
+    docker network create web
 fi
 
-# Сборка фронтенда
-echo "🎨 Сборка фронтенда..."
-docker run --rm -v "$(pwd):/app" -w /app node:20-alpine sh -c "npm install && npm run build"
+# Проверка наличия собранного фронтенда
+if [ ! -f "public/index.html" ] || [ ! -d "public/assets" ]; then
+    echo "⚠️  ВНИМАНИЕ: Фронтенд не собран!"
+    echo "   Соберите локально: npm run build"
+    echo "   И закоммитьте перед деплоем: git add public/ && git commit -m 'Build frontend'"
+    echo ""
+    read -p "Продолжить без фронтенда? (y/N): " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        exit 1
+    fi
+else
+    echo "✅ Фронтенд найден (public/index.html и public/assets/)"
+fi
 
 # Сборка и запуск контейнеров
 echo "🐳 Сборка и запуск Docker контейнеров (с Traefik)..."

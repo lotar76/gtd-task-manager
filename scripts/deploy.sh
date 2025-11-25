@@ -20,9 +20,14 @@ docker-compose -f docker-compose.prod.yml exec -T app php artisan down
 echo "📥 Получение последних изменений из git..."
 git pull origin main
 
-# Сборка фронтенда
-echo "🎨 Сборка фронтенда..."
-docker run --rm -v "$(pwd):/app" -w /app node:20-alpine sh -c "npm install && npm run build"
+# Проверка наличия собранного фронтенда
+if [ ! -f "public/index.html" ] || [ ! -d "public/assets" ]; then
+    echo "❌ ОШИБКА: Фронтенд не собран!"
+    echo "   Запустите локально: npm run build"
+    echo "   Затем закоммитьте: git add public/ && git commit -m 'Build frontend' && git push"
+    exit 1
+fi
+echo "✅ Фронтенд найден (public/index.html и public/assets/)"
 
 # Сборка и перезапуск контейнеров
 echo "🐳 Пересборка Docker контейнеров..."
