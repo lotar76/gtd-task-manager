@@ -3,8 +3,10 @@ import vue from '@vitejs/plugin-vue'
 import { resolve } from 'path'
 
 export default defineConfig(({ mode }) => {
-  // Для production сборки используем относительный путь, если VITE_API_URL не установлен
-  const apiUrl = process.env.VITE_API_URL || (mode === 'production' ? '/api' : undefined)
+  // КРИТИЧНО: Для production сборки ВСЕГДА используем '/api'
+  // Игнорируем VITE_API_URL из env, чтобы избежать localhost:9090 в production
+  const isProduction = mode === 'production'
+  const apiUrl = isProduction ? '/api' : (process.env.VITE_API_URL || undefined)
   
   return {
     plugins: [vue()],
@@ -15,7 +17,8 @@ export default defineConfig(({ mode }) => {
       },
     },
     define: {
-      // Переопределяем переменную окружения для production
+      // Переопределяем переменную окружения
+      // В production всегда '/api', в dev - из env или undefined
       'import.meta.env.VITE_API_URL': apiUrl ? JSON.stringify(apiUrl) : 'undefined',
     },
     build: {
