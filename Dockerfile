@@ -42,6 +42,9 @@ RUN chown -R www-data:www-data /var/www/html \
 # Установка зависимостей Composer
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
+# Копирование кастомного конфига PHP-FPM (без user/group директив)
+COPY docker/php-fpm/www.conf /usr/local/etc/php-fpm.d/www.conf
+
 USER www-data
 
 EXPOSE 9000
