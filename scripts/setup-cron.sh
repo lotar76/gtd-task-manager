@@ -4,7 +4,9 @@
 
 set -e
 
-PROJECT_PATH="/home/projects/api"
+# Определяем путь к проекту автоматически (откуда запущен скрипт)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_PATH="$(cd "$SCRIPT_DIR/.." && pwd)"
 CRON_JOB="* * * * * cd $PROJECT_PATH && php artisan schedule:run >> /dev/null 2>&1"
 
 echo "🔧 Настройка cron для Laravel Scheduler..."
@@ -34,7 +36,12 @@ echo "Текущие задачи cron:"
 crontab -l
 echo ""
 echo "📋 Проверка расписания Laravel:"
-cd "$PROJECT_PATH" && php artisan schedule:list
+if [ -d "$PROJECT_PATH" ] && [ -f "$PROJECT_PATH/artisan" ]; then
+    cd "$PROJECT_PATH" && php artisan schedule:list
+else
+    echo "⚠️  Предупреждение: Не удалось найти проект по пути $PROJECT_PATH"
+    echo "   Убедитесь, что путь правильный и artisan файл существует"
+fi
 echo ""
 echo "✅ Готово! Laravel Scheduler будет запускаться каждую минуту."
 
