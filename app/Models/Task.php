@@ -26,6 +26,7 @@ class Task extends Model
         'assigned_to',
         'due_date',
         'estimated_time',
+        'end_time',
         'completed_at',
         'position',
         'created_by',

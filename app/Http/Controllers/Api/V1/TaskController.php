@@ -182,6 +182,7 @@ class TaskController extends Controller
             'assigned_to' => 'nullable|exists:users,id',
             'due_date' => 'nullable|date',
             'estimated_time' => 'nullable|date_format:H:i',
+            'end_time' => 'nullable|date_format:H:i',
             'tags' => 'nullable|array',
             'tags.*' => 'exists:tags,id',
         ]);
@@ -271,6 +272,7 @@ class TaskController extends Controller
             'assigned_to' => 'nullable|exists:users,id',
             'due_date' => 'nullable|date',
             'estimated_time' => 'nullable|date_format:H:i',
+            'end_time' => 'nullable|date_format:H:i',
             'tags' => 'nullable|array',
             'tags.*' => 'exists:tags,id',
         ]);

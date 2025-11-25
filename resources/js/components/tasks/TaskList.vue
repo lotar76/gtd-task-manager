@@ -69,6 +69,25 @@
               {{ formatDate(task.due_date) }}
             </span>
 
+            <!-- Время начала и окончания -->
+            <span
+              v-if="task.estimated_time || task.end_time"
+              class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-700"
+            >
+              <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span v-if="task.estimated_time && task.end_time">
+                {{ formatTime(task.estimated_time) }} - {{ formatTime(task.end_time) }}
+              </span>
+              <span v-else-if="task.estimated_time">
+                {{ formatTime(task.estimated_time) }}
+              </span>
+              <span v-else-if="task.end_time">
+                до {{ formatTime(task.end_time) }}
+              </span>
+            </span>
+
             <!-- Назначен -->
             <span v-if="task.assignee" class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-700">
               {{ task.assignee.name }}
@@ -170,6 +189,14 @@ const formatDate = (date) => {
   }
   
   return d.format('D MMM')
+}
+
+const formatTime = (time) => {
+  if (!time) return ''
+  // Если время уже в формате HH:mm, возвращаем как есть
+  if (/^\d{2}:\d{2}$/.test(time)) return time
+  // Иначе извлекаем HH:mm из формата HH:mm:ss
+  return time.substring(0, 5)
 }
 
 const getDueDateClass = (task) => {

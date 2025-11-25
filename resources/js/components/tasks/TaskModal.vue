@@ -139,7 +139,7 @@
                 <!-- Estimated Time -->
                 <div>
                   <label for="estimated_time" class="block text-sm font-medium text-gray-700 mb-2">
-                    Время выполнения
+                    Время начала
                   </label>
                   <input
                     id="estimated_time"
@@ -149,6 +149,20 @@
                     placeholder="12:30"
                   />
                 </div>
+              </div>
+
+              <!-- End Time -->
+              <div>
+                <label for="end_time" class="block text-sm font-medium text-gray-700 mb-2">
+                  Время окончания
+                </label>
+                <input
+                  id="end_time"
+                  v-model="form.end_time"
+                  type="time"
+                  class="input"
+                  placeholder="13:30"
+                />
               </div>
 
               <!-- Workspace -->
@@ -289,6 +303,7 @@ const form = ref({
   priority: 'medium',
   due_date: '',
   estimated_time: '',
+  end_time: '',
   workspace_id: null,
   project_id: null,
 })
@@ -368,6 +383,7 @@ watch(() => props.task, (newTask, oldTask) => {
       priority: 'medium',
       due_date: '',
       estimated_time: '',
+      end_time: '',
       workspace_id: currentWorkspace.value?.id,
       project_id: null,
     }
@@ -399,6 +415,7 @@ watch(() => props.task, (newTask, oldTask) => {
       priority: newTask.priority || 'medium',
       due_date: formatDateForInput(newTask.due_date),
       estimated_time: formatTimeForInput(newTask.estimated_time),
+      end_time: formatTimeForInput(newTask.end_time),
       workspace_id: newTask.workspace_id || currentWorkspace.value?.id,
       project_id: newTask.project_id || null,
     }
@@ -413,6 +430,7 @@ watch(() => props.task, (newTask, oldTask) => {
       priority: 'medium',
       due_date: getDefaultDueDateFromRoute(),
       estimated_time: '',
+      end_time: '',
       workspace_id: currentWorkspace.value?.id,
       project_id: null,
     }
@@ -450,6 +468,7 @@ watch(() => props.show, (newShow) => {
       priority: 'medium',
       due_date: '',
       estimated_time: '',
+      end_time: '',
       workspace_id: currentWorkspace.value?.id,
       project_id: null,
     }

@@ -149,8 +149,16 @@
                 }"
               >
                   <div class="font-medium truncate">{{ task.title }}</div>
-                  <div v-if="task.estimated_time" class="text-[10px] opacity-75 mt-1">
-                    {{ formatTime(task.estimated_time) }}
+                  <div v-if="task.estimated_time || task.end_time" class="text-[10px] opacity-75 mt-1">
+                    <span v-if="task.estimated_time && task.end_time">
+                      {{ formatTime(task.estimated_time) }} - {{ formatTime(task.end_time) }}
+                    </span>
+                    <span v-else-if="task.estimated_time">
+                      {{ formatTime(task.estimated_time) }}
+                    </span>
+                    <span v-else-if="task.end_time">
+                      до {{ formatTime(task.end_time) }}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -195,8 +203,16 @@
                   }"
                 >
                   <div class="font-medium text-sm mb-1">{{ task.title }}</div>
-                  <div v-if="task.estimated_time" class="text-xs text-gray-600 mt-1">
-                    ⏱ {{ formatTime(task.estimated_time) }}
+                  <div v-if="task.estimated_time || task.end_time" class="text-xs text-gray-600 mt-1">
+                    ⏱ <span v-if="task.estimated_time && task.end_time">
+                      {{ formatTime(task.estimated_time) }} - {{ formatTime(task.end_time) }}
+                    </span>
+                    <span v-else-if="task.estimated_time">
+                      {{ formatTime(task.estimated_time) }}
+                    </span>
+                    <span v-else-if="task.end_time">
+                      до {{ formatTime(task.end_time) }}
+                    </span>
                   </div>
                 </div>
                 <div v-if="day.tasks.length === 0" class="text-xs text-gray-400 text-center py-4">
@@ -233,9 +249,17 @@
                   <div class="font-medium text-sm sm:text-base text-gray-900 mb-1">{{ task.title }}</div>
                   <div v-if="task.description" class="text-xs sm:text-sm text-gray-600 mt-1 line-clamp-2">{{ task.description }}</div>
                   <div class="flex flex-wrap items-center gap-2 mt-2">
-                    <span v-if="task.estimated_time" class="text-xs text-gray-600 flex items-center">
+                    <span v-if="task.estimated_time || task.end_time" class="text-xs text-gray-600 flex items-center">
                       <ClockIcon class="w-3 h-3 mr-1" />
-                      {{ formatTime(task.estimated_time) }}
+                      <span v-if="task.estimated_time && task.end_time">
+                        {{ formatTime(task.estimated_time) }} - {{ formatTime(task.end_time) }}
+                      </span>
+                      <span v-else-if="task.estimated_time">
+                        {{ formatTime(task.estimated_time) }}
+                      </span>
+                      <span v-else-if="task.end_time">
+                        до {{ formatTime(task.end_time) }}
+                      </span>
                     </span>
                     <span
                       class="text-xs px-2 py-0.5 rounded-full"
