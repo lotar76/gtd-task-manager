@@ -14,7 +14,10 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
-        // $schedule->command('inspire')->hourly();
+        // Пересчет статусов задач в 00:00 по московскому времени
+        $schedule->command('tasks:recalculate-statuses')
+            ->dailyAt('00:00')
+            ->timezone('Europe/Moscow');
     }
 
     /**
