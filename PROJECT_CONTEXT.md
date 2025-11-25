@@ -61,12 +61,13 @@
 ### Проблема: localhost:9090 в собранном JS
 **Симптомы**: API запросы идут на `http://localhost:9090/api` вместо `/api`
 
-**Причина**: При сборке фронтенда `VITE_API_URL` был установлен в `http://localhost:9090/api`
+**Причина**: При сборке фронтенда `VITE_API_URL` был установлен в `http://localhost:9090/api` и попал в собранный код
 
 **Решение**: 
-- Использовать скрипт `scripts/rebuild-frontend.sh`
-- Убедиться что `VITE_API_URL` не установлен при сборке
-- Использовать `--env-file /dev/null` в Docker
+- ✅ В `vite.config.js` принудительно используется `/api` для production режима
+- ✅ `mode === 'production'` гарантирует использование относительного пути
+- ✅ Использовать скрипт `scripts/rebuild-frontend.sh` с `--mode production`
+- ✅ Скрипт использует `--env-file /dev/null` чтобы не читать .env файлы
 
 ### Проблема: index.php удаляется при сборке фронта
 **Симптомы**: API перестает работать после `npm run build`
