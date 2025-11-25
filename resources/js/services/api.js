@@ -1,19 +1,10 @@
 import axios from 'axios'
 
-// КРИТИЧНО: В production всегда используем относительный путь '/api'
-// VITE_API_URL используется только для локальной разработки
-// В production mode Vite заменяет import.meta.env.MODE на 'production'
-const getApiUrl = () => {
-  // В production всегда '/api'
-  if (import.meta.env.MODE === 'production') {
-    return '/api'
-  }
-  // В dev используем VITE_API_URL или fallback на '/api'
-  return import.meta.env.VITE_API_URL || '/api'
-}
-
+// Используем VITE_API_URL из .env файлов
+// Для production: VITE_API_URL=/api в .env.production
+// Для local dev: VITE_API_URL=http://localhost:9090/api в .env.local
 const api = axios.create({
-  baseURL: getApiUrl(),
+  baseURL: import.meta.env.VITE_API_URL || '/api',
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
