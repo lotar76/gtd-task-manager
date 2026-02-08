@@ -21,6 +21,13 @@ class TelegramService
         'low' => '🔵 Низкий',
     ];
 
+    private const PRIORITY_ICONS = [
+        'urgent' => '🔴',
+        'high' => '🟠',
+        'medium' => '🟡',
+        'low' => '🔵',
+    ];
+
     public function __construct()
     {
         $this->client = new Client([
@@ -33,6 +40,9 @@ class TelegramService
         return config('services.telegram.bot_token');
     }
 
+    /**
+     * Форматирует задачу в читаемое многострочное сообщение.
+     */
     public function formatTask(Task $task): string
     {
         $task->loadMissing(['project', 'context']);
@@ -45,14 +55,48 @@ class TelegramService
             if (mb_strlen($task->description) > 200) {
                 $desc .= '...';
             }
+            $lines[] = '';
             $lines[] = $desc;
         }
 
-        $meta = [];
+        $lines[] = '';
 
         if ($task->due_date) {
-            $meta[] = '📅 ' . Carbon::parse($task->due_date)->format('d.m.Y');
+            $lines[] = '📅 ' . Carbon::parse($task->due_date)->format('d.m.Y');
         }
+
+        if ($task->estimated_time) {
+            $time = substr($task->estimated_time, 0, 5);
+            if ($task->end_time) {
+                $time .= ' – ' . substr($task->end_time, 0, 5);
+            }
+            $lines[] = '🕐 ' . $time;
+        }
+
+        if ($task->priority) {
+            $lines[] = self::PRIORITY_LABELS[$task->priority] ?? $task->priority;
+        }
+
+        if ($task->project) {
+            $lines[] = '📁 ' . $task->project->name;
+        }
+
+        if ($task->context) {
+            $lines[] = '📍 ' . $task->context->name;
+        }
+
+        return implode("\n", $lines);
+    }
+
+    /**
+     * Форматирует задачу для списка (компактно, но читаемо — каждая на 2 строки).
+     */
+    public function formatTaskLine(Task $task, bool $showDate = false): string
+    {
+        $task->loadMissing(['project']);
+
+        $line = "<b>{$task->title}</b>";
+        $meta = [];
 
         if ($task->estimated_time) {
             $time = substr($task->estimated_time, 0, 5);
@@ -62,120 +106,96 @@ class TelegramService
             $meta[] = '🕐 ' . $time;
         }
 
+        if ($showDate && $task->due_date) {
+            $meta[] = '📅 ' . Carbon::parse($task->due_date)->format('d.m');
+        }
+
         if ($task->priority) {
-            $meta[] = self::PRIORITY_LABELS[$task->priority] ?? $task->priority;
+            $meta[] = self::PRIORITY_ICONS[$task->priority] ?? '';
         }
 
         if ($task->project) {
             $meta[] = '📁 ' . $task->project->name;
         }
 
-        if ($task->context) {
-            $meta[] = '📍 ' . $task->context->name;
-        }
-
         if (!empty($meta)) {
-            $lines[] = implode('  ', $meta);
+            $line .= "\n     " . implode('  ', $meta);
         }
 
-        return implode("\n", $lines);
+        return $line;
     }
 
-    public function formatTaskLine(Task $task, bool $showDate = false): string
-    {
-        $task->loadMissing(['project']);
-
-        $parts = [$task->title];
-
-        if ($task->estimated_time) {
-            $time = substr($task->estimated_time, 0, 5);
-            if ($task->end_time) {
-                $time .= '–' . substr($task->end_time, 0, 5);
-            }
-            $parts[] = '🕐' . $time;
-        }
-
-        if ($showDate && $task->due_date) {
-            $parts[] = '📅' . Carbon::parse($task->due_date)->format('d.m');
-        }
-
-        if ($task->priority) {
-            $icons = ['urgent' => '🔴', 'high' => '🟠', 'medium' => '🟡', 'low' => '🔵'];
-            $parts[] = $icons[$task->priority] ?? '';
-        }
-
-        if ($task->project) {
-            $parts[] = '📁' . $task->project->name;
-        }
-
-        return implode('  ', $parts);
-    }
-
+    /**
+     * Отправить сообщение.
+     */
     public function sendMessage(string $chatId, string $text, string $parseMode = 'HTML'): bool
     {
-        $botToken = $this->getBotToken();
-        if (!$botToken) {
-            Log::error('Telegram bot token not configured');
-            return false;
-        }
+        return $this->apiCall('sendMessage', [
+            'chat_id' => $chatId,
+            'text' => $text,
+            'parse_mode' => $parseMode,
+        ]);
+    }
 
-        try {
-            $response = $this->client->post("https://api.telegram.org/bot{$botToken}/sendMessage", [
-                'json' => [
-                    'chat_id' => $chatId,
-                    'text' => $text,
-                    'parse_mode' => $parseMode,
-                ],
+    /**
+     * Отправить сообщение с inline-кнопками.
+     */
+    public function sendMessageWithKeyboard(string $chatId, string $text, array $keyboard, string $parseMode = 'HTML'): bool
+    {
+        return $this->apiCall('sendMessage', [
+            'chat_id' => $chatId,
+            'text' => $text,
+            'parse_mode' => $parseMode,
+            'reply_markup' => json_encode([
+                'inline_keyboard' => $keyboard,
+            ]),
+        ]);
+    }
+
+    /**
+     * Ответить на callback query (убирает "часики" на кнопке).
+     */
+    public function answerCallbackQuery(string $callbackQueryId, string $text = ''): bool
+    {
+        return $this->apiCall('answerCallbackQuery', [
+            'callback_query_id' => $callbackQueryId,
+            'text' => $text,
+        ]);
+    }
+
+    /**
+     * Редактировать текст существующего сообщения.
+     */
+    public function editMessageText(string $chatId, int $messageId, string $text, string $parseMode = 'HTML', ?array $keyboard = null): bool
+    {
+        $params = [
+            'chat_id' => $chatId,
+            'message_id' => $messageId,
+            'text' => $text,
+            'parse_mode' => $parseMode,
+        ];
+
+        if ($keyboard !== null) {
+            $params['reply_markup'] = json_encode([
+                'inline_keyboard' => $keyboard,
             ]);
-
-            $data = json_decode($response->getBody()->getContents(), true);
-            return $data['ok'] ?? false;
-        } catch (GuzzleException $e) {
-            Log::error('Telegram sendMessage error: ' . $e->getMessage());
-            return false;
+        } else {
+            $params['reply_markup'] = json_encode([
+                'inline_keyboard' => [],
+            ]);
         }
+
+        return $this->apiCall('editMessageText', $params);
     }
 
     public function setWebhook(string $webhookUrl): bool
     {
-        $botToken = $this->getBotToken();
-        if (!$botToken) {
-            Log::error('Telegram bot token not configured');
-            return false;
-        }
-
-        try {
-            $response = $this->client->post("https://api.telegram.org/bot{$botToken}/setWebhook", [
-                'json' => [
-                    'url' => $webhookUrl,
-                ],
-            ]);
-
-            $data = json_decode($response->getBody()->getContents(), true);
-            return $data['ok'] ?? false;
-        } catch (GuzzleException $e) {
-            Log::error('Telegram setWebhook error: ' . $e->getMessage());
-            return false;
-        }
+        return $this->apiCall('setWebhook', ['url' => $webhookUrl]);
     }
 
     public function deleteWebhook(): bool
     {
-        $botToken = $this->getBotToken();
-        if (!$botToken) {
-            Log::error('Telegram bot token not configured');
-            return false;
-        }
-
-        try {
-            $response = $this->client->post("https://api.telegram.org/bot{$botToken}/deleteWebhook");
-
-            $data = json_decode($response->getBody()->getContents(), true);
-            return $data['ok'] ?? false;
-        } catch (GuzzleException $e) {
-            Log::error('Telegram deleteWebhook error: ' . $e->getMessage());
-            return false;
-        }
+        return $this->apiCall('deleteWebhook');
     }
 
     public function getMe(): ?array
@@ -187,15 +207,35 @@ class TelegramService
 
         try {
             $response = $this->client->get("https://api.telegram.org/bot{$botToken}/getMe");
-
             $data = json_decode($response->getBody()->getContents(), true);
-            if ($data['ok'] ?? false) {
-                return $data['result'];
-            }
-            return null;
+            return ($data['ok'] ?? false) ? $data['result'] : null;
         } catch (GuzzleException $e) {
             Log::error('Telegram getMe error: ' . $e->getMessage());
             return null;
+        }
+    }
+
+    /**
+     * Общий метод для вызовов Telegram Bot API.
+     */
+    private function apiCall(string $method, array $params = []): bool
+    {
+        $botToken = $this->getBotToken();
+        if (!$botToken) {
+            Log::error('Telegram bot token not configured');
+            return false;
+        }
+
+        try {
+            $response = $this->client->post("https://api.telegram.org/bot{$botToken}/{$method}", [
+                'json' => $params,
+            ]);
+
+            $data = json_decode($response->getBody()->getContents(), true);
+            return $data['ok'] ?? false;
+        } catch (GuzzleException $e) {
+            Log::error("Telegram {$method} error: " . $e->getMessage());
+            return false;
         }
     }
 }

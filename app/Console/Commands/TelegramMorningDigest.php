@@ -80,27 +80,27 @@ class TelegramMorningDigest extends Command
             $text = "<b>☀️ Доброе утро, {$user->name}!</b>\n\n";
 
             if ($allTodayTasks->isNotEmpty()) {
-                $text .= "<b>📋 Задачи на сегодня ({$allTodayTasks->count()}):</b>\n";
+                $text .= "<b>📋 Задачи на сегодня ({$allTodayTasks->count()}):</b>\n\n";
                 foreach ($allTodayTasks->values() as $i => $task) {
                     $line = $telegramService->formatTaskLine($task);
                     if ($showWorkspaceName) {
-                        $line .= "  [{$task->_workspace_name}]";
+                        $line .= "\n     📂 {$task->_workspace_name}";
                     }
-                    $text .= ($i + 1) . ". {$line}\n";
+                    $text .= ($i + 1) . ". {$line}\n\n";
                 }
             } else {
-                $text .= "На сегодня задач нет. 🎉\n";
+                $text .= "На сегодня задач нет 🎉\n";
             }
 
             if ($allOverdueTasks->isNotEmpty()) {
-                $text .= "\n<b>⚠️ Просроченные ({$allOverdueTasks->count()}):</b>\n";
+                $text .= "<b>⚠️ Просроченные ({$allOverdueTasks->count()}):</b>\n\n";
                 foreach ($allOverdueTasks->take(5) as $task) {
                     $days = Carbon::parse($task->due_date)->diffInDays($now);
                     $line = $telegramService->formatTaskLine($task, true);
                     if ($showWorkspaceName) {
-                        $line .= "  [{$task->_workspace_name}]";
+                        $line .= "\n     📂 {$task->_workspace_name}";
                     }
-                    $text .= "- {$line} ({$days} дн.)\n";
+                    $text .= "• {$line}\n  ⏰ просрочена {$days} дн.\n\n";
                 }
                 if ($allOverdueTasks->count() > 5) {
                     $text .= "...и ещё " . ($allOverdueTasks->count() - 5) . "\n";

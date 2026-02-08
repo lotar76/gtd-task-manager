@@ -15,6 +15,7 @@ class TelegramSubscription extends Model
         'chat_id',
         'link_token',
         'is_active',
+        'pending_task_text',
         'morning_digest_time',
         'reminder_minutes_before',
         'notify_overdue',

@@ -56,14 +56,19 @@ class TelegramTaskReminders extends Command
                     $taskTime = substr($task->estimated_time, 0, 5);
 
                     if ($taskTime === $reminderTime) {
-                        $text = "🔔 <b>Напоминание:</b> через {$reminderMinutes} мин.\n\n"
+                        $text = "🔔 <b>Напоминание</b>\n"
+                            . "Через {$reminderMinutes} мин.\n\n"
                             . $telegramService->formatTask($task);
 
                         if ($showWorkspaceName) {
                             $text .= "\n📂 {$workspace->name}";
                         }
 
-                        $telegramService->sendMessage($subscription->chat_id, $text);
+                        $telegramService->sendMessageWithKeyboard(
+                            $subscription->chat_id,
+                            $text,
+                            [[['text' => '✅ Закрыть задачу', 'callback_data' => "done:{$task->id}"]]]
+                        );
                         $sent++;
                     }
                 }

@@ -67,13 +67,13 @@ class TelegramOverdueAlerts extends Command
                 $days = Carbon::parse($task->due_date)->diffInDays($now);
                 $line = $telegramService->formatTaskLine($task, true);
                 if ($showWorkspaceName) {
-                    $line .= "  [{$task->_workspace_name}]";
+                    $line .= "\n     📂 {$task->_workspace_name}";
                 }
-                $text .= "- {$line} ({$days} дн.)\n";
+                $text .= "• {$line}\n  ⏰ просрочена {$days} дн.\n\n";
             }
 
             if ($allOverdueTasks->count() > 10) {
-                $text .= "\n...и ещё " . ($allOverdueTasks->count() - 10) . " задач";
+                $text .= "...и ещё " . ($allOverdueTasks->count() - 10) . " задач";
             }
 
             $telegramService->sendMessage($subscription->chat_id, $text);

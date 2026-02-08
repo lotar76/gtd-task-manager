@@ -43,15 +43,50 @@ for filepath in glob.glob('public/assets/*'):
 ## 4. Commit и push
 - Если тип деплоя **FULL rebuild**: выполни `git commit -m "🐳 Deploy (full rebuild)"`
 - Если тип деплоя **FAST deploy**: выполни `git commit -m "⚡ Deploy"`
-- Выполни `git push origin main`
+- Выполни `git push` (на текущую ветку)
 
 ## 5. Запуск на сервере
-Сначала сбрось локальные изменения на сервере (они могут быть в `public/`), затем запусти деплой:
-- Если тип деплоя **FULL rebuild**: выполни `ssh root@37.220.82.214 "cd /home/projects/todo && git checkout -- . && git clean -fd public/assets/ && ./scripts/deploy.sh"`
-- Если тип деплоя **FAST deploy**: выполни `ssh root@37.220.82.214 "cd /home/projects/todo && git checkout -- . && git clean -fd public/assets/ && ./scripts/deploy-fast.sh"`
+Сначала сбрось локальные изменения на сервере, затем запусти деплой:
 
-## 6. Сообщи результат
+**FAST deploy:**
+```bash
+ssh root@37.220.82.214 "cd /home/projects/todo && git checkout -- . && git clean -fd public/assets/ && git pull"
+```
+
+**FULL rebuild:**
+```bash
+ssh root@37.220.82.214 "cd /home/projects/todo && git checkout -- . && git clean -fd public/assets/ && git pull && docker-compose -f docker-compose.prod.yml up -d --build"
+```
+
+## 6. Очистка кэшей Laravel (ОБЯЗАТЕЛЬНО!)
+**Всегда выполняй после каждого деплоя**, иначе Laravel использует старые закэшированные роуты/конфиги и всё ломается:
+```bash
+ssh root@37.220.82.214 "cd /home/projects/todo && docker-compose -f docker-compose.prod.yml exec -T app php artisan route:clear && docker-compose -f docker-compose.prod.yml exec -T app php artisan config:clear && docker-compose -f docker-compose.prod.yml exec -T app php artisan view:clear && docker-compose -f docker-compose.prod.yml exec -T app php artisan config:cache && docker-compose -f docker-compose.prod.yml exec -T app php artisan route:cache && docker-compose -f docker-compose.prod.yml exec -T app php artisan view:cache"
+```
+
+## 7. Миграции (если есть новые)
+Проверь, есть ли в коммите новые файлы `database/migrations/`. Если да:
+```bash
+ssh root@37.220.82.214 "cd /home/projects/todo && docker-compose -f docker-compose.prod.yml exec -T app php artisan migrate --force"
+```
+
+## 8. Сообщи результат
 После завершения сообщи пользователю:
-- ✅ Тип деплоя (FAST ~10 сек или FULL ~60 сек)
-- ✅ Статус завершения
-- 🌐 Сайт: https://todo.e-api.ru
+- Тип деплоя (FAST или FULL)
+- Статус завершения
+- Были ли миграции
+- Сайт: https://todo.e-api.ru
+
+---
+
+## Известные грабли (чтобы не наступать повторно)
+
+1. **VITE_API_URL** — контейнер `api_frontend` имеет `VITE_API_URL=http://localhost:9090/api` из docker-compose.local.yml. При билде ВСЕГДА передавать `-e VITE_API_URL=/api`.
+
+2. **Route cache** — если удалён/переименован контроллер, а route:cache не очищен, Laravel падает с 500 на ВСЕХ запросах. Поэтому шаг 6 обязателен.
+
+3. **Config cache** — новые env-переменные не подхватываются без `config:cache`. После добавления переменных в `.env` на сервере ОБЯЗАТЕЛЬНО пересоздать кэш.
+
+4. **Docker env_file** — `docker-compose.prod.yml` использует `env_file: .env` (не `environment:`). Все env-переменные должны быть в `.env` на сервере.
+
+5. **git push** — пушим в текущую ветку (не обязательно main). На сервере `git pull` подтянет правильную ветку.
