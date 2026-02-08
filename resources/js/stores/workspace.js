@@ -154,15 +154,11 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     if (index > -1) {
       // Убираем из выбранных
       selectedWorkspaces.value.splice(index, 1)
-      
-      // Если это был последний, выбираем первый доступный
-      if (selectedWorkspaces.value.length === 0 && workspaces.value.length > 0) {
-        selectedWorkspaces.value.push(workspaces.value[0])
-        currentWorkspace.value = workspaces.value[0]
-      } else if (currentWorkspace.value?.id === workspace.id) {
-        // Если убрали текущий, переключаемся на первый из выбранных
-        if (selectedWorkspaces.value.length > 0) {
-          currentWorkspace.value = selectedWorkspaces.value[0]
+
+      if (currentWorkspace.value?.id === workspace.id) {
+        // Если убрали текущий, переключаемся на первый из выбранных (или null)
+        currentWorkspace.value = selectedWorkspaces.value[0] || null
+        if (currentWorkspace.value) {
           localStorage.setItem('currentWorkspaceId', currentWorkspace.value.id)
         }
       }

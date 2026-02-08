@@ -164,7 +164,7 @@ class TelegramWebhookController extends Controller
 
         $text = "<b>📋 Задачи на сегодня ({$allTasks->count()}):</b>\n\n";
 
-        $buttons = [];
+        $keyboard = [];
 
         foreach ($allTasks as $i => $task) {
             $num = $i + 1;
@@ -176,14 +176,12 @@ class TelegramWebhookController extends Controller
 
             $text .= "{$num}. {$line}\n\n";
 
-            $buttons[] = [
-                'text' => "✅ {$num}",
-                'callback_data' => "done:{$task->id}",
-            ];
+            $shortTitle = mb_substr($task->title, 0, 25);
+            if (mb_strlen($task->title) > 25) {
+                $shortTitle .= '…';
+            }
+            $keyboard[] = [['text' => "✅ {$num}. {$shortTitle}", 'callback_data' => "done:{$task->id}"]];
         }
-
-        // Разбиваем кнопки по 5 в ряд
-        $keyboard = array_chunk($buttons, 5);
 
         $this->telegramService->sendMessageWithKeyboard($chatId, $text, $keyboard);
         return response()->json(['ok' => true]);
