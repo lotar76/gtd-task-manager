@@ -7,13 +7,13 @@
         
         <!-- Modal -->
         <div class="flex min-h-screen items-center justify-center p-4">
-          <div class="relative bg-white rounded-lg shadow-xl max-w-2xl w-full mx-auto" @click.stop>
+          <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full mx-auto" @click.stop>
             <!-- Header -->
-            <div class="flex items-center justify-between p-6 border-b border-gray-200">
-              <h3 class="text-xl font-semibold text-gray-900">
+            <div class="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+              <h3 class="text-xl font-semibold text-gray-900 dark:text-white">
                 {{ task ? 'Редактировать задачу' : 'Новая задача' }}
               </h3>
-              <button @click="$emit('close')" class="text-gray-400 hover:text-gray-600">
+              <button @click="$emit('close')" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -23,15 +23,15 @@
             <!-- Body -->
             <form @submit.prevent="handleSubmit" class="p-6 space-y-4">
               <!-- Completed Toggle -->
-              <div class="flex items-center space-x-3 pb-4 border-b border-gray-200">
+              <div class="flex items-center space-x-3 pb-4 border-b border-gray-200 dark:border-gray-700">
                 <label class="flex items-center space-x-2 cursor-pointer">
                   <input
                     type="checkbox"
                     v-model="isCompleted"
                     @change="handleToggleCompleted"
-                    class="w-5 h-5 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                    class="w-5 h-5 text-primary-600 border-gray-300 dark:border-gray-600 rounded focus:ring-primary-500 dark:bg-gray-700"
                   />
-                  <span class="text-sm font-medium text-gray-700">
+                  <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
                     {{ isCompleted ? 'Задача выполнена' : 'Отметить как выполненную' }}
                   </span>
                 </label>
@@ -39,7 +39,7 @@
 
               <!-- Title -->
               <div>
-                <label for="title" class="block text-sm font-medium text-gray-700 mb-2">
+                <label for="title" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Название задачи *
                 </label>
                 <input
@@ -55,7 +55,7 @@
 
               <!-- Description -->
               <div>
-                <label for="description" class="block text-sm font-medium text-gray-700 mb-2">
+                <label for="description" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Описание
                 </label>
                 <textarea
@@ -71,7 +71,7 @@
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <!-- Status -->
                 <div>
-                  <label for="status" class="block text-sm font-medium text-gray-700 mb-2">
+                  <label for="status" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Статус
                   </label>
                   <div class="relative">
@@ -81,7 +81,7 @@
                       class="input w-full flex items-center justify-between"
                     >
                       <span class="flex items-center space-x-2">
-                        <component :is="statusOptions[form.status].icon" class="w-5 h-5 text-gray-500" />
+                        <component :is="statusOptions[form.status].icon" class="w-5 h-5 text-gray-500 dark:text-gray-400" />
                         <span>{{ statusOptions[form.status].label }}</span>
                       </span>
                       <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -90,15 +90,15 @@
                     </button>
                     <div
                       v-if="statusDropdownOpen"
-                      class="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg"
+                      class="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg"
                     >
                       <button
                         v-for="(option, key) in statusOptions"
                         :key="key"
                         type="button"
                         @click="selectStatus(key)"
-                        class="w-full flex items-center space-x-2 px-3 py-2 text-sm hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg transition-colors"
-                        :class="form.status === key ? 'bg-primary-50 text-primary-700' : 'text-gray-700'"
+                        class="w-full flex items-center space-x-2 px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-600 first:rounded-t-lg last:rounded-b-lg transition-colors"
+                        :class="form.status === key ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400' : 'text-gray-700 dark:text-gray-300'"
                       >
                         <component :is="option.icon" class="w-5 h-5" />
                         <span>{{ option.label }}</span>
@@ -109,7 +109,7 @@
 
                 <!-- Priority -->
                 <div>
-                  <label for="priority" class="block text-sm font-medium text-gray-700 mb-2">
+                  <label for="priority" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Приоритет
                   </label>
                   <select id="priority" v-model="form.priority" class="input">
@@ -125,7 +125,7 @@
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <!-- Due Date -->
               <div>
-                <label for="due_date" class="block text-sm font-medium text-gray-700 mb-2">
+                <label for="due_date" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Срок выполнения
                 </label>
                 <input
@@ -138,7 +138,7 @@
 
                 <!-- Estimated Time -->
                 <div>
-                  <label for="estimated_time" class="block text-sm font-medium text-gray-700 mb-2">
+                  <label for="estimated_time" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Время начала
                   </label>
                   <input
@@ -153,7 +153,7 @@
 
               <!-- End Time -->
               <div>
-                <label for="end_time" class="block text-sm font-medium text-gray-700 mb-2">
+                <label for="end_time" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Время окончания
                 </label>
                 <input
@@ -167,7 +167,7 @@
 
               <!-- Workspace -->
               <div v-if="workspaces.length > 1">
-                <label for="workspace_id" class="block text-sm font-medium text-gray-700 mb-2">
+                <label for="workspace_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Рабочее пространство
                 </label>
                 <select
@@ -183,7 +183,7 @@
 
               <!-- Project -->
               <div>
-                <label for="project_id" class="block text-sm font-medium text-gray-700 mb-2">
+                <label for="project_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Проект
                 </label>
                 <select
@@ -203,7 +203,7 @@
               </div>
 
               <!-- Error Message -->
-              <div v-if="error" class="text-red-600 text-sm bg-red-50 p-3 rounded-lg">
+              <div v-if="error" class="text-red-600 dark:text-red-400 text-sm bg-red-50 dark:bg-red-900/20 p-3 rounded-lg">
                 {{ error }}
               </div>
 

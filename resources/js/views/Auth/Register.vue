@@ -1,15 +1,15 @@
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-primary-100 px-4">
+  <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-primary-100 dark:from-gray-900 dark:to-gray-800 px-4">
     <div class="max-w-md w-full">
       <div class="card">
         <div class="text-center mb-8">
-          <h1 class="text-3xl font-bold text-gray-900">GTD TODO</h1>
-          <p class="text-gray-600 mt-2">Создайте свой аккаунт</p>
+          <h1 class="text-3xl font-bold text-gray-900 dark:text-white">GTD TODO</h1>
+          <p class="text-gray-600 dark:text-gray-400 mt-2">Создайте свой аккаунт</p>
         </div>
 
         <form @submit.prevent="handleSubmit" class="space-y-6">
           <div>
-            <label for="name" class="block text-sm font-medium text-gray-700 mb-2">
+            <label for="name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Имя
             </label>
             <input
@@ -23,7 +23,7 @@
           </div>
 
           <div>
-            <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
+            <label for="email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Email
             </label>
             <input
@@ -37,7 +37,7 @@
           </div>
 
           <div>
-            <label for="password" class="block text-sm font-medium text-gray-700 mb-2">
+            <label for="password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Пароль
             </label>
             <input
@@ -52,7 +52,7 @@
           </div>
 
           <div>
-            <label for="password_confirmation" class="block text-sm font-medium text-gray-700 mb-2">
+            <label for="password_confirmation" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Подтверждение пароля
             </label>
             <input
@@ -65,7 +65,7 @@
             />
           </div>
 
-          <div v-if="error" class="text-red-600 text-sm bg-red-50 p-3 rounded-lg">
+          <div v-if="error" class="text-red-600 dark:text-red-400 text-sm bg-red-50 dark:bg-red-900/20 p-3 rounded-lg">
             {{ error }}
           </div>
 
@@ -79,9 +79,9 @@
         </form>
 
         <div class="mt-6 text-center">
-          <p class="text-sm text-gray-600">
+          <p class="text-sm text-gray-600 dark:text-gray-400">
             Уже есть аккаунт?
-            <router-link to="/login" class="text-primary-600 hover:text-primary-700 font-medium">
+            <router-link to="/login" class="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 font-medium">
               Войти
             </router-link>
           </p>

@@ -4,7 +4,7 @@
       <!-- Header -->
       <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-4 lg:mb-6">
         <div>
-          <h1 class="text-lg sm:text-xl lg:text-2xl font-semibold text-gray-900">Календарь</h1>
+          <h1 class="text-lg sm:text-xl lg:text-2xl font-semibold text-gray-900 dark:text-white">Календарь</h1>
         </div>
         
         <div class="flex items-center space-x-1 sm:space-x-2 mt-3 lg:mt-0 overflow-x-auto pb-2 lg:pb-0">
@@ -12,21 +12,21 @@
           <button
             @click="viewMode = 'day'"
             class="px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-lg transition-colors whitespace-nowrap touch-manipulation"
-            :class="viewMode === 'day' ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-700 active:bg-gray-200'"
+            :class="viewMode === 'day' ? 'bg-primary-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 active:bg-gray-200 dark:active:bg-gray-600'"
           >
             День
           </button>
           <button
             @click="viewMode = 'week'"
             class="px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-lg transition-colors whitespace-nowrap touch-manipulation"
-            :class="viewMode === 'week' ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-700 active:bg-gray-200'"
+            :class="viewMode === 'week' ? 'bg-primary-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 active:bg-gray-200 dark:active:bg-gray-600'"
           >
             Неделя
           </button>
           <button
             @click="viewMode = 'month'"
             class="px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-lg transition-colors whitespace-nowrap touch-manipulation"
-            :class="viewMode === 'month' ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-700 active:bg-gray-200'"
+            :class="viewMode === 'month' ? 'bg-primary-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 active:bg-gray-200 dark:active:bg-gray-600'"
           >
             Месяц
           </button>
@@ -34,30 +34,30 @@
       </div>
 
       <!-- Calendar Navigation -->
-      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 mb-4 lg:mb-6">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-3 sm:p-4 mb-4 lg:mb-6">
         <div class="flex items-center justify-between">
-          <button @click="previousPeriod" class="p-2 sm:p-3 rounded-lg bg-gray-100 hover:bg-gray-200 active:bg-gray-300 transition-colors touch-manipulation">
-            <ChevronLeftIcon class="w-5 h-5 sm:w-6 sm:h-6 text-gray-700" />
+          <button @click="previousPeriod" class="p-2 sm:p-3 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 active:bg-gray-300 transition-colors touch-manipulation">
+            <ChevronLeftIcon class="w-5 h-5 sm:w-6 sm:h-6 text-gray-700 dark:text-gray-300" />
           </button>
-          
-          <h2 class="text-base sm:text-lg font-semibold text-gray-900 text-center px-2">
+
+          <h2 class="text-base sm:text-lg font-semibold text-gray-900 dark:text-white text-center px-2">
             {{ currentPeriodTitle }}
           </h2>
-          
-          <button @click="nextPeriod" class="p-2 sm:p-3 rounded-lg bg-gray-100 hover:bg-gray-200 active:bg-gray-300 transition-colors touch-manipulation">
-            <ChevronRightIcon class="w-5 h-5 sm:w-6 sm:h-6 text-gray-700" />
+
+          <button @click="nextPeriod" class="p-2 sm:p-3 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 active:bg-gray-300 transition-colors touch-manipulation">
+            <ChevronRightIcon class="w-5 h-5 sm:w-6 sm:h-6 text-gray-700 dark:text-gray-300" />
           </button>
         </div>
       </div>
 
       <!-- Month View -->
-      <div v-if="viewMode === 'month'" class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+      <div v-if="viewMode === 'month'" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
         <!-- Days Header -->
-        <div class="grid grid-cols-7 border-b border-gray-200">
+        <div class="grid grid-cols-7 border-b border-gray-200 dark:border-gray-700">
           <div
             v-for="day in weekDays"
             :key="day"
-            class="text-center py-2 sm:py-3 text-xs sm:text-sm font-medium text-gray-700 border-r border-gray-200 last:border-r-0"
+            class="text-center py-2 sm:py-3 text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700 last:border-r-0"
           >
             {{ day }}
           </div>
@@ -69,10 +69,10 @@
             v-for="(day, index) in calendarDays"
             :key="index"
             @click="handleDayClick(day.date)"
-            class="min-h-[60px] sm:min-h-[80px] lg:min-h-[100px] border-b border-r border-gray-200 last:border-r-0 p-1 sm:p-2 cursor-pointer touch-manipulation hover:bg-gray-50 active:bg-gray-100 transition-colors"
+            class="min-h-[60px] sm:min-h-[80px] lg:min-h-[100px] border-b border-r border-gray-200 dark:border-gray-700 last:border-r-0 p-1 sm:p-2 cursor-pointer touch-manipulation hover:bg-gray-50 dark:hover:bg-gray-700 active:bg-gray-100 dark:active:bg-gray-600 transition-colors"
             :class="{
-              'bg-gray-50': !day.currentMonth,
-              'bg-primary-50 hover:bg-primary-100': day.isToday
+              'bg-gray-50 dark:bg-gray-900': !day.currentMonth,
+              'bg-primary-50 dark:bg-primary-900/30 hover:bg-primary-100 dark:hover:bg-primary-900/40': day.isToday
             }"
           >
             <div class="flex flex-col h-full">
@@ -80,9 +80,9 @@
                 <span
                   class="text-xs sm:text-sm font-medium"
                   :class="{
-                    'text-gray-400': !day.currentMonth,
-                    'text-primary-700': day.isToday,
-                    'text-gray-900': day.currentMonth && !day.isToday
+                    'text-gray-400 dark:text-gray-600': !day.currentMonth,
+                    'text-primary-700 dark:text-primary-400': day.isToday,
+                    'text-gray-900 dark:text-gray-100': day.currentMonth && !day.isToday
                   }"
                 >
                   {{ day.day }}
@@ -101,7 +101,7 @@
               >
                 <button
                   @click.stop="handleAddTaskForDay(day.date)"
-                  class="w-6 h-6 flex items-center justify-center rounded-full text-gray-300 hover:text-gray-500 hover:bg-gray-100 transition-colors"
+                  class="w-6 h-6 flex items-center justify-center rounded-full text-gray-300 dark:text-gray-600 hover:text-gray-500 dark:hover:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                 >
                   <PlusIcon class="w-4 h-4" />
                 </button>
@@ -112,18 +112,18 @@
       </div>
 
       <!-- Week View -->
-      <div v-if="viewMode === 'week'" class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+      <div v-if="viewMode === 'week'" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
         <!-- Desktop: Grid Layout with Time Grid -->
         <div class="hidden lg:block overflow-x-auto">
           <!-- Days Header -->
-          <div class="grid border-b border-gray-200" :style="{ gridTemplateColumns: '60px repeat(7, 1fr)' }">
-            <div class="border-r border-gray-200"></div>
+          <div class="grid border-b border-gray-200 dark:border-gray-700" :style="{ gridTemplateColumns: '60px repeat(7, 1fr)' }">
+            <div class="border-r border-gray-200 dark:border-gray-700"></div>
             <div
               v-for="(day, index) in weekDaysData"
               :key="index"
-              class="text-center py-3 text-sm font-medium text-gray-700 border-r border-gray-200 last:border-r-0"
+              class="text-center py-3 text-sm font-medium text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700 last:border-r-0"
               :class="{
-                'bg-primary-50': day.isToday
+                'bg-primary-50 dark:bg-primary-900/30': day.isToday
               }"
             >
               <div class="font-semibold">{{ weekDays[index] }}</div>
@@ -132,15 +132,15 @@
           </div>
 
           <!-- Time Grid -->
-          <div class="grid border-b border-gray-200" :style="{ gridTemplateColumns: '60px repeat(7, 1fr)' }">
+          <div class="grid border-b border-gray-200 dark:border-gray-700" :style="{ gridTemplateColumns: '60px repeat(7, 1fr)' }">
             <!-- Time Column -->
-            <div class="border-r border-gray-200 bg-gray-50">
+            <div class="border-r border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
               <div
                 v-for="hour in weekHours"
                 :key="hour"
-                class="h-16 border-b border-gray-200 flex items-start justify-end pr-2 pt-1"
+                class="h-16 border-b border-gray-200 dark:border-gray-700 flex items-start justify-end pr-2 pt-1"
               >
-                <span class="text-xs text-gray-500">{{ formatHour(hour) }}</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400">{{ formatHour(hour) }}</span>
               </div>
             </div>
 
@@ -148,9 +148,9 @@
             <div
               v-for="(day, dayIndex) in weekDaysData"
               :key="dayIndex"
-              class="border-r border-gray-200 last:border-r-0 relative"
+              class="border-r border-gray-200 dark:border-gray-700 last:border-r-0 relative"
               :class="{
-                'bg-primary-50/30': day.isToday
+                'bg-primary-50/30 dark:bg-primary-900/20': day.isToday
               }"
             >
               <!-- Time Slots -->
@@ -158,7 +158,7 @@
                 <div
                   v-for="hour in weekHours"
                   :key="hour"
-                  class="h-16 border-b border-gray-100"
+                  class="h-16 border-b border-gray-100 dark:border-gray-700/50"
                 ></div>
                 
                 <!-- Current time line (only for today) -->
@@ -181,9 +181,9 @@
                     @click.stop="handleTaskClick(task)"
                     class="absolute left-1 right-1 rounded cursor-pointer p-1.5 text-xs touch-manipulation border-l-2 shadow-sm z-10"
                     :class="[
-                      task.status === 'completed' 
-                        ? 'bg-gray-100 text-gray-500 line-through border-gray-300'
-                        : getDurationGradientClass(task) + ' text-primary-700 border-primary-500'
+                      task.status === 'completed'
+                        ? 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 line-through border-gray-300 dark:border-gray-500'
+                        : getDurationGradientClass(task) + ' text-primary-700 dark:text-primary-300 border-primary-500'
                     ]"
                     :style="getTaskPositionStyle(task, weekHours)"
                   >
@@ -206,16 +206,16 @@
           </div>
           
           <!-- Tasks without time (below the grid) -->
-          <div class="grid border-t border-gray-200" :style="{ gridTemplateColumns: '60px repeat(7, 1fr)' }">
-            <div class="border-r border-gray-200 bg-gray-50 p-2">
-              <span class="text-xs text-gray-500">Без времени</span>
+          <div class="grid border-t border-gray-200 dark:border-gray-700" :style="{ gridTemplateColumns: '60px repeat(7, 1fr)' }">
+            <div class="border-r border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 p-2">
+              <span class="text-xs text-gray-500 dark:text-gray-400">Без времени</span>
             </div>
             <div
               v-for="(day, dayIndex) in weekDaysData"
               :key="dayIndex"
-              class="border-r border-gray-200 last:border-r-0 p-2"
+              class="border-r border-gray-200 dark:border-gray-700 last:border-r-0 p-2"
               :class="{
-                'bg-primary-50/30': day.isToday
+                'bg-primary-50/30 dark:bg-primary-900/20': day.isToday
               }"
             >
               <div class="space-y-1 min-w-0">
@@ -225,9 +225,9 @@
                   @click.stop="handleTaskClick(task)"
                   class="p-1.5 rounded cursor-pointer text-xs touch-manipulation border-l-2 w-full max-w-full overflow-hidden"
                   :class="[
-                    task.status === 'completed' 
-                      ? 'bg-gray-100 text-gray-500 line-through border-gray-300'
-                      : getDurationGradientClass(task) + ' text-primary-700 border-primary-500'
+                    task.status === 'completed'
+                      ? 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 line-through border-gray-300 dark:border-gray-500'
+                      : getDurationGradientClass(task) + ' text-primary-700 dark:text-primary-300 border-primary-500'
                   ]"
                 >
                   <div class="font-medium truncate block">{{ task.title }}</div>
@@ -243,18 +243,18 @@
             <div
               v-for="(day, index) in weekDaysData"
               :key="index"
-              class="w-[280px] min-w-[280px] border-r border-gray-200 last:border-r-0 p-3"
+              class="w-[280px] min-w-[280px] border-r border-gray-200 dark:border-gray-700 last:border-r-0 p-3"
               :class="{
-                'bg-primary-50': day.isToday
+                'bg-primary-50 dark:bg-primary-900/30': day.isToday
               }"
             >
-              <div class="mb-3 sticky top-0 bg-inherit pb-2 border-b border-gray-200">
-                <div class="text-xs text-gray-500 mb-1">{{ weekDays[index] }}</div>
+              <div class="mb-3 sticky top-0 bg-inherit pb-2 border-b border-gray-200 dark:border-gray-700">
+                <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">{{ weekDays[index] }}</div>
                 <span
                   class="text-base font-semibold"
                   :class="{
-                    'text-primary-700': day.isToday,
-                    'text-gray-900': !day.isToday
+                    'text-primary-700 dark:text-primary-400': day.isToday,
+                    'text-gray-900 dark:text-white': !day.isToday
                   }"
                 >
                   {{ day.day }} {{ day.monthName }}
@@ -270,12 +270,12 @@
                   class="p-3 rounded-lg cursor-pointer touch-manipulation border-l-4"
                   :class="[
                     task.status === 'completed'
-                      ? 'bg-gray-100 text-gray-500 line-through border-gray-300'
-                      : getDurationGradientClass(task) + ' text-primary-700 border-primary-500'
+                      ? 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 line-through border-gray-300 dark:border-gray-500'
+                      : getDurationGradientClass(task) + ' text-primary-700 dark:text-primary-300 border-primary-500'
                   ]"
                 >
                   <div class="font-medium text-sm mb-1">{{ task.title }}</div>
-                  <div v-if="task.estimated_time || task.end_time" class="text-xs text-gray-600 mt-1">
+                  <div v-if="task.estimated_time || task.end_time" class="text-xs text-gray-600 dark:text-gray-400 mt-1">
                     ⏱ <span v-if="task.estimated_time && task.end_time">
                       {{ formatTime(task.estimated_time) }} - {{ formatTime(task.end_time) }}
                     </span>
@@ -287,7 +287,7 @@
                     </span>
                   </div>
                 </div>
-                <div v-if="day.tasks.length === 0" class="text-xs text-gray-400 text-center py-4">
+                <div v-if="day.tasks.length === 0" class="text-xs text-gray-400 dark:text-gray-500 text-center py-4">
                   Нет задач
                 </div>
               </div>
@@ -297,24 +297,24 @@
       </div>
 
       <!-- Day View -->
-      <div v-if="viewMode === 'day'" class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-        <div class="p-3 sm:p-4 border-b border-gray-200">
-          <h3 class="text-base sm:text-lg font-semibold text-gray-900">
+      <div v-if="viewMode === 'day'" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div class="p-3 sm:p-4 border-b border-gray-200 dark:border-gray-700">
+          <h3 class="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
             {{ currentDate.format('D MMMM YYYY') }}
           </h3>
         </div>
 
         <!-- Desktop: Time Grid -->
         <div class="hidden lg:block overflow-x-auto">
-          <div class="grid border-b border-gray-200" :style="{ gridTemplateColumns: '60px 1fr' }">
+          <div class="grid border-b border-gray-200 dark:border-gray-700" :style="{ gridTemplateColumns: '60px 1fr' }">
             <!-- Time Column -->
-            <div class="border-r border-gray-200 bg-gray-50">
+            <div class="border-r border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
               <div
                 v-for="hour in dayHours"
                 :key="hour"
-                class="h-16 border-b border-gray-200 flex items-start justify-end pr-2 pt-1"
+                class="h-16 border-b border-gray-200 dark:border-gray-700 flex items-start justify-end pr-2 pt-1"
               >
-                <span class="text-xs text-gray-500">{{ formatHour(hour) }}</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400">{{ formatHour(hour) }}</span>
               </div>
             </div>
 
@@ -325,7 +325,7 @@
                 <div
                   v-for="hour in dayHours"
                   :key="hour"
-                  class="h-16 border-b border-gray-100"
+                  class="h-16 border-b border-gray-100 dark:border-gray-700/50"
                 ></div>
                 
                 <!-- Current time line (only for today) -->
@@ -349,15 +349,15 @@
                     class="absolute left-2 right-2 rounded-lg cursor-pointer p-2 sm:p-3 border-l-4 shadow-sm z-10 touch-manipulation"
                     :class="[
                       task.status === 'completed'
-                        ? 'bg-gray-50 border-gray-300 line-through'
+                        ? 'bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-500 line-through'
                         : getDurationGradientClass(task) + ' border-primary-500'
                     ]"
                     :style="getTaskPositionStyle(task, dayHours)"
                   >
-                    <div class="font-medium text-sm sm:text-base text-gray-900 mb-1">{{ task.title }}</div>
-                    <div v-if="task.description" class="text-xs sm:text-sm text-gray-600 mt-1 line-clamp-2">{{ task.description }}</div>
+                    <div class="font-medium text-sm sm:text-base text-gray-900 dark:text-white mb-1">{{ task.title }}</div>
+                    <div v-if="task.description" class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">{{ task.description }}</div>
                     <div class="flex flex-wrap items-center gap-2 mt-2">
-                      <span v-if="task.estimated_time || task.end_time" class="text-xs text-gray-600 flex items-center">
+                      <span v-if="task.estimated_time || task.end_time" class="text-xs text-gray-600 dark:text-gray-400 flex items-center">
                         <ClockIcon class="w-3 h-3 mr-1" />
                         <span v-if="task.estimated_time && task.end_time">
                           {{ formatTime(task.estimated_time) }} - {{ formatTime(task.end_time) }}
@@ -372,10 +372,10 @@
                       <span
                         class="text-xs px-2 py-0.5 rounded-full"
                         :class="{
-                          'bg-red-100 text-red-700': task.priority === 'urgent',
-                          'bg-primary-100 text-primary-700': task.priority === 'high',
-                          'bg-yellow-100 text-yellow-700': task.priority === 'medium',
-                          'bg-gray-100 text-gray-700': task.priority === 'low'
+                          'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400': task.priority === 'urgent',
+                          'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400': task.priority === 'high',
+                          'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400': task.priority === 'medium',
+                          'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300': task.priority === 'low'
                         }"
                       >
                         {{ getPriorityLabel(task.priority) }}
@@ -386,11 +386,11 @@
               </div>
             </div>
           </div>
-          
+
           <!-- Tasks without time (below the grid) -->
-          <div class="grid border-t border-gray-200" :style="{ gridTemplateColumns: '60px 1fr' }">
-            <div class="border-r border-gray-200 bg-gray-50 p-3">
-              <span class="text-xs text-gray-500 font-medium">Без времени</span>
+          <div class="grid border-t border-gray-200 dark:border-gray-700" :style="{ gridTemplateColumns: '60px 1fr' }">
+            <div class="border-r border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 p-3">
+              <span class="text-xs text-gray-500 dark:text-gray-400 font-medium">Без времени</span>
             </div>
             <div class="p-3">
               <div class="space-y-2">
@@ -401,20 +401,20 @@
                   class="p-3 rounded-lg cursor-pointer border-l-4 touch-manipulation"
                   :class="[
                     task.status === 'completed'
-                      ? 'bg-gray-50 border-gray-300 line-through'
+                      ? 'bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-500 line-through'
                       : getDurationGradientClass(task) + ' border-primary-500'
                   ]"
                 >
-                  <div class="font-medium text-sm sm:text-base text-gray-900 mb-1">{{ task.title }}</div>
-                  <div v-if="task.description" class="text-xs sm:text-sm text-gray-600 mt-1 line-clamp-2">{{ task.description }}</div>
+                  <div class="font-medium text-sm sm:text-base text-gray-900 dark:text-white mb-1">{{ task.title }}</div>
+                  <div v-if="task.description" class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">{{ task.description }}</div>
                   <div class="flex flex-wrap items-center gap-2 mt-2">
                     <span
                       class="text-xs px-2 py-0.5 rounded-full"
                       :class="{
-                        'bg-red-100 text-red-700': task.priority === 'urgent',
-                        'bg-primary-100 text-primary-700': task.priority === 'high',
-                        'bg-yellow-100 text-yellow-700': task.priority === 'medium',
-                        'bg-gray-100 text-gray-700': task.priority === 'low'
+                        'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400': task.priority === 'urgent',
+                        'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400': task.priority === 'high',
+                        'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400': task.priority === 'medium',
+                        'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300': task.priority === 'low'
                       }"
                     >
                       {{ getPriorityLabel(task.priority) }}
@@ -436,16 +436,16 @@
               class="p-3 sm:p-4 rounded-lg cursor-pointer border-l-4 touch-manipulation active:scale-[0.98] transition-transform"
               :class="[
                 task.status === 'completed'
-                  ? 'bg-gray-50 border-gray-300 line-through'
+                  ? 'bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-500 line-through'
                   : getDurationGradientClass(task) + ' border-primary-500'
               ]"
             >
               <div class="flex items-start justify-between">
                 <div class="flex-1 min-w-0">
-                  <div class="font-medium text-sm sm:text-base text-gray-900 mb-1">{{ task.title }}</div>
-                  <div v-if="task.description" class="text-xs sm:text-sm text-gray-600 mt-1 line-clamp-2">{{ task.description }}</div>
+                  <div class="font-medium text-sm sm:text-base text-gray-900 dark:text-white mb-1">{{ task.title }}</div>
+                  <div v-if="task.description" class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">{{ task.description }}</div>
                   <div class="flex flex-wrap items-center gap-2 mt-2">
-                    <span v-if="task.estimated_time || task.end_time" class="text-xs text-gray-600 flex items-center">
+                    <span v-if="task.estimated_time || task.end_time" class="text-xs text-gray-600 dark:text-gray-400 flex items-center">
                       <ClockIcon class="w-3 h-3 mr-1" />
                       <span v-if="task.estimated_time && task.end_time">
                         {{ formatTime(task.estimated_time) }} - {{ formatTime(task.end_time) }}
@@ -460,10 +460,10 @@
                     <span
                       class="text-xs px-2 py-0.5 rounded-full"
                       :class="{
-                        'bg-red-100 text-red-700': task.priority === 'urgent',
-                        'bg-primary-100 text-primary-700': task.priority === 'high',
-                        'bg-yellow-100 text-yellow-700': task.priority === 'medium',
-                        'bg-gray-100 text-gray-700': task.priority === 'low'
+                        'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400': task.priority === 'urgent',
+                        'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400': task.priority === 'high',
+                        'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400': task.priority === 'medium',
+                        'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300': task.priority === 'low'
                       }"
                     >
                       {{ getPriorityLabel(task.priority) }}
@@ -472,7 +472,7 @@
                 </div>
               </div>
             </div>
-            <div v-if="dayTasks.length === 0" class="text-center py-8 sm:py-12 text-gray-500 text-sm sm:text-base">
+            <div v-if="dayTasks.length === 0" class="text-center py-8 sm:py-12 text-gray-500 dark:text-gray-400 text-sm sm:text-base">
               Нет задач на этот день
             </div>
           </div>
@@ -891,28 +891,24 @@ const getTaskDuration = (task) => {
 // Получение класса градиента в зависимости от продолжительности
 const getDurationGradientClass = (task) => {
   if (task.status === 'completed') {
-    return 'bg-gray-100' // Завершенные задачи без градиента
+    return 'bg-gray-100 dark:bg-gray-700'
   }
-  
+
   const duration = getTaskDuration(task)
-  
-  // Без времени или до 1 часа - зелёная
+
   if (duration === 0 || duration < 1) {
-    return 'bg-gradient-to-l from-white via-green-50 to-green-100'
+    return 'bg-gradient-to-l from-white via-green-50 to-green-100 dark:from-gray-800 dark:via-green-900/20 dark:to-green-900/40'
   }
-  
-  // 1-2 часа - оранжевая
+
   if (duration >= 1 && duration < 2) {
-    return 'bg-gradient-to-l from-white via-orange-50 to-orange-100'
+    return 'bg-gradient-to-l from-white via-orange-50 to-orange-100 dark:from-gray-800 dark:via-orange-900/20 dark:to-orange-900/40'
   }
-  
-  // От 2 часов и более - красная
+
   if (duration >= 2) {
-    return 'bg-gradient-to-l from-white via-red-50 to-red-100'
+    return 'bg-gradient-to-l from-white via-red-50 to-red-100 dark:from-gray-800 dark:via-red-900/20 dark:to-red-900/40'
   }
-  
-  // По умолчанию белый фон
-  return 'bg-white'
+
+  return 'bg-white dark:bg-gray-800'
 }
 
 const getPriorityLabel = (priority) => {

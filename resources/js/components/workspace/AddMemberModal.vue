@@ -5,12 +5,12 @@
         <div class="fixed inset-0 bg-black bg-opacity-50 transition-opacity"></div>
         
         <div class="flex min-h-screen items-center justify-center p-4">
-          <div class="relative bg-white rounded-lg shadow-xl max-w-md w-full mx-auto" @click.stop>
-            <div class="flex items-center justify-between p-6 border-b border-gray-200">
-              <h3 class="text-xl font-semibold text-gray-900">
+          <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-auto" @click.stop>
+            <div class="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+              <h3 class="text-xl font-semibold text-gray-900 dark:text-white">
                 Добавить пользователя
               </h3>
-              <button @click="$emit('close')" class="text-gray-400 hover:text-gray-600">
+              <button @click="$emit('close')" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -19,13 +19,13 @@
 
             <form @submit.prevent="handleSubmit" class="p-6 space-y-4">
               <div>
-                <p class="text-sm text-gray-600 mb-4">
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
                   Workspace: <span class="font-medium">{{ workspace?.name }}</span>
                 </p>
               </div>
 
               <div>
-                <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
+                <label for="email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Email пользователя *
                 </label>
                 <input
@@ -39,7 +39,7 @@
               </div>
 
               <div>
-                <label for="role" class="block text-sm font-medium text-gray-700 mb-2">
+                <label for="role" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Роль
                 </label>
                 <select id="role" v-model="form.role" class="input">
@@ -49,7 +49,7 @@
                 </select>
               </div>
 
-              <div v-if="error" class="text-red-600 text-sm bg-red-50 p-3 rounded-lg">
+              <div v-if="error" class="text-red-600 dark:text-red-400 text-sm bg-red-50 dark:bg-red-900/20 p-3 rounded-lg">
                 {{ error }}
               </div>
 

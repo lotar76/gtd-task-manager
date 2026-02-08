@@ -5,12 +5,12 @@
         <div class="fixed inset-0 bg-black bg-opacity-50 transition-opacity"></div>
         
         <div class="flex min-h-screen items-center justify-center p-4">
-          <div class="relative bg-white rounded-lg shadow-xl max-w-2xl w-full mx-auto" @click.stop>
-            <div class="flex items-center justify-between p-6 border-b border-gray-200">
-              <h3 class="text-xl font-semibold text-gray-900">
+          <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full mx-auto" @click.stop>
+            <div class="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+              <h3 class="text-xl font-semibold text-gray-900 dark:text-white">
                 Участники workspace
               </h3>
-              <button @click="$emit('close')" class="text-gray-400 hover:text-gray-600">
+              <button @click="$emit('close')" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -22,7 +22,7 @@
                 <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
               </div>
 
-              <div v-else-if="members.length === 0" class="text-center py-8 text-gray-500">
+              <div v-else-if="members.length === 0" class="text-center py-8 text-gray-500 dark:text-gray-400">
                 Нет участников
               </div>
 
@@ -30,15 +30,15 @@
                 <div
                   v-for="member in members"
                   :key="member.id"
-                  class="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+                  class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg"
                 >
                   <div class="flex items-center space-x-3">
                     <div class="w-10 h-10 bg-primary-600 rounded-full flex items-center justify-center text-white text-sm font-medium">
                       {{ getInitials(member.name) }}
                     </div>
                     <div>
-                      <div class="font-medium text-gray-900">{{ member.name }}</div>
-                      <div class="text-sm text-gray-500">{{ member.email }}</div>
+                      <div class="font-medium text-gray-900 dark:text-white">{{ member.name }}</div>
+                      <div class="text-sm text-gray-500 dark:text-gray-400">{{ member.email }}</div>
                     </div>
                   </div>
                   
@@ -74,12 +74,12 @@
             </div>
 
             <div v-if="error" class="px-6 pb-4">
-              <div class="text-red-600 text-sm bg-red-50 p-3 rounded-lg">
+              <div class="text-red-600 dark:text-red-400 text-sm bg-red-50 dark:bg-red-900/20 p-3 rounded-lg">
                 {{ error }}
               </div>
             </div>
 
-            <div class="flex justify-end p-6 border-t border-gray-200">
+            <div class="flex justify-end p-6 border-t border-gray-200 dark:border-gray-700">
               <button
                 @click="$emit('close')"
                 class="btn btn-secondary"
@@ -142,12 +142,12 @@ const getRoleLabel = (role) => {
 
 const getRoleBadgeClass = (role) => {
   const classes = {
-    owner: 'bg-purple-100 text-purple-700',
-    admin: 'bg-blue-100 text-blue-700',
-    member: 'bg-green-100 text-green-700',
-    viewer: 'bg-gray-100 text-gray-700',
+    owner: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
+    admin: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+    member: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+    viewer: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-400',
   }
-  return classes[role] || 'bg-gray-100 text-gray-700'
+  return classes[role] || 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-400'
 }
 
 const canRemoveMember = (member) => {

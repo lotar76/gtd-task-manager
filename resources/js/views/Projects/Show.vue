@@ -10,10 +10,10 @@
             :style="{ backgroundColor: project.color || '#3B82F6' }"
           ></div>
           <div>
-            <h1 class="text-xl lg:text-2xl font-semibold text-gray-900">
+            <h1 class="text-xl lg:text-2xl font-semibold text-gray-900 dark:text-white">
               {{ project?.name || 'Загрузка...' }}
             </h1>
-            <p v-if="project?.description" class="text-sm text-gray-600 mt-1">
+            <p v-if="project?.description" class="text-sm text-gray-600 dark:text-gray-400 mt-1">
               {{ project.description }}
             </p>
           </div>
@@ -50,18 +50,18 @@
 
       <!-- Project Tasks -->
       <div v-else>
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200">
-          <div class="p-4 border-b border-gray-200">
-            <h2 class="text-lg font-semibold text-gray-900">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+          <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
               Задачи проекта
-              <span v-if="tasks.length > 0" class="text-sm font-normal text-gray-500">
+              <span v-if="tasks.length > 0" class="text-sm font-normal text-gray-500 dark:text-gray-400">
                 ({{ tasks.length }})
               </span>
             </h2>
           </div>
 
-          <div v-if="tasks.length === 0" class="p-12 text-center text-gray-500">
-            <svg class="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div v-if="tasks.length === 0" class="p-12 text-center text-gray-500 dark:text-gray-400">
+            <svg class="w-16 h-16 mx-auto mb-4 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
             </svg>
             <p>Нет задач в проекте</p>
@@ -73,7 +73,7 @@
             </button>
           </div>
 
-          <div v-else class="divide-y divide-gray-200">
+          <div v-else class="divide-y divide-gray-200 dark:divide-gray-700">
             <TaskList
               :tasks="tasks"
               @task-click="handleTaskClick"
