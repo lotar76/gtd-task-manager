@@ -258,6 +258,10 @@ const props = defineProps({
     type: String,
     default: '',
   },
+  defaultDate: {
+    type: String,
+    default: '',
+  },
 })
 
 const emit = defineEmits(['close', 'submit'])
@@ -286,13 +290,17 @@ const getDefaultStatusFromRoute = () => {
 // Определяем дату по умолчанию
 const getDefaultDueDateFromRoute = () => {
   const path = route.path
-  
+
   if (path.includes('/today')) {
-    // Для "Сегодня" автоматически ставим сегодняшнюю дату
-    const today = new Date()
-    return today.toISOString().split('T')[0]
+    return new Date().toISOString().split('T')[0]
   }
-  
+
+  if (path.includes('/tomorrow')) {
+    const tomorrow = new Date()
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    return tomorrow.toISOString().split('T')[0]
+  }
+
   return ''
 }
 
@@ -462,7 +470,7 @@ watch(() => props.show, (newShow) => {
     if (!props.task) {
       form.value.workspace_id = currentWorkspace.value?.id
       form.value.status = getDefaultStatusFromRoute()
-      form.value.due_date = getDefaultDueDateFromRoute()
+      form.value.due_date = props.defaultDate || getDefaultDueDateFromRoute()
     } else if (!form.value.workspace_id) {
       form.value.workspace_id = currentWorkspace.value?.id
     }

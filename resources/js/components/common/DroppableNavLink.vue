@@ -5,13 +5,13 @@
     @dragleave="handleDragLeave"
     :class="[
       'rounded-lg transition-all',
-      isDragOver ? 'bg-primary-100 ring-2 ring-primary-500' : ''
+      isDragOver ? 'bg-primary-100 dark:bg-primary-900/40 ring-2 ring-primary-500' : ''
     ]"
   >
     <router-link
       :to="computedTo"
       class="flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors"
-      :class="isActive ? 'bg-primary-50 text-primary-700' : 'text-gray-700 hover:bg-gray-100'"
+      :class="isActive ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'"
     >
       <div class="flex items-center space-x-3">
         <component :is="iconComponent" class="w-5 h-5" />
@@ -20,7 +20,7 @@
       <span
         v-if="count !== null && count > 0"
         class="px-2 py-0.5 text-xs font-semibold rounded-full"
-        :class="isActive ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-700'"
+        :class="isActive ? 'bg-primary-600 text-white' : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300'"
       >
         {{ count }}
       </span>

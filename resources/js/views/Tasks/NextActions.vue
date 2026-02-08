@@ -2,19 +2,42 @@
   <div class="p-4 lg:p-8">
     <div class="max-w-4xl mx-auto">
       <div class="mb-6">
-        <h1 class="text-xl lg:text-2xl font-semibold text-gray-900">Следующие</h1>
+        <h1 class="text-xl lg:text-2xl font-semibold text-gray-900 dark:text-white">Следующие действия</h1>
       </div>
 
       <div v-if="loading" class="text-center py-12">
         <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
       </div>
 
-      <TaskList
-        v-else
-        :tasks="tasks"
-        @task-click="handleTaskClick"
-        @toggle-complete="handleToggleComplete"
-      />
+      <template v-else>
+        <TaskList
+          v-if="tasks.length > 0"
+          :tasks="tasks"
+          @task-click="handleTaskClick"
+          @toggle-complete="handleToggleComplete"
+        />
+
+        <div v-else class="text-center py-12">
+          <div class="max-w-md mx-auto">
+            <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-yellow-50 dark:bg-yellow-900/30 flex items-center justify-center">
+              <BoltIcon class="w-8 h-8 text-yellow-500" />
+            </div>
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Нет следующих действий</h3>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-6 leading-relaxed">
+              Следующие действия — это ключевой список GTD. Сюда попадают конкретные
+              физические действия, которые можно выполнить прямо сейчас, без привязки к дате.
+              Спросите себя: «Какой следующий конкретный шаг?» — и запишите его сюда.
+            </p>
+            <button
+              @click="handleAddTask"
+              class="inline-flex items-center px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors"
+            >
+              <PlusIcon class="w-5 h-5 mr-1.5" />
+              Добавить действие
+            </button>
+          </div>
+        </div>
+      </template>
 
       <TaskModal
         :show="showTaskModal"
@@ -28,34 +51,27 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, computed } from 'vue'
 import { useTasksStore } from '@/stores/tasks'
-import { useWorkspaceStore } from '@/stores/workspace'
-import { useTaskEvents } from '@/composables/useTaskEvents'
 import TaskList from '@/components/tasks/TaskList.vue'
 import TaskModal from '@/components/tasks/TaskModal.vue'
+import { BoltIcon, PlusIcon } from '@heroicons/vue/24/outline'
 
 const tasksStore = useTasksStore()
-const workspaceStore = useWorkspaceStore()
-const { taskUpdatedEvent } = useTaskEvents()
-const tasks = ref([])
-const loading = ref(false)
+
+const tasks = computed(() => tasksStore.nextActionTasks)
+const loading = computed(() => tasksStore.loading)
 const showTaskModal = ref(false)
 const selectedTask = ref(null)
 const taskError = ref('')
 
-const loadTasks = async () => {
-  loading.value = true
-  try {
-    await tasksStore.fetchNextActions(false)
-    tasks.value = tasksStore.tasks
-  } finally {
-    loading.value = false
-  }
-}
-
 const handleTaskClick = (task) => {
   selectedTask.value = task
+  showTaskModal.value = true
+}
+
+const handleAddTask = () => {
+  selectedTask.value = null
   showTaskModal.value = true
 }
 
@@ -64,9 +80,8 @@ const handleToggleComplete = async (task) => {
     if (task.status === 'completed') {
       await tasksStore.updateTask(task.id, { status: 'next_action' })
     } else {
-  await tasksStore.completeTask(task.id)
+      await tasksStore.completeTask(task.id)
     }
-  loadTasks()
   } catch (error) {
     console.error('Error toggling task:', error)
   }
@@ -82,12 +97,8 @@ const handleSaveTask = async (taskData) => {
     }
     showTaskModal.value = false
     selectedTask.value = null
-    await loadTasks()
   } catch (error) {
     console.error('Error saving task:', error)
-    console.error('Error details:', error.response?.data)
-    
-    // Формируем детальное сообщение об ошибке
     let errorMessage = 'Ошибка при сохранении задачи'
     if (error.response?.data?.errors) {
       const errors = Object.values(error.response.data.errors).flat()
@@ -95,7 +106,6 @@ const handleSaveTask = async (taskData) => {
     } else if (error.response?.data?.message) {
       errorMessage = error.response.data.message
     }
-    
     taskError.value = errorMessage
   }
 }
@@ -105,17 +115,4 @@ const handleCloseModal = () => {
   selectedTask.value = null
   taskError.value = ''
 }
-
-// Watch для загрузки задач при смене workspace
-watch(() => workspaceStore.currentWorkspace?.id, (newWorkspaceId) => {
-  if (newWorkspaceId) {
-    loadTasks()
-  }
-}, { immediate: true })
-
-// Watch для обновления задач при изменениях
-watch(taskUpdatedEvent, () => {
-  loadTasks()
-})
 </script>
-

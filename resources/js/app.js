@@ -10,6 +10,10 @@ const pinia = createPinia()
 app.use(pinia)
 app.use(router)
 
+// Инициализация темы до монтирования
+import { useThemeStore } from './stores/theme'
+useThemeStore()
+
 app.mount('#app')
 
 

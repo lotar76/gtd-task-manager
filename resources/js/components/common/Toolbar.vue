@@ -1,10 +1,10 @@
 <template>
-  <header class="bg-white border-b border-gray-200 sticky top-0 z-20">
+  <header class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-20">
     <div class="flex items-center justify-between px-4 lg:px-8 py-3">
       <!-- Mobile Menu Button -->
       <button
         @click="$emit('toggle-sidebar')"
-        class="lg:hidden p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors mr-2"
+        class="lg:hidden p-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors mr-2"
       >
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
@@ -23,7 +23,7 @@
             v-model="searchQuery"
             type="text"
             placeholder="Поиск задач..."
-            class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+            class="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg leading-5 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
             @input="handleSearch"
             @keydown.enter="handleSearchEnter"
           />
@@ -36,7 +36,7 @@
         <div class="relative" ref="quickAddMenuContainer">
         <button
             @click.stop="toggleQuickAddMenu"
-          class="inline-flex items-center px-3 lg:px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors"
+          class="inline-flex items-center px-3 lg:px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-800 focus:ring-primary-500 transition-colors"
         >
           <svg class="w-5 h-5 lg:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
@@ -48,11 +48,11 @@
           <Transition name="dropdown">
             <div
               v-if="showQuickAddMenu"
-              class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50"
+              class="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-700 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 py-2 z-50"
             >
               <button
                 @click="handleQuickAddTask"
-                class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
               >
                 <div class="flex items-center space-x-2">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -63,7 +63,7 @@
               </button>
               <button
                 @click="handleQuickAddProject"
-                class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
               >
                 <div class="flex items-center space-x-2">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -74,7 +74,7 @@
               </button>
               <button
                 @click="handleQuickAddGoal"
-                class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
               >
                 <div class="flex items-center space-x-2">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -90,8 +90,8 @@
         <!-- Notifications -->
         <div class="relative">
           <button
-            @click="showNotifications = !showNotifications"
-            class="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors relative"
+            @click.stop="showNotifications = !showNotifications"
+            class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors relative"
           >
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
@@ -107,39 +107,55 @@
           <div
             v-if="showNotifications"
             v-click-outside="() => showNotifications = false"
-            class="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 py-2 max-h-96 overflow-y-auto"
+            class="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-700 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 py-2 max-h-96 overflow-y-auto"
           >
-            <div class="px-4 py-2 border-b border-gray-200">
-              <h3 class="text-sm font-semibold text-gray-900">Уведомления</h3>
+            <div class="px-4 py-2 border-b border-gray-200 dark:border-gray-600">
+              <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Уведомления</h3>
             </div>
-            <div v-if="notifications.length === 0" class="px-4 py-6 text-center text-sm text-gray-500">
+            <div v-if="notifications.length === 0" class="px-4 py-6 text-center text-sm text-gray-500 dark:text-gray-400">
               Нет новых уведомлений
             </div>
             <div v-else>
               <button
                 v-for="notification in notifications"
                 :key="notification.id"
-                class="w-full px-4 py-3 hover:bg-gray-50 transition-colors text-left"
+                class="w-full px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors text-left"
               >
-                <p class="text-sm text-gray-900">{{ notification.message }}</p>
-                <p class="text-xs text-gray-500 mt-1">{{ notification.time }}</p>
+                <p class="text-sm text-gray-900 dark:text-gray-100">{{ notification.message }}</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ notification.time }}</p>
               </button>
             </div>
           </div>
         </div>
 
+        <!-- Theme Toggle -->
+        <button
+          @click="themeStore.toggleTheme()"
+          class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+          :title="themeStore.isDark ? 'Светлая тема' : 'Тёмная тема'"
+        >
+          <!-- Sun icon (shown in dark mode) -->
+          <svg v-if="themeStore.isDark" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+          </svg>
+          <!-- Moon icon (shown in light mode) -->
+          <svg v-else class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+          </svg>
+        </button>
+
         <!-- User Menu (только десктоп) -->
         <div class="hidden lg:block relative">
           <button
-            @click="showUserMenu = !showUserMenu"
-            class="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-100 transition-colors"
+            @click.stop="showUserMenu = !showUserMenu"
+            class="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
           >
             <div class="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center text-white text-sm font-medium">
               {{ userInitials }}
             </div>
             <div class="hidden lg:block text-left">
-              <div class="text-sm font-medium text-gray-900">{{ user?.name }}</div>
-              <div class="text-xs text-gray-500">{{ user?.email }}</div>
+              <div class="text-sm font-medium text-gray-900 dark:text-white">{{ user?.name }}</div>
+              <div class="text-xs text-gray-500 dark:text-gray-400">{{ user?.email }}</div>
             </div>
             <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
@@ -150,11 +166,11 @@
           <div
             v-if="showUserMenu"
             v-click-outside="() => showUserMenu = false"
-            class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2"
+            class="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-700 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 py-2"
           >
             <button
               @click="handleProfile"
-              class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+              class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
             >
               <div class="flex items-center space-x-2">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -165,7 +181,7 @@
             </button>
             <button
               @click="handleSettings"
-              class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+              class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
             >
               <div class="flex items-center space-x-2">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -175,10 +191,10 @@
                 <span>Настройки</span>
               </div>
             </button>
-            <div class="border-t border-gray-200 my-2" />
+            <div class="border-t border-gray-200 dark:border-gray-600 my-2" />
             <button
               @click="handleLogout"
-              class="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 transition-colors"
+              class="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
             >
               <div class="flex items-center space-x-2">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -196,6 +212,9 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useThemeStore } from '@/stores/theme'
+
+const themeStore = useThemeStore()
 
 const props = defineProps({
   user: {

@@ -7,6 +7,8 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\LoginRequest;
 use App\Http\Requests\Api\V1\RegisterRequest;
+use App\Http\Requests\Api\V1\UpdatePasswordRequest;
+use App\Http\Requests\Api\V1\UpdateProfileRequest;
 use App\Http\Responses\ApiResponse;
 use App\Models\User;
 use App\Services\WorkspaceService;
@@ -89,6 +91,41 @@ class AuthController extends Controller
             'roles' => $request->user()->getRoleNames(),
             'permissions' => $request->user()->getAllPermissions()->pluck('name'),
         ]);
+    }
+
+    /**
+     * Обновление профиля пользователя.
+     */
+    public function updateProfile(UpdateProfileRequest $request): JsonResponse
+    {
+        $user = $request->user();
+        $oldName = $user->name;
+        $user->update(['name' => $request->name]);
+
+        // Обновить имя личного workspace
+        $user->ownedWorkspaces()
+            ->where('name', $oldName . ' - Личные задачи')
+            ->update(['name' => $request->name . ' - Личные задачи']);
+
+        return ApiResponse::success([
+            'user' => $user->fresh(),
+        ], 'Profile updated successfully');
+    }
+
+    /**
+     * Изменение пароля пользователя.
+     */
+    public function updatePassword(UpdatePasswordRequest $request): JsonResponse
+    {
+        $user = $request->user();
+
+        if (!Hash::check($request->current_password, $user->password)) {
+            return ApiResponse::error('Текущий пароль указан неверно', 422);
+        }
+
+        $user->update(['password' => Hash::make($request->password)]);
+
+        return ApiResponse::success(null, 'Пароль успешно изменён');
     }
 }
 

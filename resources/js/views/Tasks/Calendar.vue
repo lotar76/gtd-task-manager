@@ -76,24 +76,36 @@
             }"
           >
             <div class="flex flex-col h-full">
-            <div class="flex justify-between items-start mb-1">
-              <span
+              <div class="flex justify-between items-start mb-1">
+                <span
                   class="text-xs sm:text-sm font-medium"
-                :class="{
-                  'text-gray-400': !day.currentMonth,
-                  'text-primary-700': day.isToday,
-                  'text-gray-900': day.currentMonth && !day.isToday
-                }"
-              >
-                {{ day.day }}
-              </span>
-              <span
-                v-if="day.taskCount > 0"
+                  :class="{
+                    'text-gray-400': !day.currentMonth,
+                    'text-primary-700': day.isToday,
+                    'text-gray-900': day.currentMonth && !day.isToday
+                  }"
+                >
+                  {{ day.day }}
+                </span>
+                <span
+                  v-if="day.taskCount > 0"
                   class="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-semibold bg-primary-600 text-white rounded-full"
+                >
+                  {{ day.taskCount }}
+                </span>
+              </div>
+              <!-- Иконка добавления задачи в пустом дне -->
+              <div
+                v-if="day.taskCount === 0 && day.currentMonth"
+                class="flex-1 flex items-center justify-center"
               >
-                {{ day.taskCount }}
-              </span>
-            </div>
+                <button
+                  @click.stop="handleAddTaskForDay(day.date)"
+                  class="w-6 h-6 flex items-center justify-center rounded-full text-gray-300 hover:text-gray-500 hover:bg-gray-100 transition-colors"
+                >
+                  <PlusIcon class="w-4 h-4" />
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -472,6 +484,7 @@
         :show="showTaskModal"
         :task="selectedTask"
         :server-error="taskError"
+        :default-date="newTaskDate"
         @close="handleCloseTaskModal"
         @submit="handleSaveTask"
       />
@@ -480,33 +493,51 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useTasksStore } from '@/stores/tasks'
-import { useWorkspaceStore } from '@/stores/workspace'
 import TaskModal from '@/components/tasks/TaskModal.vue'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
 import isSameOrAfter from 'dayjs/plugin/isSameOrAfter'
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore'
-import { ChevronLeftIcon, ChevronRightIcon, ClockIcon } from '@heroicons/vue/24/outline'
+import { ChevronLeftIcon, ChevronRightIcon, ClockIcon, PlusIcon } from '@heroicons/vue/24/outline'
 
 dayjs.extend(isSameOrAfter)
 dayjs.extend(isSameOrBefore)
 dayjs.locale('ru')
 
 const tasksStore = useTasksStore()
-const workspaceStore = useWorkspaceStore()
 
 const currentDate = ref(dayjs())
-const tasks = ref([])
-const loading = ref(false)
-const showMyTasks = ref(false)
-// По умолчанию показываем "Месяц" (на всех устройствах)
+const loading = computed(() => tasksStore.loading)
 const viewMode = ref('month')
 const showTaskModal = ref(false)
 const selectedTask = ref(null)
 const taskError = ref('')
-const currentTime = ref(dayjs()) // Для обновления линии текущего времени
+const newTaskDate = ref('')
+const currentTime = ref(dayjs())
+
+// Вычисляемый диапазон дат для текущего вида
+const dateRange = computed(() => {
+  if (viewMode.value === 'month') {
+    return {
+      start: currentDate.value.startOf('month').subtract(7, 'days').format('YYYY-MM-DD'),
+      end: currentDate.value.endOf('month').add(7, 'days').format('YYYY-MM-DD'),
+    }
+  } else if (viewMode.value === 'week') {
+    const weekStart = currentDate.value.startOf('week')
+    return {
+      start: weekStart.format('YYYY-MM-DD'),
+      end: weekStart.add(6, 'day').format('YYYY-MM-DD'),
+    }
+  } else {
+    const d = currentDate.value.format('YYYY-MM-DD')
+    return { start: d, end: d }
+  }
+})
+
+// Задачи автоматически фильтруются по диапазону дат
+const tasks = computed(() => tasksStore.calendarTasks(dateRange.value.start, dateRange.value.end))
 
 const weekDays = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
 
@@ -695,55 +726,24 @@ const createDayObject = (date, currentMonth) => {
   }
 }
 
-const loadTasks = async () => {
-  loading.value = true
-  try {
-    let startDate, endDate
-    
-    if (viewMode.value === 'month') {
-      startDate = currentDate.value.startOf('month').subtract(7, 'days').format('YYYY-MM-DD')
-      endDate = currentDate.value.endOf('month').add(7, 'days').format('YYYY-MM-DD')
-    } else if (viewMode.value === 'week') {
-      const weekStart = currentDate.value.startOf('week')
-      startDate = weekStart.format('YYYY-MM-DD')
-      endDate = weekStart.add(6, 'day').format('YYYY-MM-DD')
-    } else {
-      startDate = currentDate.value.format('YYYY-MM-DD')
-      endDate = currentDate.value.format('YYYY-MM-DD')
-    }
-    
-    await tasksStore.fetchCalendar(startDate, endDate, showMyTasks.value)
-    tasks.value = tasksStore.tasks
-  } finally {
-    loading.value = false
-  }
-}
-
-// Перезагружаем задачи при смене режима просмотра
-watch(() => viewMode.value, () => {
-  loadTasks()
-})
-
 const previousPeriod = () => {
   if (viewMode.value === 'month') {
-  currentDate.value = currentDate.value.subtract(1, 'month')
+    currentDate.value = currentDate.value.subtract(1, 'month')
   } else if (viewMode.value === 'week') {
     currentDate.value = currentDate.value.subtract(1, 'week')
   } else {
     currentDate.value = currentDate.value.subtract(1, 'day')
   }
-  loadTasks()
 }
 
 const nextPeriod = () => {
   if (viewMode.value === 'month') {
-  currentDate.value = currentDate.value.add(1, 'month')
+    currentDate.value = currentDate.value.add(1, 'month')
   } else if (viewMode.value === 'week') {
     currentDate.value = currentDate.value.add(1, 'week')
   } else {
     currentDate.value = currentDate.value.add(1, 'day')
   }
-  loadTasks()
 }
 
 const formatTime = (time) => {
@@ -927,14 +927,19 @@ const getPriorityLabel = (priority) => {
 
 const handleTaskClick = (task) => {
   selectedTask.value = task
+  newTaskDate.value = ''
+  showTaskModal.value = true
+}
+
+const handleAddTaskForDay = (dateString) => {
+  selectedTask.value = null
+  newTaskDate.value = dateString
   showTaskModal.value = true
 }
 
 const handleDayClick = (dateString) => {
-  // Переключаемся на дневной вид и устанавливаем выбранную дату
   currentDate.value = dayjs(dateString)
   viewMode.value = 'day'
-  loadTasks()
 }
 
 const handleSaveTask = async (taskData) => {
@@ -947,11 +952,8 @@ const handleSaveTask = async (taskData) => {
     }
     showTaskModal.value = false
     selectedTask.value = null
-    await loadTasks()
   } catch (error) {
     console.error('Error saving task:', error)
-    console.error('Error details:', error.response?.data)
-    
     let errorMessage = 'Ошибка при сохранении задачи'
     if (error.response?.data?.errors) {
       const errors = Object.values(error.response.data.errors).flat()
@@ -959,7 +961,6 @@ const handleSaveTask = async (taskData) => {
     } else if (error.response?.data?.message) {
       errorMessage = error.response.data.message
     }
-    
     taskError.value = errorMessage
   }
 }
@@ -967,6 +968,7 @@ const handleSaveTask = async (taskData) => {
 const handleCloseTaskModal = () => {
   showTaskModal.value = false
   selectedTask.value = null
+  newTaskDate.value = ''
   taskError.value = ''
 }
 
@@ -977,46 +979,19 @@ const handleToggleComplete = async (task) => {
     } else {
       await tasksStore.completeTask(task.id)
     }
-    loadTasks()
   } catch (error) {
     console.error('Error toggling task:', error)
   }
 }
 
-// Watch для загрузки задач при смене workspace
-watch(() => workspaceStore.currentWorkspace?.id, (newWorkspaceId) => {
-  if (newWorkspaceId) {
-    loadTasks()
-  }
-}, { immediate: true })
-
-// Watch для загрузки задач при изменении выбранных workspace
-watch(() => workspaceStore.selectedWorkspaces, () => {
-  if (workspaceStore.selectedWorkspaces.length > 0) {
-    loadTasks()
-  }
-}, { deep: true })
-
-// Перезагружаем задачи при смене месяца/недели/дня
-watch(() => currentDate.value.format('YYYY-MM'), () => {
-  if (workspaceStore.selectedWorkspaces.length > 0) {
-    loadTasks()
-  }
-})
-
-// Загружаем задачи при монтировании
+// Обновление линии текущего времени
 let timeUpdateInterval = null
 
 onMounted(() => {
-  if (workspaceStore.selectedWorkspaces.length > 0) {
-    loadTasks()
-  }
-  
-  // Обновляем текущее время каждую минуту для линии текущего времени
   currentTime.value = dayjs()
   timeUpdateInterval = setInterval(() => {
     currentTime.value = dayjs()
-  }, 60000) // Каждую минуту
+  }, 60000)
 })
 
 onUnmounted(() => {

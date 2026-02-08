@@ -47,6 +47,13 @@ Route::prefix('v1')->group(function () {
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::get('/me', [AuthController::class, 'me']);
 
+        // Профиль
+        Route::put('/profile', [AuthController::class, 'updateProfile']);
+        Route::put('/password', [AuthController::class, 'updatePassword']);
+
+        // Все задачи пользователя (по всем workspace)
+        Route::get('/tasks', [TaskController::class, 'all']);
+
         // === WORKSPACES (Команды) ===
         Route::apiResource('workspaces', WorkspaceController::class);
         Route::get('workspaces/{workspace}/members', [WorkspaceController::class, 'members']);

@@ -52,7 +52,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   const checkAuth = async () => {
     if (!token.value) return false
-    
+
     try {
       const response = await api.get('/v1/me')
       console.log('Full response from /v1/me:', response.data)
@@ -66,6 +66,17 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  const updateProfile = async (name) => {
+    const response = await api.put('/v1/profile', { name })
+    user.value = response.data.user
+    return response.data
+  }
+
+  const updatePassword = async (passwordData) => {
+    const response = await api.put('/v1/password', passwordData)
+    return response.data
+  }
+
   return {
     user,
     token,
@@ -74,6 +85,8 @@ export const useAuthStore = defineStore('auth', () => {
     register,
     logout,
     checkAuth,
+    updateProfile,
+    updatePassword,
   }
 })
 

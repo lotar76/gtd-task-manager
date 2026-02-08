@@ -1,28 +1,28 @@
 <template>
-  <div class="min-h-screen bg-gray-50">
+  <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
     <div class="flex h-screen">
       <!-- Sidebar -->
       <aside
         :class="[
-          'fixed lg:static inset-y-0 left-0 z-40 w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out',
+          'fixed lg:static inset-y-0 left-0 z-40 w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transform transition-transform duration-300 ease-in-out',
           sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         ]"
       >
         <div class="flex flex-col h-full">
           <!-- Logo (только десктоп) -->
-          <div class="hidden lg:flex items-center justify-between p-6 border-b border-gray-200">
-            <h1 class="text-xl font-bold text-gray-900">GTD TODO</h1>
+          <div class="hidden lg:flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+            <h1 class="text-xl font-bold text-gray-900 dark:text-white">GTD TODO</h1>
           </div>
 
           <!-- Workspace Section -->
-          <div class="p-4 border-b border-gray-200">
+          <div class="p-4 border-b border-gray-200 dark:border-gray-700">
             <div class="flex items-center justify-between mb-3">
-              <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+              <h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 Рабочие пространства
               </h3>
               <button
                 @click="showWorkspaceModal = true"
-                class="text-gray-400 hover:text-gray-600 transition-colors"
+                class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
                 title="Создать workspace"
               >
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -39,8 +39,8 @@
                 :class="[
                   'flex items-center rounded-lg transition-colors',
                   selectedWorkspaceIds.includes(ws.id)
-                    ? 'bg-primary-50'
-                    : 'hover:bg-gray-50'
+                    ? 'bg-primary-50 dark:bg-primary-900/30'
+                    : 'hover:bg-gray-50 dark:hover:bg-gray-700'
                 ]"
               >
                 <!-- Checkbox для выбора workspace -->
@@ -49,14 +49,14 @@
                     type="checkbox"
                     :checked="selectedWorkspaceIds.includes(ws.id)"
                     @change="toggleWorkspace(ws)"
-                    class="mr-3 h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                    class="mr-3 h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded dark:bg-gray-700"
                   />
                   <span 
                     :class="[
                       'truncate',
                       selectedWorkspaceIds.includes(ws.id)
-                        ? 'text-primary-700 font-medium'
-                        : 'text-gray-700'
+                        ? 'text-primary-700 dark:text-primary-400 font-medium'
+                        : 'text-gray-700 dark:text-gray-300'
                     ]"
                   >
                     {{ ws.name }}
@@ -67,7 +67,7 @@
                 <div class="relative" @click.stop>
                   <button
                     @click="toggleWorkspaceMenu(ws.id)"
-                    class="p-2 text-gray-400 hover:text-gray-600 rounded transition-colors"
+                    class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded transition-colors"
                   >
                     <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                       <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
@@ -78,27 +78,34 @@
                   <Transition name="dropdown">
                     <div
                       v-if="openWorkspaceMenuId === ws.id"
-                      class="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50"
+                      class="absolute right-0 mt-1 w-48 bg-white dark:bg-gray-700 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 py-1 z-50"
                     >
                       <button
                         @click="handleViewMembers(ws)"
-                        class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                        class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
             >
                         Участники
                       </button>
                       <button
                         v-if="canManageWorkspace(ws)"
                         @click="handleRenameWorkspace(ws)"
-                        class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                        class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
                       >
                         Переименовать
                       </button>
                       <button
                         v-if="canManageWorkspace(ws)"
                         @click="handleAddMember(ws)"
-                        class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                        class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
                       >
                         Добавить пользователя
+                      </button>
+                      <button
+                        v-if="canManageWorkspace(ws) && getWorkspaceTaskCount(ws.id) === 0"
+                        @click="handleDeleteWorkspace(ws)"
+                        class="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                      >
+                        Удалить пространство
                       </button>
                       <button
                         v-if="!canManageWorkspace(ws)"
@@ -130,7 +137,7 @@
               </DroppableNavLink>
             </div>
 
-            <div class="mt-6 pt-6 border-t border-gray-200 space-y-1">
+            <div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700 space-y-1">
               <!-- Сегодня -->
               <DroppableNavLink 
                 to="/workspaces/:id/today" 
@@ -181,26 +188,31 @@
               </DroppableNavLink>
               
               <!-- Ожидание -->
-              <DroppableNavLink 
-                to="/workspaces/:id/waiting" 
-                icon="clock" 
+              <DroppableNavLink
+                to="/workspaces/:id/waiting"
+                icon="clock"
                 :count="taskCounts.waiting"
                 drop-status="waiting"
                 @task-dropped="handleTaskDropped"
               >
                 Ожидание
               </DroppableNavLink>
+
+              <!-- Все задачи -->
+              <NavLink to="/workspaces/:id/all" icon="rectangle-stack" :count="totalTaskCount">
+                Все задачи
+              </NavLink>
             </div>
 
             <!-- Projects -->
-            <div class="mt-6 pt-6 border-t border-gray-200">
+            <div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
               <div class="flex items-center justify-between px-3 mb-3">
-                <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                <h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Проекты
                 </h3>
                 <button
                   @click="handleQuickAddProject"
-                  class="text-gray-400 hover:text-gray-600"
+                  class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                   title="Создать проект"
                 >
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -212,7 +224,7 @@
                 <div
                   v-for="project in activeProjects"
                   :key="project.id"
-                  class="flex items-center justify-between group px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors"
+                  class="flex items-center justify-between group px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 >
                   <router-link
                     :to="`/workspaces/${currentWorkspace?.id}/projects/${project.id}`"
@@ -222,7 +234,7 @@
                       class="w-3 h-3 rounded-full flex-shrink-0"
                       :style="{ backgroundColor: project.color || '#3B82F6' }"
                     ></div>
-                    <span class="text-sm text-gray-700 truncate">{{ project.name }}</span>
+                    <span class="text-sm text-gray-700 dark:text-gray-300 truncate">{{ project.name }}</span>
                     <span
                       v-if="project.tasks_count > 0"
                       class="text-xs text-gray-500"
@@ -232,7 +244,7 @@
                   </router-link>
                   <button
                     @click.stop="handleArchiveProject(project)"
-                    class="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-600 p-1 transition-opacity"
+                    class="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 transition-opacity"
                     title="Архивировать"
                   >
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -246,8 +258,8 @@
               </div>
             </div>
 
-            <div class="mt-6 pt-6 border-t border-gray-200">
-              <h3 class="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+            <div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+              <h3 class="px-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
                 Организация
               </h3>
               <div class="space-y-1">
@@ -258,25 +270,6 @@
             </div>
           </nav>
 
-          <!-- User Menu (десктоп) -->
-          <div class="hidden lg:block p-4 border-t border-gray-200">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center space-x-3">
-                <div class="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center text-white text-sm font-medium">
-                  {{ userInitials }}
-                </div>
-                <div class="text-sm">
-                  <div class="font-medium text-gray-900">{{ user?.name }}</div>
-                  <div class="text-xs text-gray-500">{{ user?.email }}</div>
-                </div>
-              </div>
-              <button @click="handleLogout" class="text-gray-400 hover:text-gray-600">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                </svg>
-              </button>
-            </div>
-          </div>
         </div>
       </aside>
 
@@ -356,6 +349,36 @@
       @close="handleCloseProjectModal"
       @submit="handleSaveProject"
     />
+
+    <!-- Delete Workspace Confirm -->
+    <Transition name="modal">
+      <div
+        v-if="showDeleteConfirm"
+        class="fixed inset-0 z-[60] flex items-center justify-center p-4"
+      >
+        <div class="fixed inset-0 bg-black/50" @click="cancelDeleteWorkspace" />
+        <div class="relative bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-sm w-full p-6">
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Удалить пространство?</h3>
+          <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">
+            Пространство «{{ workspaceToDelete?.name }}» будет удалено навсегда. Это действие нельзя отменить.
+          </p>
+          <div class="flex justify-end space-x-3">
+            <button
+              @click="cancelDeleteWorkspace"
+              class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+            >
+              Отмена
+            </button>
+            <button
+              @click="confirmDeleteWorkspace"
+              class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
+            >
+              Удалить
+            </button>
+          </div>
+        </div>
+      </div>
+    </Transition>
   </div>
 </template>
 
@@ -366,7 +389,6 @@ import { useAuthStore } from '@/stores/auth'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useTasksStore } from '@/stores/tasks'
 import { useProjectsStore } from '@/stores/projects'
-import { useTaskEvents } from '@/composables/useTaskEvents'
 import NavLink from '@/components/common/NavLink.vue'
 import DroppableNavLink from '@/components/common/DroppableNavLink.vue'
 import Toolbar from '@/components/common/Toolbar.vue'
@@ -382,8 +404,6 @@ const authStore = useAuthStore()
 const workspaceStore = useWorkspaceStore()
 const tasksStore = useTasksStore()
 const projectsStore = useProjectsStore()
-const { triggerTaskUpdate } = useTaskEvents()
-
 const sidebarOpen = ref(false)
 const showUserMenu = ref(false)
 const showWorkspaceModal = ref(false)
@@ -397,11 +417,10 @@ const showProjectModal = ref(false)
 const selectedProject = ref(null)
 const projectError = ref('')
 const selectedWorkspaceForAction = ref(null)
+const showDeleteConfirm = ref(false)
+const workspaceToDelete = ref(null)
 
-const user = computed(() => {
-  console.log('User from store:', authStore.user)
-  return authStore.user
-})
+const user = computed(() => authStore.user)
 const workspaces = computed(() => workspaceStore.workspaces)
 const taskCounts = computed(() => tasksStore.counts)
 const currentWorkspace = computed(() => workspaceStore.currentWorkspace)
@@ -413,6 +432,8 @@ const selectedWorkspaceIds = computed(() =>
 // Счетчик задач в текущем месяце для календаря
 // Используем scheduled задачи (задачи с датой, не today/tomorrow)
 // + today и tomorrow задачи (они тоже отображаются в календаре)
+const totalTaskCount = computed(() => tasksStore.filteredTasks.length)
+
 const calendarMonthCount = computed(() => {
   if (selectedWorkspaceIds.value.length === 0) return 0
   
@@ -434,10 +455,9 @@ const userInitials = computed(() => {
     .slice(0, 2)
 })
 
-const toggleWorkspace = async (workspace) => {
+const toggleWorkspace = (workspace) => {
   workspaceStore.toggleSelectedWorkspace(workspace)
-  await tasksStore.fetchCounts()
-  
+
   // Обновляем роутинг
   const currentPath = router.currentRoute.value.path
   const pathSegments = currentPath.split('/')
@@ -522,7 +542,6 @@ const handleCreateTask = async (taskData) => {
   try {
     await tasksStore.createTask(taskData)
     showTaskModal.value = false
-    await tasksStore.fetchCounts()
   } catch (error) {
     console.error('Error creating task:', error)
     taskError.value = error.response?.data?.message || error.message || 'Ошибка при создании задачи'
@@ -536,37 +555,18 @@ const handleCloseTaskModal = () => {
 
 const handleTaskDropped = async ({ taskId, newStatus }) => {
   try {
-    console.log('Dropping task:', taskId, 'to status:', newStatus)
-    
-    // Для "today" устанавливаем статус и дату на сегодня
+    const updateData = { status: newStatus }
     if (newStatus === 'today') {
-      const today = new Date().toISOString().split('T')[0]
-      await tasksStore.updateTask(taskId, { status: 'today', due_date: today })
-    }
-    // Для "tomorrow" устанавливаем статус и дату на завтра
-    else if (newStatus === 'tomorrow') {
+      updateData.due_date = new Date().toISOString().split('T')[0]
+    } else if (newStatus === 'tomorrow') {
       const tomorrow = new Date()
       tomorrow.setDate(tomorrow.getDate() + 1)
-      const tomorrowStr = tomorrow.toISOString().split('T')[0]
-      await tasksStore.updateTask(taskId, { status: 'tomorrow', due_date: tomorrowStr })
-    } else {
-      // Обновляем статус задачи для остальных папок
-      await tasksStore.updateTask(taskId, { status: newStatus })
+      updateData.due_date = tomorrow.toISOString().split('T')[0]
     }
-    
-    // Обновляем счетчики
-    await tasksStore.fetchCounts()
-    
-    // Триггерим событие обновления для перезагрузки списков
-    triggerTaskUpdate()
+    await tasksStore.updateTask(taskId, updateData)
   } catch (error) {
     console.error('Error updating task status:', error)
-    console.error('Error response:', error.response?.data)
-    console.error('Error status:', error.response?.status)
-    
-    // Показываем пользователю понятное сообщение
-    const errorMessage = error.response?.data?.message || 'Ошибка при обновлении задачи'
-    alert(errorMessage)
+    alert(error.response?.data?.message || 'Ошибка при обновлении задачи')
   }
 }
 
@@ -576,13 +576,11 @@ const handleSearch = (query) => {
 }
 
 const handleProfile = () => {
-  console.log('Profile clicked')
-  // TODO: Перейти на страницу профиля
+  router.push('/settings')
 }
 
 const handleSettings = () => {
-  console.log('Settings clicked')
-  // TODO: Перейти на страницу настроек
+  router.push('/settings')
 }
 
 const canManageWorkspace = (workspace) => {
@@ -618,6 +616,32 @@ const handleAddMember = (workspace) => {
   selectedWorkspaceForAction.value = workspace
   showAddMemberModal.value = true
   openWorkspaceMenuId.value = null
+}
+
+const getWorkspaceTaskCount = (workspaceId) => {
+  return tasksStore.allTasks.filter(t => t.workspace_id === workspaceId).length
+}
+
+const handleDeleteWorkspace = (workspace) => {
+  workspaceToDelete.value = workspace
+  showDeleteConfirm.value = true
+  openWorkspaceMenuId.value = null
+}
+
+const confirmDeleteWorkspace = async () => {
+  if (!workspaceToDelete.value) return
+  try {
+    await workspaceStore.deleteWorkspace(workspaceToDelete.value.id)
+  } catch (error) {
+    console.error('Error deleting workspace:', error)
+  }
+  showDeleteConfirm.value = false
+  workspaceToDelete.value = null
+}
+
+const cancelDeleteWorkspace = () => {
+  showDeleteConfirm.value = false
+  workspaceToDelete.value = null
 }
 
 const handleCloseAddMemberModal = () => {
@@ -692,11 +716,9 @@ const handleSubmitRenameWorkspace = async (newName) => {
 
 onMounted(async () => {
   await workspaceStore.fetchWorkspaces()
-  
-  if (workspaceStore.currentWorkspace) {
-    await tasksStore.fetchCounts()
-    await projectsStore.fetchProjects()
-  }
+  await tasksStore.fetchAllTasks()
+  await projectsStore.fetchProjects()
+  tasksStore.startSync()
 
   // Закрываем меню воркспейсов при клике вне его
   document.addEventListener('click', handleClickOutsideWorkspaceMenu)
@@ -710,6 +732,7 @@ watch(() => workspaceStore.currentWorkspace?.id, (newWorkspaceId) => {
 })
 
 onUnmounted(() => {
+  tasksStore.stopSync()
   document.removeEventListener('click', handleClickOutsideWorkspaceMenu)
 })
 
@@ -717,25 +740,6 @@ const handleClickOutsideWorkspaceMenu = () => {
   openWorkspaceMenuId.value = null
 }
 
-watch(() => workspaceStore.selectedWorkspaces, async () => {
-  await tasksStore.fetchCounts()
-  
-  // Перезагружаем текущий список задач если мы на странице задач
-  const currentPath = router.currentRoute.value.path
-  if (currentPath.includes('/inbox')) {
-    await tasksStore.fetchInbox()
-  } else if (currentPath.includes('/next-actions')) {
-    await tasksStore.fetchNextActions()
-  } else if (currentPath.includes('/waiting')) {
-    await tasksStore.fetchWaiting()
-  } else if (currentPath.includes('/someday')) {
-    await tasksStore.fetchSomeday()
-  } else if (currentPath.includes('/today')) {
-    await tasksStore.fetchToday()
-  } else if (currentPath.includes('/tomorrow')) {
-    await tasksStore.fetchTomorrow()
-  }
-}, { deep: true })
 </script>
 
 <style scoped>

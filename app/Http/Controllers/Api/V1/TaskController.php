@@ -23,6 +23,22 @@ class TaskController extends Controller
     ) {
     }
 
+    // Все активные задачи пользователя (по всем workspace)
+    public function all(Request $request): JsonResponse
+    {
+        $workspaceIds = $request->user()
+            ->allWorkspaces()
+            ->pluck('id');
+
+        $tasks = Task::whereIn('workspace_id', $workspaceIds)
+            ->where('status', '!=', 'completed')
+            ->with(['workspace:id,name', 'project:id,name', 'context:id,name', 'assignee:id,name', 'tags:id,name'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return ApiResponse::success(['tasks' => $tasks]);
+    }
+
     // Список задач
     public function index(Request $request, Workspace $workspace): JsonResponse
     {

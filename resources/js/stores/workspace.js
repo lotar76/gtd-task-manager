@@ -103,6 +103,24 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     return response.data
   }
 
+  const deleteWorkspace = async (id) => {
+    await api.delete(`/v1/workspaces/${id}`)
+    workspaces.value = workspaces.value.filter(ws => ws.id !== id)
+    selectedWorkspaces.value = selectedWorkspaces.value.filter(ws => ws.id !== id)
+
+    if (currentWorkspace.value?.id === id) {
+      currentWorkspace.value = workspaces.value[0] || null
+      if (currentWorkspace.value) {
+        localStorage.setItem('currentWorkspaceId', currentWorkspace.value.id)
+      }
+    }
+
+    if (selectedWorkspaces.value.length === 0 && workspaces.value.length > 0) {
+      selectedWorkspaces.value.push(workspaces.value[0])
+    }
+    saveSelectedWorkspaces()
+  }
+
   const addMember = async (workspaceId, memberData) => {
     const response = await api.post(`/v1/workspaces/${workspaceId}/members`, memberData)
     return response.data
@@ -177,6 +195,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     fetchWorkspace,
     createWorkspace,
     updateWorkspace,
+    deleteWorkspace,
     addMember,
     removeMember,
     fetchMembers,

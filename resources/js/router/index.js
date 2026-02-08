@@ -25,6 +25,11 @@ const routes = [
         component: () => import('@/views/Dashboard.vue'),
       },
       {
+        path: 'settings',
+        name: 'Settings',
+        component: () => import('@/views/Settings/Index.vue'),
+      },
+      {
         path: 'workspaces',
         name: 'Workspaces',
         component: () => import('@/views/Workspaces/Index.vue'),
@@ -78,6 +83,11 @@ const routes = [
             path: 'projects/:projectId',
             name: 'ProjectShow',
             component: () => import('@/views/Projects/Show.vue'),
+          },
+          {
+            path: 'all',
+            name: 'AllTasks',
+            component: () => import('@/views/Tasks/AllTasks.vue'),
           },
           {
             path: 'goals',
