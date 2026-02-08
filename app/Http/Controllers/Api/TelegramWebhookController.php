@@ -130,24 +130,25 @@ class TelegramWebhookController extends Controller
     {
         $workspace = $setting->workspace;
         $tasks = $workspace->tasks()
+            ->with(['project', 'context'])
             ->where('status', 'today')
             ->where(function ($q) use ($subscription) {
                 $q->where('assigned_to', $subscription->user_id)
                   ->orWhere('created_by', $subscription->user_id);
             })
+            ->orderBy('estimated_time', 'asc')
             ->orderBy('priority', 'desc')
             ->get();
 
         if ($tasks->isEmpty()) {
-            $this->telegramService->sendMessage($botToken, $chatId, "На сегодня задач нет.");
+            $this->telegramService->sendMessage($botToken, $chatId, "На сегодня задач нет. 🎉");
             return response()->json(['ok' => true]);
         }
 
-        $text = "<b>Задачи на сегодня:</b>\n\n";
+        $text = "<b>📋 Задачи на сегодня ({$tasks->count()}):</b>\n\n";
         foreach ($tasks as $i => $task) {
-            $status = $task->status === 'completed' ? ' ' : ' ';
-            $priority = $task->priority ? " [{$task->priority}]" : '';
-            $text .= ($i + 1) . ". {$status}{$task->title}{$priority}\n";
+            $line = $this->telegramService->formatTaskLine($task);
+            $text .= ($i + 1) . ". {$line}\n";
         }
 
         $this->telegramService->sendMessage($botToken, $chatId, $text);
@@ -182,7 +183,7 @@ class TelegramWebhookController extends Controller
             $this->telegramService->sendMessage(
                 $botToken,
                 $chatId,
-                "Задача создана во Входящих:\n<b>{$task->title}</b>"
+                "✅ Задача создана во Входящих:\n<b>{$task->title}</b>"
             );
         } catch (\Exception $e) {
             Log::error('Telegram create task error: ' . $e->getMessage());

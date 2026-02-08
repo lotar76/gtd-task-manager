@@ -37,6 +37,7 @@ class TelegramOverdueAlerts extends Command
             $userId = $subscription->user_id;
 
             $overdueTasks = $workspace->tasks()
+                ->with(['project'])
                 ->whereNotNull('due_date')
                 ->where('due_date', '<', $today)
                 ->whereNotIn('status', ['completed'])
@@ -51,11 +52,12 @@ class TelegramOverdueAlerts extends Command
                 continue;
             }
 
-            $text = "<b>Просроченные задачи ({$overdueTasks->count()}):</b>\n\n";
+            $text = "<b>⚠️ Просроченные задачи ({$overdueTasks->count()}):</b>\n\n";
 
             foreach ($overdueTasks->take(10) as $task) {
                 $days = Carbon::parse($task->due_date)->diffInDays($now);
-                $text .= "- <b>{$task->title}</b> (просрочена {$days} дн.)\n";
+                $line = $telegramService->formatTaskLine($task, true);
+                $text .= "- {$line} ({$days} дн.)\n";
             }
 
             if ($overdueTasks->count() > 10) {

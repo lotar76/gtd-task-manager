@@ -39,16 +39,19 @@ class TelegramMorningDigest extends Command
 
             // Задачи на сегодня
             $todayTasks = $workspace->tasks()
+                ->with(['project', 'context'])
                 ->where('status', 'today')
                 ->where(function ($q) use ($userId) {
                     $q->where('assigned_to', $userId)
                       ->orWhere('created_by', $userId);
                 })
+                ->orderBy('estimated_time', 'asc')
                 ->orderBy('priority', 'desc')
                 ->get();
 
             // Просроченные задачи
             $overdueTasks = $workspace->tasks()
+                ->with(['project'])
                 ->whereNotNull('due_date')
                 ->where('due_date', '<', $now->format('Y-m-d'))
                 ->whereNotIn('status', ['completed'])
@@ -56,25 +59,27 @@ class TelegramMorningDigest extends Command
                     $q->where('assigned_to', $userId)
                       ->orWhere('created_by', $userId);
                 })
+                ->orderBy('due_date', 'asc')
                 ->get();
 
-            $text = "<b>Доброе утро, {$subscription->user->name}!</b>\n\n";
+            $text = "<b>☀️ Доброе утро, {$subscription->user->name}!</b>\n\n";
 
             if ($todayTasks->isNotEmpty()) {
-                $text .= "<b>Задачи на сегодня ({$todayTasks->count()}):</b>\n";
+                $text .= "<b>📋 Задачи на сегодня ({$todayTasks->count()}):</b>\n";
                 foreach ($todayTasks as $i => $task) {
-                    $priority = $task->priority ? " [{$task->priority}]" : '';
-                    $text .= ($i + 1) . ". {$task->title}{$priority}\n";
+                    $line = $telegramService->formatTaskLine($task);
+                    $text .= ($i + 1) . ". {$line}\n";
                 }
             } else {
-                $text .= "На сегодня задач нет.\n";
+                $text .= "На сегодня задач нет. 🎉\n";
             }
 
             if ($overdueTasks->isNotEmpty()) {
-                $text .= "\n<b>Просроченные ({$overdueTasks->count()}):</b>\n";
+                $text .= "\n<b>⚠️ Просроченные ({$overdueTasks->count()}):</b>\n";
                 foreach ($overdueTasks->take(5) as $task) {
                     $days = Carbon::parse($task->due_date)->diffInDays($now);
-                    $text .= "- {$task->title} (просрочена {$days} дн.)\n";
+                    $line = $telegramService->formatTaskLine($task, true);
+                    $text .= "- {$line} ({$days} дн.)\n";
                 }
                 if ($overdueTasks->count() > 5) {
                     $text .= "...и ещё " . ($overdueTasks->count() - 5) . "\n";

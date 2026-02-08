@@ -43,6 +43,7 @@ class TelegramTaskReminders extends Command
             $currentMinute = $now->format('H:i');
 
             $tasks = $workspace->tasks()
+                ->with(['project', 'context'])
                 ->where('due_date', $today)
                 ->whereNotIn('status', ['completed'])
                 ->whereNotNull('estimated_time')
@@ -57,12 +58,8 @@ class TelegramTaskReminders extends Command
                 $taskTime = substr($task->estimated_time, 0, 5);
 
                 if ($taskTime === $reminderTime) {
-                    $text = "Напоминание: через {$reminderMinutes} мин.\n"
-                        . "<b>{$task->title}</b>";
-
-                    if ($task->description) {
-                        $text .= "\n" . mb_substr($task->description, 0, 100);
-                    }
+                    $text = "🔔 <b>Напоминание:</b> через {$reminderMinutes} мин.\n\n"
+                        . $telegramService->formatTask($task);
 
                     $telegramService->sendMessage($setting->bot_token, $subscription->chat_id, $text);
                     $sent++;
