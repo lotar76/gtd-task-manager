@@ -1,1 +1,0 @@
-import{_ as e}from"./_plugin-vue_export-helper-DlAUqK2U.js";import{c as o,a as s,o as r}from"./index-BQ_tbw2b.js";const a={},c={class:"p-4 lg:p-8"};function n(d,t){return r(),o("div",c,[...t[0]||(t[0]=[s("h1",{class:"text-2xl font-bold text-gray-900 dark:text-white"},"Проекты",-1)])])}const f=e(a,[["render",n]]);export{f as default};
