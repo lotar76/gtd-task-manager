@@ -13,11 +13,9 @@ return new class extends Migration
 
         // Перестраиваем telegram_subscriptions: убираем workspace_id, делаем user-level
         Schema::table('telegram_subscriptions', function (Blueprint $table) {
-            // Удаляем старый уникальный индекс
-            $table->dropUnique(['workspace_id', 'user_id']);
-
-            // Удаляем foreign key и колонку workspace_id
+            // Сначала удаляем foreign key, потом unique index, потом колонку
             $table->dropForeign(['workspace_id']);
+            $table->dropUnique(['workspace_id', 'user_id']);
             $table->dropColumn('workspace_id');
 
             // Добавляем default_workspace_id для создания задач из Telegram
