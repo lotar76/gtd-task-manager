@@ -69,11 +69,8 @@
             v-for="(day, index) in calendarDays"
             :key="index"
             @click="handleDayClick(day.date)"
-            class="min-h-[60px] sm:min-h-[80px] lg:min-h-[100px] border-b border-r border-gray-200 dark:border-gray-700 last:border-r-0 p-1 sm:p-2 cursor-pointer touch-manipulation hover:bg-gray-50 dark:hover:bg-gray-700 active:bg-gray-100 dark:active:bg-gray-600 transition-colors"
-            :class="{
-              'bg-gray-50 dark:bg-gray-900': !day.currentMonth,
-              'bg-primary-50 dark:bg-primary-900/30 hover:bg-primary-100 dark:hover:bg-primary-900/40': day.isToday
-            }"
+            class="group/day relative min-h-[60px] sm:min-h-[80px] lg:min-h-[100px] border-b border-r border-gray-200 dark:border-gray-700 last:border-r-0 p-1 sm:p-2 cursor-pointer touch-manipulation transition-colors"
+            :class="getDayCellClass(day)"
           >
             <div class="flex flex-col h-full">
               <div class="flex justify-between items-start mb-1">
@@ -105,6 +102,22 @@
                 >
                   <PlusIcon class="w-4 h-4" />
                 </button>
+              </div>
+            </div>
+
+            <!-- Tooltip with task names (desktop only) -->
+            <div
+              v-if="day.taskCount > 0"
+              class="hidden lg:block absolute left-1/2 -translate-x-1/2 bottom-full mb-2 z-50 pointer-events-none opacity-0 group-hover/day:opacity-100 transition-opacity duration-150"
+            >
+              <div class="bg-gray-900 dark:bg-gray-700 text-white text-xs rounded-lg shadow-lg px-3 py-2 whitespace-nowrap max-w-[250px]">
+                <div v-for="task in day.tasks.slice(0, 8)" :key="task.id" class="truncate py-0.5">
+                  {{ task.title }}
+                </div>
+                <div v-if="day.tasks.length > 8" class="text-gray-400 text-[10px] pt-1">
+                  +{{ day.tasks.length - 8 }} ещё
+                </div>
+                <div class="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900 dark:border-t-gray-700"></div>
               </div>
             </div>
           </div>
@@ -993,6 +1006,50 @@ const getDurationGradientClass = (task) => {
   }
 
   return 'bg-white dark:bg-gray-800'
+}
+
+// Определение цвета фона ячейки дня в месячном календаре (тепловая карта)
+const getDayCellClass = (day) => {
+  const base = []
+
+  if (day.isToday) {
+    base.push('ring-2 ring-inset ring-primary-500')
+  }
+
+  if (!day.currentMonth) {
+    base.push('bg-gray-50/50 dark:bg-gray-900/30')
+    return base.join(' ')
+  }
+
+  if (day.taskCount === 0) {
+    base.push('hover:bg-gray-50 dark:hover:bg-gray-700/50')
+    return base.join(' ')
+  }
+
+  // Определяем максимальную продолжительность задач для этого дня
+  let maxDuration = 0
+  let hasTasksWithoutTime = false
+
+  day.tasks.forEach(task => {
+    const duration = getTaskDuration(task)
+    if (duration === 0) {
+      hasTasksWithoutTime = true
+    }
+    if (duration > maxDuration) {
+      maxDuration = duration
+    }
+  })
+
+  // Раскраска по максимальной длительности задачи
+  if (maxDuration >= 2) {
+    base.push('bg-red-50/70 dark:bg-red-900/15 hover:bg-red-100/80 dark:hover:bg-red-900/25')
+  } else if (maxDuration >= 1) {
+    base.push('bg-orange-50/70 dark:bg-orange-900/15 hover:bg-orange-100/80 dark:hover:bg-orange-900/25')
+  } else {
+    base.push('bg-green-50/70 dark:bg-green-900/15 hover:bg-green-100/80 dark:hover:bg-green-900/25')
+  }
+
+  return base.join(' ')
 }
 
 const getPriorityLabel = (priority) => {
