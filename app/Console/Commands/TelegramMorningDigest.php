@@ -16,6 +16,11 @@ class TelegramMorningDigest extends Command
 
     public function handle(TelegramService $telegramService): int
     {
+        if (!config('services.telegram.bot_token')) {
+            $this->warn('Telegram bot token not configured');
+            return Command::SUCCESS;
+        }
+
         $now = Carbon::now('Europe/Moscow');
         $currentTime = $now->format('H:i');
 
@@ -23,70 +28,86 @@ class TelegramMorningDigest extends Command
             ->where('notify_morning_digest', true)
             ->where('morning_digest_time', $currentTime)
             ->whereNotNull('chat_id')
-            ->with(['workspace.telegramSetting', 'user'])
+            ->with('user')
             ->get();
 
         $sent = 0;
 
         foreach ($subscriptions as $subscription) {
-            $setting = $subscription->workspace->telegramSetting;
-            if (!$setting || !$setting->is_active) {
-                continue;
+            $user = $subscription->user;
+            $workspaces = $user->allWorkspaces();
+
+            $allTodayTasks = collect();
+            $allOverdueTasks = collect();
+
+            foreach ($workspaces as $workspace) {
+                $todayTasks = $workspace->tasks()
+                    ->with(['project', 'context'])
+                    ->where('status', 'today')
+                    ->where(function ($q) use ($user) {
+                        $q->where('assigned_to', $user->id)
+                          ->orWhere('created_by', $user->id);
+                    })
+                    ->orderBy('estimated_time', 'asc')
+                    ->orderBy('priority', 'desc')
+                    ->get()
+                    ->each(fn ($task) => $task->_workspace_name = $workspace->name);
+
+                $overdueTasks = $workspace->tasks()
+                    ->with(['project'])
+                    ->whereNotNull('due_date')
+                    ->where('due_date', '<', $now->format('Y-m-d'))
+                    ->whereNotIn('status', ['completed'])
+                    ->where(function ($q) use ($user) {
+                        $q->where('assigned_to', $user->id)
+                          ->orWhere('created_by', $user->id);
+                    })
+                    ->orderBy('due_date', 'asc')
+                    ->get()
+                    ->each(fn ($task) => $task->_workspace_name = $workspace->name);
+
+                $allTodayTasks = $allTodayTasks->merge($todayTasks);
+                $allOverdueTasks = $allOverdueTasks->merge($overdueTasks);
             }
 
-            $workspace = $subscription->workspace;
-            $userId = $subscription->user_id;
+            $allTodayTasks = $allTodayTasks->sortBy([
+                ['estimated_time', 'asc'],
+                ['priority', 'desc'],
+            ]);
 
-            // Задачи на сегодня
-            $todayTasks = $workspace->tasks()
-                ->with(['project', 'context'])
-                ->where('status', 'today')
-                ->where(function ($q) use ($userId) {
-                    $q->where('assigned_to', $userId)
-                      ->orWhere('created_by', $userId);
-                })
-                ->orderBy('estimated_time', 'asc')
-                ->orderBy('priority', 'desc')
-                ->get();
+            $showWorkspaceName = $workspaces->count() > 1;
 
-            // Просроченные задачи
-            $overdueTasks = $workspace->tasks()
-                ->with(['project'])
-                ->whereNotNull('due_date')
-                ->where('due_date', '<', $now->format('Y-m-d'))
-                ->whereNotIn('status', ['completed'])
-                ->where(function ($q) use ($userId) {
-                    $q->where('assigned_to', $userId)
-                      ->orWhere('created_by', $userId);
-                })
-                ->orderBy('due_date', 'asc')
-                ->get();
+            $text = "<b>☀️ Доброе утро, {$user->name}!</b>\n\n";
 
-            $text = "<b>☀️ Доброе утро, {$subscription->user->name}!</b>\n\n";
-
-            if ($todayTasks->isNotEmpty()) {
-                $text .= "<b>📋 Задачи на сегодня ({$todayTasks->count()}):</b>\n";
-                foreach ($todayTasks as $i => $task) {
+            if ($allTodayTasks->isNotEmpty()) {
+                $text .= "<b>📋 Задачи на сегодня ({$allTodayTasks->count()}):</b>\n";
+                foreach ($allTodayTasks->values() as $i => $task) {
                     $line = $telegramService->formatTaskLine($task);
+                    if ($showWorkspaceName) {
+                        $line .= "  [{$task->_workspace_name}]";
+                    }
                     $text .= ($i + 1) . ". {$line}\n";
                 }
             } else {
                 $text .= "На сегодня задач нет. 🎉\n";
             }
 
-            if ($overdueTasks->isNotEmpty()) {
-                $text .= "\n<b>⚠️ Просроченные ({$overdueTasks->count()}):</b>\n";
-                foreach ($overdueTasks->take(5) as $task) {
+            if ($allOverdueTasks->isNotEmpty()) {
+                $text .= "\n<b>⚠️ Просроченные ({$allOverdueTasks->count()}):</b>\n";
+                foreach ($allOverdueTasks->take(5) as $task) {
                     $days = Carbon::parse($task->due_date)->diffInDays($now);
                     $line = $telegramService->formatTaskLine($task, true);
+                    if ($showWorkspaceName) {
+                        $line .= "  [{$task->_workspace_name}]";
+                    }
                     $text .= "- {$line} ({$days} дн.)\n";
                 }
-                if ($overdueTasks->count() > 5) {
-                    $text .= "...и ещё " . ($overdueTasks->count() - 5) . "\n";
+                if ($allOverdueTasks->count() > 5) {
+                    $text .= "...и ещё " . ($allOverdueTasks->count() - 5) . "\n";
                 }
             }
 
-            $telegramService->sendMessage($setting->bot_token, $subscription->chat_id, $text);
+            $telegramService->sendMessage($subscription->chat_id, $text);
             $sent++;
         }
 

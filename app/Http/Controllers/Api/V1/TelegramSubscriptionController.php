@@ -6,45 +6,41 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Responses\ApiResponse;
-use App\Models\Workspace;
+use App\Models\TelegramSubscription;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
 class TelegramSubscriptionController extends Controller
 {
-    public function show(Workspace $workspace): JsonResponse
+    public function show(): JsonResponse
     {
-        if (!$workspace->hasMember(auth()->id())) {
-            return ApiResponse::error('Вы не участник этого пространства', 403);
-        }
+        $botUsername = config('services.telegram.bot_username');
 
-        $setting = $workspace->telegramSetting;
-        if (!$setting || !$setting->is_active) {
+        if (!$botUsername || !config('services.telegram.bot_token')) {
             return ApiResponse::success([
                 'bot_configured' => false,
             ]);
         }
 
-        $subscription = $workspace->telegramSubscriptions()
-            ->where('user_id', auth()->id())
-            ->first();
+        $subscription = TelegramSubscription::where('user_id', auth()->id())->first();
 
         if (!$subscription) {
             return ApiResponse::success([
                 'bot_configured' => true,
-                'bot_username' => $setting->bot_username,
+                'bot_username' => $botUsername,
                 'subscribed' => false,
             ]);
         }
 
         return ApiResponse::success([
             'bot_configured' => true,
-            'bot_username' => $setting->bot_username,
+            'bot_username' => $botUsername,
             'subscribed' => true,
             'is_active' => $subscription->is_active,
             'link_token' => $subscription->link_token,
-            'connect_url' => "https://t.me/{$setting->bot_username}?start={$subscription->link_token}",
+            'connect_url' => "https://t.me/{$botUsername}?start={$subscription->link_token}",
+            'default_workspace_id' => $subscription->default_workspace_id,
             'morning_digest_time' => $subscription->morning_digest_time,
             'reminder_minutes_before' => $subscription->reminder_minutes_before,
             'notify_overdue' => $subscription->notify_overdue,
@@ -53,57 +49,50 @@ class TelegramSubscriptionController extends Controller
         ]);
     }
 
-    public function store(Workspace $workspace): JsonResponse
+    public function store(): JsonResponse
     {
-        if (!$workspace->hasMember(auth()->id())) {
-            return ApiResponse::error('Вы не участник этого пространства', 403);
+        $botUsername = config('services.telegram.bot_username');
+
+        if (!$botUsername || !config('services.telegram.bot_token')) {
+            return ApiResponse::error('Telegram бот не настроен', 400);
         }
 
-        $setting = $workspace->telegramSetting;
-        if (!$setting || !$setting->is_active) {
-            return ApiResponse::error('Telegram бот не настроен для этого пространства', 400);
-        }
-
-        // Проверяем, нет ли уже подписки
-        $existing = $workspace->telegramSubscriptions()
-            ->where('user_id', auth()->id())
-            ->first();
+        $existing = TelegramSubscription::where('user_id', auth()->id())->first();
 
         if ($existing) {
             return ApiResponse::success([
-                'connect_url' => "https://t.me/{$setting->bot_username}?start={$existing->link_token}",
+                'connect_url' => "https://t.me/{$botUsername}?start={$existing->link_token}",
                 'is_active' => $existing->is_active,
             ], 'Подписка уже существует');
         }
 
         $linkToken = Str::random(64);
 
-        $subscription = $workspace->telegramSubscriptions()->create([
-            'user_id' => auth()->id(),
+        $user = auth()->user();
+        $defaultWorkspace = $user->allWorkspaces()->first();
+
+        TelegramSubscription::create([
+            'user_id' => $user->id,
+            'default_workspace_id' => $defaultWorkspace?->id,
             'link_token' => $linkToken,
         ]);
 
         return ApiResponse::success([
-            'connect_url' => "https://t.me/{$setting->bot_username}?start={$linkToken}",
+            'connect_url' => "https://t.me/{$botUsername}?start={$linkToken}",
             'is_active' => false,
         ], 'Подписка создана. Перейдите по ссылке и нажмите Start в Telegram.');
     }
 
-    public function update(Request $request, Workspace $workspace): JsonResponse
+    public function update(Request $request): JsonResponse
     {
-        if (!$workspace->hasMember(auth()->id())) {
-            return ApiResponse::error('Вы не участник этого пространства', 403);
-        }
-
-        $subscription = $workspace->telegramSubscriptions()
-            ->where('user_id', auth()->id())
-            ->first();
+        $subscription = TelegramSubscription::where('user_id', auth()->id())->first();
 
         if (!$subscription) {
             return ApiResponse::error('Подписка не найдена', 404);
         }
 
         $validated = $request->validate([
+            'default_workspace_id' => 'sometimes|nullable|integer|exists:workspaces,id',
             'morning_digest_time' => 'sometimes|string|regex:/^\d{2}:\d{2}$/',
             'reminder_minutes_before' => 'sometimes|integer|min:5|max:120',
             'notify_overdue' => 'sometimes|boolean',
@@ -114,6 +103,7 @@ class TelegramSubscriptionController extends Controller
         $subscription->update($validated);
 
         return ApiResponse::success([
+            'default_workspace_id' => $subscription->default_workspace_id,
             'morning_digest_time' => $subscription->morning_digest_time,
             'reminder_minutes_before' => $subscription->reminder_minutes_before,
             'notify_overdue' => $subscription->notify_overdue,
@@ -122,15 +112,9 @@ class TelegramSubscriptionController extends Controller
         ], 'Настройки обновлены');
     }
 
-    public function destroy(Workspace $workspace): JsonResponse
+    public function destroy(): JsonResponse
     {
-        if (!$workspace->hasMember(auth()->id())) {
-            return ApiResponse::error('Вы не участник этого пространства', 403);
-        }
-
-        $subscription = $workspace->telegramSubscriptions()
-            ->where('user_id', auth()->id())
-            ->first();
+        $subscription = TelegramSubscription::where('user_id', auth()->id())->first();
 
         if (!$subscription) {
             return ApiResponse::error('Подписка не найдена', 404);

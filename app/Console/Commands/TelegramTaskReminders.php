@@ -16,53 +16,56 @@ class TelegramTaskReminders extends Command
 
     public function handle(TelegramService $telegramService): int
     {
+        if (!config('services.telegram.bot_token')) {
+            $this->warn('Telegram bot token not configured');
+            return Command::SUCCESS;
+        }
+
         $now = Carbon::now('Europe/Moscow');
         $today = $now->format('Y-m-d');
 
         $subscriptions = TelegramSubscription::where('is_active', true)
             ->where('notify_reminders', true)
             ->whereNotNull('chat_id')
-            ->with(['workspace.telegramSetting'])
+            ->with('user')
             ->get();
 
         $sent = 0;
 
         foreach ($subscriptions as $subscription) {
-            $setting = $subscription->workspace->telegramSetting;
-            if (!$setting || !$setting->is_active) {
-                continue;
-            }
-
-            $workspace = $subscription->workspace;
-            $userId = $subscription->user_id;
+            $user = $subscription->user;
+            $workspaces = $user->allWorkspaces();
             $reminderMinutes = $subscription->reminder_minutes_before;
-
-            // Ищем задачи на сегодня с estimated_time
-            // Напоминаем за N минут до начала
             $reminderTime = $now->copy()->addMinutes($reminderMinutes)->format('H:i');
-            $currentMinute = $now->format('H:i');
 
-            $tasks = $workspace->tasks()
-                ->with(['project', 'context'])
-                ->where('due_date', $today)
-                ->whereNotIn('status', ['completed'])
-                ->whereNotNull('estimated_time')
-                ->where(function ($q) use ($userId) {
-                    $q->where('assigned_to', $userId)
-                      ->orWhere('created_by', $userId);
-                })
-                ->get();
+            $showWorkspaceName = $workspaces->count() > 1;
 
-            foreach ($tasks as $task) {
-                // estimated_time хранит время начала задачи (HH:MM)
-                $taskTime = substr($task->estimated_time, 0, 5);
+            foreach ($workspaces as $workspace) {
+                $tasks = $workspace->tasks()
+                    ->with(['project', 'context'])
+                    ->where('due_date', $today)
+                    ->whereNotIn('status', ['completed'])
+                    ->whereNotNull('estimated_time')
+                    ->where(function ($q) use ($user) {
+                        $q->where('assigned_to', $user->id)
+                          ->orWhere('created_by', $user->id);
+                    })
+                    ->get();
 
-                if ($taskTime === $reminderTime) {
-                    $text = "🔔 <b>Напоминание:</b> через {$reminderMinutes} мин.\n\n"
-                        . $telegramService->formatTask($task);
+                foreach ($tasks as $task) {
+                    $taskTime = substr($task->estimated_time, 0, 5);
 
-                    $telegramService->sendMessage($setting->bot_token, $subscription->chat_id, $text);
-                    $sent++;
+                    if ($taskTime === $reminderTime) {
+                        $text = "🔔 <b>Напоминание:</b> через {$reminderMinutes} мин.\n\n"
+                            . $telegramService->formatTask($task);
+
+                        if ($showWorkspaceName) {
+                            $text .= "\n📂 {$workspace->name}";
+                        }
+
+                        $telegramService->sendMessage($subscription->chat_id, $text);
+                        $sent++;
+                    }
                 }
             }
         }

@@ -10,8 +10,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class TelegramSubscription extends Model
 {
     protected $fillable = [
-        'workspace_id',
         'user_id',
+        'default_workspace_id',
         'chat_id',
         'link_token',
         'is_active',
@@ -29,13 +29,13 @@ class TelegramSubscription extends Model
         'notify_reminders' => 'boolean',
     ];
 
-    public function workspace(): BelongsTo
-    {
-        return $this->belongsTo(Workspace::class);
-    }
-
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function defaultWorkspace(): BelongsTo
+    {
+        return $this->belongsTo(Workspace::class, 'default_workspace_id');
     }
 }

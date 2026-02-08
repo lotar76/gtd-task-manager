@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
+
 
 class Workspace extends Model
 {
@@ -64,18 +64,6 @@ class Workspace extends Model
     public function tags(): HasMany
     {
         return $this->hasMany(Tag::class);
-    }
-
-    // Настройки Telegram бота
-    public function telegramSetting(): HasOne
-    {
-        return $this->hasOne(TelegramSetting::class);
-    }
-
-    // Подписки на Telegram
-    public function telegramSubscriptions(): HasMany
-    {
-        return $this->hasMany(TelegramSubscription::class);
     }
 
     // Проверка, является ли пользователь участником

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\TelegramSetting;
 use App\Models\TelegramSubscription;
 use App\Services\TaskService;
 use App\Services\TelegramService;
@@ -22,13 +21,14 @@ class TelegramWebhookController extends Controller
 
     public function handle(Request $request, string $secret): JsonResponse
     {
-        // Находим workspace по webhook_secret
-        $setting = TelegramSetting::where('webhook_secret', $secret)
-            ->where('is_active', true)
-            ->first();
+        $expectedSecret = config('services.telegram.webhook_secret');
 
-        if (!$setting) {
+        if (!$expectedSecret || $secret !== $expectedSecret) {
             return response()->json(['ok' => false], 404);
+        }
+
+        if (!config('services.telegram.bot_token')) {
+            return response()->json(['ok' => false], 500);
         }
 
         $update = $request->all();
@@ -40,85 +40,74 @@ class TelegramWebhookController extends Controller
 
         $chatId = (string) $message['chat']['id'];
         $text = trim($message['text']);
-        $botToken = $setting->bot_token;
 
-        // Обработка команды /start
         if (str_starts_with($text, '/start')) {
-            return $this->handleStart($setting, $chatId, $text, $botToken);
+            return $this->handleStart($chatId, $text);
         }
 
-        // Определяем пользователя по chat_id
-        $subscription = TelegramSubscription::where('workspace_id', $setting->workspace_id)
-            ->where('chat_id', $chatId)
+        $subscription = TelegramSubscription::where('chat_id', $chatId)
             ->where('is_active', true)
+            ->with('user')
             ->first();
 
         if (!$subscription) {
             $this->telegramService->sendMessage(
-                $botToken,
                 $chatId,
-                "Вы не подключены к этому боту.\nИспользуйте ссылку из приложения для подключения."
+                "Вы не подключены к боту.\nИспользуйте ссылку из приложения для подключения."
             );
             return response()->json(['ok' => true]);
         }
 
-        // Обработка команд
         if ($text === '/today') {
-            return $this->handleToday($setting, $subscription, $botToken, $chatId);
+            return $this->handleToday($subscription, $chatId);
         }
 
         if ($text === '/help') {
-            return $this->handleHelp($botToken, $chatId);
+            return $this->handleHelp($chatId);
         }
 
-        // Любой текст — создать задачу
-        return $this->handleCreateTask($setting, $subscription, $botToken, $chatId, $text);
+        return $this->handleCreateTask($subscription, $chatId, $text);
     }
 
-    private function handleStart(TelegramSetting $setting, string $chatId, string $text, string $botToken): JsonResponse
+    private function handleStart(string $chatId, string $text): JsonResponse
     {
         $parts = explode(' ', $text, 2);
         $linkToken = $parts[1] ?? null;
 
         if (!$linkToken) {
             $this->telegramService->sendMessage(
-                $botToken,
                 $chatId,
                 "Для подключения используйте ссылку из приложения GTD Task Manager.\n\nОткройте настройки Telegram в приложении и нажмите \"Подключить\"."
             );
             return response()->json(['ok' => true]);
         }
 
-        // Ищем подписку по токену
-        $subscription = TelegramSubscription::where('link_token', $linkToken)
-            ->where('workspace_id', $setting->workspace_id)
-            ->first();
+        $subscription = TelegramSubscription::where('link_token', $linkToken)->first();
 
         if (!$subscription) {
             $this->telegramService->sendMessage(
-                $botToken,
                 $chatId,
                 "Ссылка недействительна или устарела.\nПопробуйте создать новую ссылку в приложении."
             );
             return response()->json(['ok' => true]);
         }
 
-        // Привязываем chat_id
         $subscription->update([
             'chat_id' => $chatId,
             'is_active' => true,
         ]);
 
-        $workspace = $setting->workspace;
         $user = $subscription->user;
+        $workspaces = $user->allWorkspaces();
+        $wsNames = $workspaces->pluck('name')->implode(', ');
 
         $this->telegramService->sendMessage(
-            $botToken,
             $chatId,
-            "Привет, {$user->name}! Вы подключены к пространству <b>{$workspace->name}</b>.\n\n"
+            "Привет, {$user->name}! Вы подключены к GTD Task Manager.\n\n"
+            . "Ваши пространства: <b>{$wsNames}</b>\n\n"
             . "Что я умею:\n"
             . "- Отправьте текст — создам задачу во Входящих\n"
-            . "- /today — список задач на сегодня\n"
+            . "- /today — список задач на сегодня (все пространства)\n"
             . "- /help — справка\n\n"
             . "Настройте уведомления в приложении."
         );
@@ -126,40 +115,61 @@ class TelegramWebhookController extends Controller
         return response()->json(['ok' => true]);
     }
 
-    private function handleToday(TelegramSetting $setting, TelegramSubscription $subscription, string $botToken, string $chatId): JsonResponse
+    private function handleToday(TelegramSubscription $subscription, string $chatId): JsonResponse
     {
-        $workspace = $setting->workspace;
-        $tasks = $workspace->tasks()
-            ->with(['project', 'context'])
-            ->where('status', 'today')
-            ->where(function ($q) use ($subscription) {
-                $q->where('assigned_to', $subscription->user_id)
-                  ->orWhere('created_by', $subscription->user_id);
-            })
-            ->orderBy('estimated_time', 'asc')
-            ->orderBy('priority', 'desc')
-            ->get();
+        $user = $subscription->user;
+        $workspaces = $user->allWorkspaces();
 
-        if ($tasks->isEmpty()) {
-            $this->telegramService->sendMessage($botToken, $chatId, "На сегодня задач нет. 🎉");
+        $allTasks = collect();
+
+        foreach ($workspaces as $workspace) {
+            $tasks = $workspace->tasks()
+                ->with(['project', 'context'])
+                ->where('status', 'today')
+                ->where(function ($q) use ($user) {
+                    $q->where('assigned_to', $user->id)
+                      ->orWhere('created_by', $user->id);
+                })
+                ->orderBy('estimated_time', 'asc')
+                ->orderBy('priority', 'desc')
+                ->get()
+                ->each(function ($task) use ($workspace) {
+                    $task->_workspace_name = $workspace->name;
+                });
+
+            $allTasks = $allTasks->merge($tasks);
+        }
+
+        $allTasks = $allTasks->sortBy([
+            ['estimated_time', 'asc'],
+            ['priority', 'desc'],
+        ]);
+
+        if ($allTasks->isEmpty()) {
+            $this->telegramService->sendMessage($chatId, "На сегодня задач нет. 🎉");
             return response()->json(['ok' => true]);
         }
 
-        $text = "<b>📋 Задачи на сегодня ({$tasks->count()}):</b>\n\n";
-        foreach ($tasks as $i => $task) {
+        $showWorkspaceName = $workspaces->count() > 1;
+
+        $text = "<b>📋 Задачи на сегодня ({$allTasks->count()}):</b>\n\n";
+        foreach ($allTasks->values() as $i => $task) {
             $line = $this->telegramService->formatTaskLine($task);
+            if ($showWorkspaceName) {
+                $line .= "  [{$task->_workspace_name}]";
+            }
             $text .= ($i + 1) . ". {$line}\n";
         }
 
-        $this->telegramService->sendMessage($botToken, $chatId, $text);
+        $this->telegramService->sendMessage($chatId, $text);
         return response()->json(['ok' => true]);
     }
 
-    private function handleHelp(string $botToken, string $chatId): JsonResponse
+    private function handleHelp(string $chatId): JsonResponse
     {
         $text = "<b>GTD Task Manager Bot</b>\n\n"
             . "Команды:\n"
-            . "/today — задачи на сегодня\n"
+            . "/today — задачи на сегодня (все пространства)\n"
             . "/help — эта справка\n\n"
             . "Отправьте любой текст — и я создам задачу во Входящих.\n\n"
             . "Настройте уведомления в приложении:\n"
@@ -167,28 +177,43 @@ class TelegramWebhookController extends Controller
             . "- Напоминания о задачах\n"
             . "- Просроченные задачи";
 
-        $this->telegramService->sendMessage($botToken, $chatId, $text);
+        $this->telegramService->sendMessage($chatId, $text);
         return response()->json(['ok' => true]);
     }
 
-    private function handleCreateTask(TelegramSetting $setting, TelegramSubscription $subscription, string $botToken, string $chatId, string $text): JsonResponse
+    private function handleCreateTask(TelegramSubscription $subscription, string $chatId, string $text): JsonResponse
     {
         try {
-            $workspace = $setting->workspace;
+            $user = $subscription->user;
+
+            $workspace = $subscription->defaultWorkspace
+                ?? $user->allWorkspaces()->first();
+
+            if (!$workspace) {
+                $this->telegramService->sendMessage(
+                    $chatId,
+                    "У вас нет ни одного пространства. Создайте пространство в приложении."
+                );
+                return response()->json(['ok' => true]);
+            }
+
             $task = $this->taskService->createTask($workspace, [
                 'title' => $text,
                 'status' => 'inbox',
-            ], $subscription->user_id);
+            ], $user->id);
+
+            $wsInfo = '';
+            if ($user->allWorkspaces()->count() > 1) {
+                $wsInfo = "\n📂 Пространство: {$workspace->name}";
+            }
 
             $this->telegramService->sendMessage(
-                $botToken,
                 $chatId,
-                "✅ Задача создана во Входящих:\n<b>{$task->title}</b>"
+                "✅ Задача создана во Входящих:\n<b>{$task->title}</b>{$wsInfo}"
             );
         } catch (\Exception $e) {
             Log::error('Telegram create task error: ' . $e->getMessage());
             $this->telegramService->sendMessage(
-                $botToken,
                 $chatId,
                 "Не удалось создать задачу. Попробуйте позже."
             );

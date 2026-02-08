@@ -7,73 +7,9 @@
 
     <div v-else class="space-y-6">
 
-      <!-- Секция: Настройка бота (только owner) -->
-      <div v-if="isOwner" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-        <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Настройка бота</h2>
-
-        <div v-if="!settings.is_configured">
-          <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
-            Создайте бота через <a href="https://t.me/BotFather" target="_blank" class="text-primary-600 dark:text-primary-400 hover:underline">@BotFather</a>
-            и вставьте токен.
-          </p>
-
-          <form @submit.prevent="handleConnectBot" autocomplete="off" class="space-y-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Токен бота
-              </label>
-              <input
-                v-model="botTokenForm"
-                type="text"
-                name="bot_token_nofill"
-                autocomplete="new-password"
-                readonly
-                @focus="$event.target.removeAttribute('readonly')"
-                class="input"
-                placeholder="123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11"
-                required
-              />
-            </div>
-            <div v-if="botError" class="text-red-600 dark:text-red-400 text-sm bg-red-50 dark:bg-red-900/20 p-3 rounded-lg">
-              {{ botError }}
-            </div>
-            <button type="submit" :disabled="botLoading" class="btn btn-primary">
-              {{ botLoading ? 'Подключение...' : 'Подключить бота' }}
-            </button>
-          </form>
-        </div>
-
-        <div v-else>
-          <div class="flex items-center justify-between mb-4">
-            <div>
-              <div class="flex items-center space-x-2">
-                <span class="w-2 h-2 bg-green-500 rounded-full"></span>
-                <span class="text-sm font-medium text-gray-900 dark:text-white">Бот подключен</span>
-              </div>
-              <p v-if="settings.bot_username" class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                @{{ settings.bot_username }}
-              </p>
-            </div>
-            <div class="text-right">
-              <p class="text-sm text-gray-500 dark:text-gray-400">
-                Подписчиков: {{ settings.subscribers_count || 0 }}
-              </p>
-            </div>
-          </div>
-
-          <button
-            @click="handleDisconnectBot"
-            :disabled="botLoading"
-            class="text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
-          >
-            Отключить бота
-          </button>
-        </div>
-      </div>
-
-      <!-- Секция: Моя подписка -->
+      <!-- Секция: Telegram подписка -->
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-        <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Моя подписка</h2>
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Telegram уведомления</h2>
 
         <!-- Бот не настроен -->
         <div v-if="!subscription.bot_configured" class="text-center py-6">
@@ -81,17 +17,20 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
           </svg>
           <p class="text-gray-500 dark:text-gray-400">
-            Telegram бот ещё не настроен для этого пространства.
+            Telegram бот не настроен.
           </p>
-          <p v-if="!isOwner" class="text-sm text-gray-400 dark:text-gray-500 mt-1">
-            Обратитесь к владельцу пространства.
+          <p class="text-sm text-gray-400 dark:text-gray-500 mt-1">
+            Обратитесь к администратору.
           </p>
         </div>
 
         <!-- Бот настроен, нет подписки -->
         <div v-else-if="!subscription.subscribed" class="text-center py-6">
-          <p class="text-gray-600 dark:text-gray-400 mb-4">
-            Подключите Telegram для получения уведомлений и управления задачами.
+          <p class="text-gray-600 dark:text-gray-400 mb-2">
+            Подключите Telegram для получения уведомлений и управления задачами из всех ваших пространств.
+          </p>
+          <p v-if="subscription.bot_username" class="text-sm text-gray-400 dark:text-gray-500 mb-4">
+            Бот: @{{ subscription.bot_username }}
           </p>
           <button @click="handleSubscribe" :disabled="subLoading" class="btn btn-primary">
             {{ subLoading ? 'Подключение...' : 'Подключить Telegram' }}
@@ -133,7 +72,14 @@
           <div class="flex items-center space-x-2 mb-6">
             <span class="w-2 h-2 bg-green-500 rounded-full"></span>
             <span class="text-sm text-green-700 dark:text-green-400 font-medium">Telegram подключен</span>
+            <span v-if="subscription.bot_username" class="text-sm text-gray-400 dark:text-gray-500">
+              (@{{ subscription.bot_username }})
+            </span>
           </div>
+
+          <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">
+            Уведомления приходят по задачам из всех ваших пространств.
+          </p>
 
           <form @submit.prevent="handleUpdateSettings" class="space-y-4">
             <!-- Утренний дайджест -->
@@ -221,30 +167,17 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { useAuthStore } from '@/stores/auth'
+import { ref, onMounted } from 'vue'
 import api from '@/services/api'
 
 const props = defineProps({
   workspace: { type: Object, required: true },
 })
 
-const authStore = useAuthStore()
-
 const loading = ref(true)
-const botLoading = ref(false)
 const subLoading = ref(false)
-const botError = ref('')
 const subError = ref('')
 const subSuccess = ref('')
-const botTokenForm = ref('')
-
-const settings = ref({
-  is_configured: false,
-  bot_username: null,
-  is_active: false,
-  subscribers_count: 0,
-})
 
 const subscription = ref({
   bot_configured: false,
@@ -262,21 +195,10 @@ const notifyForm = ref({
   notify_reminders: true,
 })
 
-const isOwner = computed(() => {
-  return props.workspace?.owner_id === authStore.user?.id
-})
-
-const workspaceId = computed(() => props.workspace?.id)
-
 const loadData = async () => {
-  if (!workspaceId.value) {
-    loading.value = false
-    return
-  }
-
   loading.value = true
   try {
-    const subResponse = await api.get(`/v1/workspaces/${workspaceId.value}/telegram-subscription`)
+    const subResponse = await api.get('/v1/telegram/subscription')
     const subData = subResponse.data
     subscription.value = {
       bot_configured: subData.bot_configured,
@@ -295,15 +217,6 @@ const loadData = async () => {
         notify_reminders: subData.notify_reminders ?? true,
       }
     }
-
-    if (isOwner.value) {
-      try {
-        const settingsResponse = await api.get(`/v1/workspaces/${workspaceId.value}/telegram-settings`)
-        settings.value = settingsResponse.data
-      } catch (e) {
-        // ignore
-      }
-    }
   } catch (error) {
     console.error('Error loading telegram data:', error)
   } finally {
@@ -311,41 +224,11 @@ const loadData = async () => {
   }
 }
 
-const handleConnectBot = async () => {
-  botError.value = ''
-  botLoading.value = true
-  try {
-    await api.post(`/v1/workspaces/${workspaceId.value}/telegram-settings`, {
-      bot_token: botTokenForm.value,
-    })
-    botTokenForm.value = ''
-    await loadData()
-  } catch (error) {
-    botError.value = error.response?.data?.message || 'Ошибка подключения бота'
-  } finally {
-    botLoading.value = false
-  }
-}
-
-const handleDisconnectBot = async () => {
-  if (!confirm('Отключить Telegram бота? Все подписки будут удалены.')) return
-
-  botLoading.value = true
-  try {
-    await api.delete(`/v1/workspaces/${workspaceId.value}/telegram-settings`)
-    await loadData()
-  } catch (error) {
-    botError.value = error.response?.data?.message || 'Ошибка отключения'
-  } finally {
-    botLoading.value = false
-  }
-}
-
 const handleSubscribe = async () => {
   subError.value = ''
   subLoading.value = true
   try {
-    await api.post(`/v1/workspaces/${workspaceId.value}/telegram-subscription`)
+    await api.post('/v1/telegram/subscription')
     await loadData()
   } catch (error) {
     subError.value = error.response?.data?.message || 'Ошибка подписки'
@@ -359,7 +242,7 @@ const handleUpdateSettings = async () => {
   subSuccess.value = ''
   subLoading.value = true
   try {
-    await api.put(`/v1/workspaces/${workspaceId.value}/telegram-subscription`, notifyForm.value)
+    await api.put('/v1/telegram/subscription', notifyForm.value)
     subSuccess.value = 'Настройки сохранены'
     setTimeout(() => { subSuccess.value = '' }, 3000)
   } catch (error) {
@@ -374,7 +257,7 @@ const handleUnsubscribe = async () => {
 
   subLoading.value = true
   try {
-    await api.delete(`/v1/workspaces/${workspaceId.value}/telegram-subscription`)
+    await api.delete('/v1/telegram/subscription')
     await loadData()
   } catch (error) {
     subError.value = error.response?.data?.message || 'Ошибка отключения'

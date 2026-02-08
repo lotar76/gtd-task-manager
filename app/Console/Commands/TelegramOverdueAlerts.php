@@ -16,55 +16,67 @@ class TelegramOverdueAlerts extends Command
 
     public function handle(TelegramService $telegramService): int
     {
+        if (!config('services.telegram.bot_token')) {
+            $this->warn('Telegram bot token not configured');
+            return Command::SUCCESS;
+        }
+
         $now = Carbon::now('Europe/Moscow');
         $today = $now->format('Y-m-d');
 
         $subscriptions = TelegramSubscription::where('is_active', true)
             ->where('notify_overdue', true)
             ->whereNotNull('chat_id')
-            ->with(['workspace.telegramSetting', 'user'])
+            ->with('user')
             ->get();
 
         $sent = 0;
 
         foreach ($subscriptions as $subscription) {
-            $setting = $subscription->workspace->telegramSetting;
-            if (!$setting || !$setting->is_active) {
+            $user = $subscription->user;
+            $workspaces = $user->allWorkspaces();
+
+            $allOverdueTasks = collect();
+
+            foreach ($workspaces as $workspace) {
+                $overdueTasks = $workspace->tasks()
+                    ->with(['project'])
+                    ->whereNotNull('due_date')
+                    ->where('due_date', '<', $today)
+                    ->whereNotIn('status', ['completed'])
+                    ->where(function ($q) use ($user) {
+                        $q->where('assigned_to', $user->id)
+                          ->orWhere('created_by', $user->id);
+                    })
+                    ->orderBy('due_date', 'asc')
+                    ->get()
+                    ->each(fn ($task) => $task->_workspace_name = $workspace->name);
+
+                $allOverdueTasks = $allOverdueTasks->merge($overdueTasks);
+            }
+
+            if ($allOverdueTasks->isEmpty()) {
                 continue;
             }
 
-            $workspace = $subscription->workspace;
-            $userId = $subscription->user_id;
+            $showWorkspaceName = $workspaces->count() > 1;
 
-            $overdueTasks = $workspace->tasks()
-                ->with(['project'])
-                ->whereNotNull('due_date')
-                ->where('due_date', '<', $today)
-                ->whereNotIn('status', ['completed'])
-                ->where(function ($q) use ($userId) {
-                    $q->where('assigned_to', $userId)
-                      ->orWhere('created_by', $userId);
-                })
-                ->orderBy('due_date', 'asc')
-                ->get();
+            $text = "<b>⚠️ Просроченные задачи ({$allOverdueTasks->count()}):</b>\n\n";
 
-            if ($overdueTasks->isEmpty()) {
-                continue;
-            }
-
-            $text = "<b>⚠️ Просроченные задачи ({$overdueTasks->count()}):</b>\n\n";
-
-            foreach ($overdueTasks->take(10) as $task) {
+            foreach ($allOverdueTasks->take(10) as $task) {
                 $days = Carbon::parse($task->due_date)->diffInDays($now);
                 $line = $telegramService->formatTaskLine($task, true);
+                if ($showWorkspaceName) {
+                    $line .= "  [{$task->_workspace_name}]";
+                }
                 $text .= "- {$line} ({$days} дн.)\n";
             }
 
-            if ($overdueTasks->count() > 10) {
-                $text .= "\n...и ещё " . ($overdueTasks->count() - 10) . " задач";
+            if ($allOverdueTasks->count() > 10) {
+                $text .= "\n...и ещё " . ($allOverdueTasks->count() - 10) . " задач";
             }
 
-            $telegramService->sendMessage($setting->bot_token, $subscription->chat_id, $text);
+            $telegramService->sendMessage($subscription->chat_id, $text);
             $sent++;
         }
 

@@ -28,9 +28,11 @@ class TelegramService
         ]);
     }
 
-    /**
-     * Format a single task as a detailed block (for reminders, creation confirmation, etc.)
-     */
+    private function getBotToken(): ?string
+    {
+        return config('services.telegram.bot_token');
+    }
+
     public function formatTask(Task $task): string
     {
         $task->loadMissing(['project', 'context']);
@@ -79,9 +81,6 @@ class TelegramService
         return implode("\n", $lines);
     }
 
-    /**
-     * Format a task as a single line for lists (/today, digest, etc.)
-     */
     public function formatTaskLine(Task $task, bool $showDate = false): string
     {
         $task->loadMissing(['project']);
@@ -112,8 +111,14 @@ class TelegramService
         return implode('  ', $parts);
     }
 
-    public function sendMessage(string $botToken, string $chatId, string $text, string $parseMode = 'HTML'): bool
+    public function sendMessage(string $chatId, string $text, string $parseMode = 'HTML'): bool
     {
+        $botToken = $this->getBotToken();
+        if (!$botToken) {
+            Log::error('Telegram bot token not configured');
+            return false;
+        }
+
         try {
             $response = $this->client->post("https://api.telegram.org/bot{$botToken}/sendMessage", [
                 'json' => [
@@ -131,8 +136,14 @@ class TelegramService
         }
     }
 
-    public function setWebhook(string $botToken, string $webhookUrl): bool
+    public function setWebhook(string $webhookUrl): bool
     {
+        $botToken = $this->getBotToken();
+        if (!$botToken) {
+            Log::error('Telegram bot token not configured');
+            return false;
+        }
+
         try {
             $response = $this->client->post("https://api.telegram.org/bot{$botToken}/setWebhook", [
                 'json' => [
@@ -148,8 +159,14 @@ class TelegramService
         }
     }
 
-    public function deleteWebhook(string $botToken): bool
+    public function deleteWebhook(): bool
     {
+        $botToken = $this->getBotToken();
+        if (!$botToken) {
+            Log::error('Telegram bot token not configured');
+            return false;
+        }
+
         try {
             $response = $this->client->post("https://api.telegram.org/bot{$botToken}/deleteWebhook");
 
@@ -161,8 +178,13 @@ class TelegramService
         }
     }
 
-    public function getMe(string $botToken): ?array
+    public function getMe(): ?array
     {
+        $botToken = $this->getBotToken();
+        if (!$botToken) {
+            return null;
+        }
+
         try {
             $response = $this->client->get("https://api.telegram.org/bot{$botToken}/getMe");
 
