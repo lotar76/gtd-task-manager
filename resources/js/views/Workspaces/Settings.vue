@@ -2,7 +2,7 @@
   <div class="p-4 lg:p-8">
     <div class="max-w-3xl mx-auto">
       <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-        Настройки пространства
+        Настройки — {{ workspace?.name || 'Пространство' }}
       </h1>
 
       <!-- Tabs -->
@@ -40,9 +40,9 @@
       </div>
 
       <!-- Tab Content -->
-      <GeneralTab v-if="activeTab === 'general' && canManage" :workspace="workspace" />
-      <MembersTab v-if="activeTab === 'members'" :workspace="workspace" :can-manage="canManage" />
-      <TelegramTab v-if="activeTab === 'telegram'" :workspace="workspace" />
+      <GeneralTab v-if="activeTab === 'general' && canManage" :key="workspaceId" :workspace="workspace" />
+      <MembersTab v-if="activeTab === 'members'" :key="workspaceId" :workspace="workspace" :can-manage="canManage" />
+      <TelegramTab v-if="activeTab === 'telegram'" :key="workspaceId" :workspace="workspace" />
     </div>
   </div>
 </template>
