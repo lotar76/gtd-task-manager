@@ -5,12 +5,21 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Models\Task;
+use App\Models\User;
 use App\Models\Workspace;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class TaskService
 {
+    private TelegramService $telegramService;
+
+    public function __construct(TelegramService $telegramService)
+    {
+        $this->telegramService = $telegramService;
+    }
+
     // GTD: Входящие (inbox)
     public function getInbox(Workspace $workspace, ?int $userId = null): Collection
     {
@@ -139,7 +148,12 @@ class TaskService
             $task->tags()->sync($data['tags']);
         }
 
-        return $task->load(['workspace', 'project', 'context', 'assignee', 'tags', 'creator']);
+        $task->load(['workspace', 'project', 'context', 'assignee', 'tags', 'creator']);
+
+        // Уведомляем участников workspace
+        $this->notifyMembers($task, $userId, 'created');
+
+        return $task;
     }
 
     // Обновление задачи
@@ -187,10 +201,10 @@ class TaskService
     }
 
     // Смена статуса задачи
-    public function changeStatus(Task $task, string $status): Task
+    public function changeStatus(Task $task, string $status, ?int $actorUserId = null): Task
     {
         $updateData = ['status' => $status];
-        
+
         // Если статус = 'today' - автоматически устанавливаем дату на сегодня
         if ($status === 'today') {
             $updateData['due_date'] = \Carbon\Carbon::today()->format('Y-m-d');
@@ -199,7 +213,7 @@ class TaskService
         elseif ($status === 'tomorrow') {
             $updateData['due_date'] = \Carbon\Carbon::tomorrow()->format('Y-m-d');
         }
-        
+
         $task->update($updateData);
 
         // Если завершена - ставим дату
@@ -212,13 +226,18 @@ class TaskService
             $task->update(['completed_at' => null]);
         }
 
+        // Уведомляем участников при завершении задачи
+        if ($status === 'completed' && $actorUserId) {
+            $this->notifyMembers($task, $actorUserId, 'completed');
+        }
+
         return $task->fresh();
     }
 
     // Завершение задачи
-    public function completeTask(Task $task): Task
+    public function completeTask(Task $task, ?int $actorUserId = null): Task
     {
-        return $this->changeStatus($task, 'completed');
+        return $this->changeStatus($task, 'completed', $actorUserId);
     }
 
     // Возврат задачи в работу
@@ -228,10 +247,34 @@ class TaskService
     }
 
     // Назначение задачи
-    public function assignTask(Task $task, ?int $userId): Task
+    public function assignTask(Task $task, ?int $userId, ?int $actorUserId = null): Task
     {
+        $oldAssignee = $task->assigned_to;
         $task->update(['assigned_to' => $userId]);
-        return $task->fresh();
+        $task = $task->fresh();
+
+        // Уведомляем назначенного (если сменился)
+        if ($userId && $userId !== $oldAssignee && $actorUserId) {
+            $this->notifyMembers($task, $actorUserId, 'assigned');
+        }
+
+        return $task;
+    }
+
+    /**
+     * Отправить Telegram-уведомление участникам workspace.
+     */
+    private function notifyMembers(Task $task, int $actorUserId, string $action): void
+    {
+        try {
+            $task->loadMissing('workspace');
+            $actor = User::find($actorUserId);
+            if ($actor) {
+                $this->telegramService->notifyWorkspaceMembers($task, $actor, $action);
+            }
+        } catch (\Throwable $e) {
+            Log::error("Telegram notification error: {$e->getMessage()}");
+        }
     }
 
     // Получить задачи для календаря

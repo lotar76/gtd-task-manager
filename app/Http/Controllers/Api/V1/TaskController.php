@@ -357,7 +357,7 @@ class TaskController extends Controller
         $task->load('workspace');
         $this->authorize('update', $task);
 
-        $task = $this->taskService->completeTask($task);
+        $task = $this->taskService->completeTask($task, auth()->id());
 
         return ApiResponse::success($task, 'Задача завершена');
     }
@@ -383,7 +383,7 @@ class TaskController extends Controller
             'status' => 'required|in:inbox,next_action,today,tomorrow,waiting,someday,scheduled,completed',
         ]);
 
-        $task = $this->taskService->changeStatus($task, $validated['status']);
+        $task = $this->taskService->changeStatus($task, $validated['status'], auth()->id());
 
         return ApiResponse::success($task, 'Статус задачи изменен');
     }
@@ -405,7 +405,7 @@ class TaskController extends Controller
             }
         }
 
-        $task = $this->taskService->assignTask($task, $validated['user_id'] ?? null);
+        $task = $this->taskService->assignTask($task, $validated['user_id'] ?? null, auth()->id());
 
         return ApiResponse::success($task, 'Задача назначена');
     }

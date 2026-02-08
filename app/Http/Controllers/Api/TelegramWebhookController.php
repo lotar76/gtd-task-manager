@@ -327,7 +327,7 @@ class TelegramWebhookController extends Controller
             return response()->json(['ok' => true]);
         }
 
-        $this->taskService->completeTask($task);
+        $this->taskService->completeTask($task, $user->id);
 
         $this->telegramService->answerCallbackQuery($callbackId, '✅ Задача закрыта!');
 

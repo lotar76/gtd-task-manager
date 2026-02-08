@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Models\Task;
+use App\Models\TelegramSubscription;
+use App\Models\User;
+use App\Models\Workspace;
 use Carbon\Carbon;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
@@ -222,6 +225,66 @@ class TelegramService
         } catch (GuzzleException $e) {
             Log::error('Telegram getMe error: ' . $e->getMessage());
             return null;
+        }
+    }
+
+    /**
+     * Уведомить участников workspace о событии с задачей.
+     * Отправляет сообщение всем активным Telegram-подписчикам workspace, кроме исполнителя.
+     */
+    public function notifyWorkspaceMembers(Task $task, User $actor, string $action): void
+    {
+        $workspace = $task->workspace;
+        if (!$workspace) {
+            return;
+        }
+
+        // Собираем ID всех участников workspace (members + owner)
+        $memberIds = $workspace->members()->pluck('users.id')->toArray();
+        if (!in_array($workspace->owner_id, $memberIds)) {
+            $memberIds[] = $workspace->owner_id;
+        }
+
+        // Убираем того, кто совершил действие
+        $memberIds = array_filter($memberIds, fn($id) => $id !== $actor->id);
+
+        if (empty($memberIds)) {
+            return;
+        }
+
+        // Находим активные Telegram-подписки этих пользователей
+        $subscriptions = TelegramSubscription::whereIn('user_id', $memberIds)
+            ->where('is_active', true)
+            ->whereNotNull('chat_id')
+            ->get();
+
+        if ($subscriptions->isEmpty()) {
+            return;
+        }
+
+        // Формируем сообщение
+        $actorName = $actor->name;
+        $taskTitle = $task->title;
+        $wsName = $workspace->name;
+
+        $actionTexts = [
+            'created' => "📝 <b>{$actorName}</b> создал задачу",
+            'completed' => "✅ <b>{$actorName}</b> выполнил задачу",
+            'assigned' => "👤 <b>{$actorName}</b> назначил задачу",
+        ];
+
+        $header = $actionTexts[$action] ?? "📌 <b>{$actorName}</b> обновил задачу";
+        $message = "{$header}\n\n";
+        $message .= $this->formatTaskLine($task);
+        $message .= "\n\n🏢 {$wsName}";
+
+        // Для назначения — уведомляем только назначенного
+        if ($action === 'assigned' && $task->assigned_to) {
+            $subscriptions = $subscriptions->where('user_id', $task->assigned_to);
+        }
+
+        foreach ($subscriptions as $sub) {
+            $this->sendMessage($sub->chat_id, $message);
         }
     }
 
