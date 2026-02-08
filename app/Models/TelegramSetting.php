@@ -23,12 +23,9 @@ class TelegramSetting extends Model
         'webhook_secret',
     ];
 
-    protected function casts(): array
-    {
-        return [
-            'is_active' => 'boolean',
-        ];
-    }
+    protected $casts = [
+        'is_active' => 'boolean',
+    ];
 
     public function setBotTokenAttribute(string $value): void
     {

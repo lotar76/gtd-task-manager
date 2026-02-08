@@ -22,15 +22,12 @@ class TelegramSubscription extends Model
         'notify_reminders',
     ];
 
-    protected function casts(): array
-    {
-        return [
-            'is_active' => 'boolean',
-            'notify_overdue' => 'boolean',
-            'notify_morning_digest' => 'boolean',
-            'notify_reminders' => 'boolean',
-        ];
-    }
+    protected $casts = [
+        'is_active' => 'boolean',
+        'notify_overdue' => 'boolean',
+        'notify_morning_digest' => 'boolean',
+        'notify_reminders' => 'boolean',
+    ];
 
     public function workspace(): BelongsTo
     {
