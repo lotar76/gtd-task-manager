@@ -176,11 +176,7 @@ class TelegramWebhookController extends Controller
 
             $text .= "{$num}. {$line}\n\n";
 
-            $shortTitle = mb_substr($task->title, 0, 25);
-            if (mb_strlen($task->title) > 25) {
-                $shortTitle .= '…';
-            }
-            $keyboard[] = [['text' => "✅ {$num}. {$shortTitle}", 'callback_data' => "done:{$task->id}"]];
+            $keyboard[] = [['text' => "✅ {$num}. Отметить как выполнено", 'callback_data' => "done:{$task->id}"]];
         }
 
         $this->telegramService->sendMessageWithKeyboard($chatId, $text, $keyboard);
