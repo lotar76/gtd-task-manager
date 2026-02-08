@@ -1,5 +1,19 @@
 <template>
   <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <!-- Loading Screen -->
+    <Transition name="fade">
+      <div v-if="appLoading" class="fixed inset-0 z-[100] bg-white dark:bg-gray-900 flex items-center justify-center">
+        <div class="text-center">
+          <div class="relative w-16 h-16 mx-auto mb-6">
+            <div class="absolute inset-0 rounded-full border-4 border-gray-200 dark:border-gray-700"></div>
+            <div class="absolute inset-0 rounded-full border-4 border-transparent border-t-primary-600 animate-spin"></div>
+          </div>
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">GTD TODO</h2>
+          <p class="text-sm text-gray-500 dark:text-gray-400">Загрузка...</p>
+        </div>
+      </div>
+    </Transition>
+
     <div class="flex h-screen">
       <!-- Sidebar -->
       <aside
@@ -383,6 +397,7 @@ const authStore = useAuthStore()
 const workspaceStore = useWorkspaceStore()
 const tasksStore = useTasksStore()
 const projectsStore = useProjectsStore()
+const appLoading = ref(true)
 const sidebarOpen = ref(false)
 const showUserMenu = ref(false)
 const showWorkspaceModal = ref(false)
@@ -700,9 +715,15 @@ const handleKeydown = (e) => {
 }
 
 onMounted(async () => {
-  await workspaceStore.fetchWorkspaces()
-  await tasksStore.fetchAllTasks()
-  await projectsStore.fetchProjects()
+  try {
+    await workspaceStore.fetchWorkspaces()
+    await Promise.all([
+      tasksStore.fetchAllTasks(),
+      projectsStore.fetchProjects(),
+    ])
+  } finally {
+    appLoading.value = false
+  }
   tasksStore.startSync()
 
   // Закрываем меню воркспейсов при клике вне его
@@ -739,6 +760,14 @@ const handleClickOutsideWorkspaceMenu = () => {
 .dropdown-leave-to {
   opacity: 0;
   transform: translateY(-10px);
+}
+
+.fade-leave-active {
+  transition: opacity 0.4s ease;
+}
+
+.fade-leave-to {
+  opacity: 0;
 }
 </style>
 

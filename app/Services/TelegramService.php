@@ -96,7 +96,21 @@ class TelegramService
         $task->loadMissing(['project']);
 
         $line = "<b>{$task->title}</b>";
+
+        // Описание (до 100 символов)
+        if ($task->description) {
+            $desc = mb_substr($task->description, 0, 100);
+            if (mb_strlen($task->description) > 100) {
+                $desc .= '...';
+            }
+            $line .= "\n     " . $desc;
+        }
+
         $meta = [];
+
+        if ($task->due_date) {
+            $meta[] = '📅 ' . Carbon::parse($task->due_date)->format('d.m');
+        }
 
         if ($task->estimated_time) {
             $time = substr($task->estimated_time, 0, 5);
@@ -106,12 +120,8 @@ class TelegramService
             $meta[] = '🕐 ' . $time;
         }
 
-        if ($showDate && $task->due_date) {
-            $meta[] = '📅 ' . Carbon::parse($task->due_date)->format('d.m');
-        }
-
         if ($task->priority) {
-            $meta[] = self::PRIORITY_ICONS[$task->priority] ?? '';
+            $meta[] = self::PRIORITY_LABELS[$task->priority] ?? $task->priority;
         }
 
         if ($task->project) {

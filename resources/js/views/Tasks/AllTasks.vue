@@ -142,7 +142,7 @@ import {
 const tasksStore = useTasksStore()
 const workspaceStore = useWorkspaceStore()
 
-const allTasks = computed(() => tasksStore.allTasks)
+const allTasks = computed(() => tasksStore.filteredTasks)
 const loading = computed(() => tasksStore.loading)
 const showTaskModal = ref(false)
 const selectedTask = ref(null)

@@ -187,17 +187,32 @@
                     ]"
                     :style="getTaskPositionStyle(task, weekHours)"
                   >
-                    <div class="font-medium truncate">{{ task.title }}</div>
-                    <div v-if="task.estimated_time || task.end_time" class="text-[10px] opacity-75 mt-0.5">
-                      <span v-if="task.estimated_time && task.end_time">
-                        {{ formatTime(task.estimated_time) }} - {{ formatTime(task.end_time) }}
-                      </span>
-                      <span v-else-if="task.end_time">
-                        до {{ formatTime(task.end_time) }}
-                      </span>
-                      <span v-else-if="task.estimated_time">
-                        {{ formatTime(task.estimated_time) }}
-                      </span>
+                    <div class="flex items-start gap-1">
+                      <button
+                        @click.stop="handleToggleComplete(task)"
+                        class="flex-shrink-0 w-3.5 h-3.5 mt-0.5 rounded border flex items-center justify-center transition-colors"
+                        :class="task.status === 'completed'
+                          ? 'bg-green-500 border-green-500'
+                          : 'border-gray-400 hover:border-primary-500'"
+                      >
+                        <svg v-if="task.status === 'completed'" class="w-2 h-2 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                        </svg>
+                      </button>
+                      <div class="flex-1 min-w-0">
+                        <div class="font-medium truncate">{{ task.title }}</div>
+                        <div v-if="task.estimated_time || task.end_time" class="text-[10px] opacity-75 mt-0.5">
+                          <span v-if="task.estimated_time && task.end_time">
+                            {{ formatTime(task.estimated_time) }} - {{ formatTime(task.end_time) }}
+                          </span>
+                          <span v-else-if="task.end_time">
+                            до {{ formatTime(task.end_time) }}
+                          </span>
+                          <span v-else-if="task.estimated_time">
+                            {{ formatTime(task.estimated_time) }}
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -230,7 +245,20 @@
                       : getDurationGradientClass(task) + ' text-primary-700 dark:text-primary-300 border-primary-500'
                   ]"
                 >
-                  <div class="font-medium truncate block">{{ task.title }}</div>
+                  <div class="flex items-center gap-1">
+                    <button
+                      @click.stop="handleToggleComplete(task)"
+                      class="flex-shrink-0 w-3.5 h-3.5 rounded border flex items-center justify-center transition-colors"
+                      :class="task.status === 'completed'
+                        ? 'bg-green-500 border-green-500'
+                        : 'border-gray-400 hover:border-primary-500'"
+                    >
+                      <svg v-if="task.status === 'completed'" class="w-2 h-2 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                      </svg>
+                    </button>
+                    <div class="font-medium truncate block">{{ task.title }}</div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -274,8 +302,23 @@
                       : getDurationGradientClass(task) + ' text-primary-700 dark:text-primary-300 border-primary-500'
                   ]"
                 >
-                  <div class="font-medium text-sm mb-1">{{ task.title }}</div>
-                  <div v-if="task.estimated_time || task.end_time" class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                  <div class="flex items-start gap-2">
+                    <button
+                      @click.stop="handleToggleComplete(task)"
+                      class="flex-shrink-0 w-4 h-4 mt-0.5 rounded border-2 flex items-center justify-center transition-colors"
+                      :class="task.status === 'completed'
+                        ? 'bg-green-500 border-green-500'
+                        : 'border-gray-400 hover:border-primary-500'"
+                    >
+                      <svg v-if="task.status === 'completed'" class="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                      </svg>
+                    </button>
+                    <div class="flex-1 min-w-0">
+                      <div class="font-medium text-sm mb-1">{{ task.title }}</div>
+                    </div>
+                  </div>
+                  <div v-if="task.estimated_time || task.end_time" class="text-xs text-gray-600 dark:text-gray-400 mt-1 ml-6">
                     ⏱ <span v-if="task.estimated_time && task.end_time">
                       {{ formatTime(task.estimated_time) }} - {{ formatTime(task.end_time) }}
                     </span>
@@ -354,32 +397,47 @@
                     ]"
                     :style="getTaskPositionStyle(task, dayHours)"
                   >
-                    <div class="font-medium text-sm sm:text-base text-gray-900 dark:text-white mb-1">{{ task.title }}</div>
-                    <div v-if="task.description" class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">{{ task.description }}</div>
-                    <div class="flex flex-wrap items-center gap-2 mt-2">
-                      <span v-if="task.estimated_time || task.end_time" class="text-xs text-gray-600 dark:text-gray-400 flex items-center">
-                        <ClockIcon class="w-3 h-3 mr-1" />
-                        <span v-if="task.estimated_time && task.end_time">
-                          {{ formatTime(task.estimated_time) }} - {{ formatTime(task.end_time) }}
-                        </span>
-                        <span v-else-if="task.estimated_time">
-                          {{ formatTime(task.estimated_time) }}
-                        </span>
-                        <span v-else-if="task.end_time">
-                          до {{ formatTime(task.end_time) }}
-                        </span>
-                      </span>
-                      <span
-                        class="text-xs px-2 py-0.5 rounded-full"
-                        :class="{
-                          'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400': task.priority === 'urgent',
-                          'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400': task.priority === 'high',
-                          'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400': task.priority === 'medium',
-                          'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300': task.priority === 'low'
-                        }"
+                    <div class="flex items-start gap-2">
+                      <button
+                        @click.stop="handleToggleComplete(task)"
+                        class="flex-shrink-0 w-5 h-5 mt-0.5 rounded border-2 flex items-center justify-center transition-colors"
+                        :class="task.status === 'completed'
+                          ? 'bg-green-500 border-green-500'
+                          : 'border-gray-300 hover:border-primary-500'"
                       >
-                        {{ getPriorityLabel(task.priority) }}
-                      </span>
+                        <svg v-if="task.status === 'completed'" class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                        </svg>
+                      </button>
+                      <div class="flex-1 min-w-0">
+                        <div class="font-medium text-sm sm:text-base text-gray-900 dark:text-white mb-1">{{ task.title }}</div>
+                        <div v-if="task.description" class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">{{ task.description }}</div>
+                        <div class="flex flex-wrap items-center gap-2 mt-2">
+                          <span v-if="task.estimated_time || task.end_time" class="text-xs text-gray-600 dark:text-gray-400 flex items-center">
+                            <ClockIcon class="w-3 h-3 mr-1" />
+                            <span v-if="task.estimated_time && task.end_time">
+                              {{ formatTime(task.estimated_time) }} - {{ formatTime(task.end_time) }}
+                            </span>
+                            <span v-else-if="task.estimated_time">
+                              {{ formatTime(task.estimated_time) }}
+                            </span>
+                            <span v-else-if="task.end_time">
+                              до {{ formatTime(task.end_time) }}
+                            </span>
+                          </span>
+                          <span
+                            class="text-xs px-2 py-0.5 rounded-full"
+                            :class="{
+                              'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400': task.priority === 'urgent',
+                              'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400': task.priority === 'high',
+                              'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400': task.priority === 'medium',
+                              'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300': task.priority === 'low'
+                            }"
+                          >
+                            {{ getPriorityLabel(task.priority) }}
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -405,20 +463,35 @@
                       : getDurationGradientClass(task) + ' border-primary-500'
                   ]"
                 >
-                  <div class="font-medium text-sm sm:text-base text-gray-900 dark:text-white mb-1">{{ task.title }}</div>
-                  <div v-if="task.description" class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">{{ task.description }}</div>
-                  <div class="flex flex-wrap items-center gap-2 mt-2">
-                    <span
-                      class="text-xs px-2 py-0.5 rounded-full"
-                      :class="{
-                        'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400': task.priority === 'urgent',
-                        'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400': task.priority === 'high',
-                        'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400': task.priority === 'medium',
-                        'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300': task.priority === 'low'
-                      }"
+                  <div class="flex items-start gap-2">
+                    <button
+                      @click.stop="handleToggleComplete(task)"
+                      class="flex-shrink-0 w-5 h-5 mt-0.5 rounded border-2 flex items-center justify-center transition-colors"
+                      :class="task.status === 'completed'
+                        ? 'bg-green-500 border-green-500'
+                        : 'border-gray-300 hover:border-primary-500'"
                     >
-                      {{ getPriorityLabel(task.priority) }}
-                    </span>
+                      <svg v-if="task.status === 'completed'" class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                      </svg>
+                    </button>
+                    <div class="flex-1 min-w-0">
+                      <div class="font-medium text-sm sm:text-base text-gray-900 dark:text-white mb-1">{{ task.title }}</div>
+                      <div v-if="task.description" class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">{{ task.description }}</div>
+                      <div class="flex flex-wrap items-center gap-2 mt-2">
+                        <span
+                          class="text-xs px-2 py-0.5 rounded-full"
+                          :class="{
+                            'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400': task.priority === 'urgent',
+                            'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400': task.priority === 'high',
+                            'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400': task.priority === 'medium',
+                            'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300': task.priority === 'low'
+                          }"
+                        >
+                          {{ getPriorityLabel(task.priority) }}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -440,7 +513,18 @@
                   : getDurationGradientClass(task) + ' border-primary-500'
               ]"
             >
-              <div class="flex items-start justify-between">
+              <div class="flex items-start gap-3">
+                <button
+                  @click.stop="handleToggleComplete(task)"
+                  class="flex-shrink-0 w-5 h-5 mt-0.5 rounded border-2 flex items-center justify-center transition-colors"
+                  :class="task.status === 'completed'
+                    ? 'bg-green-500 border-green-500'
+                    : 'border-gray-300 hover:border-primary-500'"
+                >
+                  <svg v-if="task.status === 'completed'" class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                  </svg>
+                </button>
                 <div class="flex-1 min-w-0">
                   <div class="font-medium text-sm sm:text-base text-gray-900 dark:text-white mb-1">{{ task.title }}</div>
                   <div v-if="task.description" class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">{{ task.description }}</div>

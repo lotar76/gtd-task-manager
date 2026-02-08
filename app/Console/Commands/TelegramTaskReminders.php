@@ -67,7 +67,7 @@ class TelegramTaskReminders extends Command
                         $telegramService->sendMessageWithKeyboard(
                             $subscription->chat_id,
                             $text,
-                            [[['text' => '✅ Закрыть задачу', 'callback_data' => "done:{$task->id}"]]]
+                            [[['text' => 'Отметить как выполнено', 'callback_data' => "done:{$task->id}"]]]
                         );
                         $sent++;
                     }

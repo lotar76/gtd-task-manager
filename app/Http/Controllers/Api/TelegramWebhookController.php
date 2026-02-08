@@ -237,7 +237,7 @@ class TelegramWebhookController extends Controller
                     "✅ Задача создана во Входящих\n\n"
                     . "<b>{$task->title}</b>\n"
                     . "📂 {$workspace->name}",
-                    [[['text' => '✅ Закрыть задачу', 'callback_data' => "done:{$task->id}"]]]
+                    [[['text' => 'Отметить как выполнено', 'callback_data' => "done:{$task->id}"]]]
                 );
 
                 return response()->json(['ok' => true]);
@@ -387,7 +387,7 @@ class TelegramWebhookController extends Controller
                 . "<b>{$task->title}</b>\n"
                 . "📂 {$workspace->name}",
                 'HTML',
-                [[['text' => '✅ Закрыть задачу', 'callback_data' => "done:{$task->id}"]]]
+                [[['text' => 'Отметить как выполнено', 'callback_data' => "done:{$task->id}"]]]
             );
         } catch (\Exception $e) {
             Log::error('Telegram select workspace error: ' . $e->getMessage());
