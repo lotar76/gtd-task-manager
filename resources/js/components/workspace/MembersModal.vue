@@ -95,7 +95,7 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted } from 'vue'
+import { ref, watch, onMounted, onUnmounted } from 'vue'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useAuthStore } from '@/stores/auth'
 
@@ -111,6 +111,12 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['close', 'member-removed'])
+
+const handleKeydown = (e) => {
+  if (e.key === 'Escape' && props.show) emit('close')
+}
+onMounted(() => document.addEventListener('keydown', handleKeydown))
+onUnmounted(() => document.removeEventListener('keydown', handleKeydown))
 
 const workspaceStore = useWorkspaceStore()
 const authStore = useAuthStore()

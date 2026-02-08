@@ -78,7 +78,7 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, onMounted, onUnmounted } from 'vue'
 
 const props = defineProps({
   show: {
@@ -92,6 +92,12 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['close', 'submit'])
+
+const handleKeydown = (e) => {
+  if (e.key === 'Escape' && props.show) emit('close')
+}
+onMounted(() => document.addEventListener('keydown', handleKeydown))
+onUnmounted(() => document.removeEventListener('keydown', handleKeydown))
 
 const form = ref({
   email: '',

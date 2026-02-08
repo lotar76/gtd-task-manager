@@ -693,6 +693,12 @@ const handleSubmitRenameWorkspace = async (newName) => {
   }
 }
 
+const handleKeydown = (e) => {
+  if (e.key === 'Escape') {
+    openWorkspaceMenuId.value = null
+  }
+}
+
 onMounted(async () => {
   await workspaceStore.fetchWorkspaces()
   await tasksStore.fetchAllTasks()
@@ -701,6 +707,7 @@ onMounted(async () => {
 
   // Закрываем меню воркспейсов при клике вне его
   document.addEventListener('click', handleClickOutsideWorkspaceMenu)
+  document.addEventListener('keydown', handleKeydown)
 })
 
 // Загружаем проекты при смене workspace
@@ -713,6 +720,7 @@ watch(() => workspaceStore.currentWorkspace?.id, (newWorkspaceId) => {
 onUnmounted(() => {
   tasksStore.stopSync()
   document.removeEventListener('click', handleClickOutsideWorkspaceMenu)
+  document.removeEventListener('keydown', handleKeydown)
 })
 
 const handleClickOutsideWorkspaceMenu = () => {

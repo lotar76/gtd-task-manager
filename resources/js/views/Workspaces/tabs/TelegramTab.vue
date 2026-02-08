@@ -196,6 +196,9 @@
             <div v-if="subError" class="text-red-600 dark:text-red-400 text-sm bg-red-50 dark:bg-red-900/20 p-3 rounded-lg">
               {{ subError }}
             </div>
+            <div v-if="subSuccess" class="text-green-600 dark:text-green-400 text-sm bg-green-50 dark:bg-green-900/20 p-3 rounded-lg">
+              {{ subSuccess }}
+            </div>
 
             <div class="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
               <button type="submit" :disabled="subLoading" class="btn btn-primary">
@@ -233,6 +236,7 @@ const botLoading = ref(false)
 const subLoading = ref(false)
 const botError = ref('')
 const subError = ref('')
+const subSuccess = ref('')
 const botTokenForm = ref('')
 
 const settings = ref({
@@ -352,10 +356,12 @@ const handleSubscribe = async () => {
 
 const handleUpdateSettings = async () => {
   subError.value = ''
+  subSuccess.value = ''
   subLoading.value = true
   try {
     await api.put(`/v1/workspaces/${workspaceId.value}/telegram-subscription`, notifyForm.value)
-    subError.value = ''
+    subSuccess.value = 'Настройки сохранены'
+    setTimeout(() => { subSuccess.value = '' }, 3000)
   } catch (error) {
     subError.value = error.response?.data?.message || 'Ошибка сохранения'
   } finally {
