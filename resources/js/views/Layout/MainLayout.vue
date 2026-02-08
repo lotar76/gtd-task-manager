@@ -251,6 +251,17 @@
         class="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden"
       />
 
+      <!-- Mobile FAB: open sidebar -->
+      <button
+        v-if="!sidebarOpen"
+        @click="sidebarOpen = true"
+        class="fixed bottom-5 right-5 z-30 lg:hidden w-12 h-12 bg-primary-600 hover:bg-primary-700 text-white rounded-full shadow-lg flex items-center justify-center active:scale-95 transition-transform"
+      >
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+        </svg>
+      </button>
+
       <!-- Main Content -->
       <main class="flex-1 flex flex-col overflow-hidden">
         <!-- Toolbar -->
