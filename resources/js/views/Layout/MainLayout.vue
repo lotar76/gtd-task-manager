@@ -251,16 +251,27 @@
         class="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden"
       />
 
-      <!-- Mobile FAB: open sidebar -->
-      <button
-        v-if="!sidebarOpen"
-        @click="sidebarOpen = true"
-        class="fixed bottom-5 right-5 z-30 lg:hidden w-12 h-12 bg-primary-600 hover:bg-primary-700 text-white rounded-full shadow-lg flex items-center justify-center active:scale-95 transition-transform"
-      >
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-        </svg>
-      </button>
+      <!-- Mobile FABs -->
+      <div v-if="!sidebarOpen" class="fixed bottom-5 right-5 z-30 lg:hidden flex flex-col gap-3 items-center">
+        <!-- Add task -->
+        <button
+          @click="showTaskModal = true"
+          class="w-10 h-10 bg-green-500 hover:bg-green-600 text-white rounded-full shadow-lg flex items-center justify-center active:scale-95 transition-transform"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+          </svg>
+        </button>
+        <!-- Open sidebar -->
+        <button
+          @click="sidebarOpen = true"
+          class="w-12 h-12 bg-primary-600 hover:bg-primary-700 text-white rounded-full shadow-lg flex items-center justify-center active:scale-95 transition-transform"
+        >
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+          </svg>
+        </button>
+      </div>
 
       <!-- Main Content -->
       <main class="flex-1 flex flex-col overflow-hidden">
