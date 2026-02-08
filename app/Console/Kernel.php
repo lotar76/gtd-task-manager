@@ -18,6 +18,21 @@ class Kernel extends ConsoleKernel
         $schedule->command('tasks:recalculate-statuses')
             ->dailyAt('00:00')
             ->timezone('Europe/Moscow');
+
+        // Telegram: утренний дайджест (проверяет каждую минуту, шлёт по настройке времени)
+        $schedule->command('telegram:morning-digest')
+            ->everyMinute()
+            ->timezone('Europe/Moscow');
+
+        // Telegram: напоминания о задачах (проверяет каждую минуту)
+        $schedule->command('telegram:task-reminders')
+            ->everyMinute()
+            ->timezone('Europe/Moscow');
+
+        // Telegram: просроченные задачи (раз в день в 09:00 МСК)
+        $schedule->command('telegram:overdue-alerts')
+            ->dailyAt('09:00')
+            ->timezone('Europe/Moscow');
     }
 
     /**

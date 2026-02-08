@@ -94,6 +94,11 @@ const routes = [
             name: 'Goals',
             component: () => import('@/views/Goals/Index.vue'),
           },
+          {
+            path: 'settings',
+            name: 'WorkspaceSettings',
+            component: () => import('@/views/Workspaces/Settings.vue'),
+          },
         ],
       },
     ],

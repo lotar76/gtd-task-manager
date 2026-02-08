@@ -12,7 +12,10 @@ use App\Http\Controllers\Api\V1\GoalController;
 use App\Http\Controllers\Api\V1\ProjectController;
 use App\Http\Controllers\Api\V1\TagController;
 use App\Http\Controllers\Api\V1\TaskController;
+use App\Http\Controllers\Api\V1\TelegramSettingsController;
+use App\Http\Controllers\Api\V1\TelegramSubscriptionController;
 use App\Http\Controllers\Api\V1\WorkspaceController;
+use App\Http\Controllers\Api\TelegramWebhookController;
 
 /*
 |--------------------------------------------------------------------------
@@ -33,10 +36,13 @@ Route::get('/test', function () {
 // API Version 1
 Route::prefix('v1')->group(function () {
     
+    // Telegram Webhook (публичный, защищён через secret в URL)
+    Route::post('/telegram/webhook/{secret}', [TelegramWebhookController::class, 'handle']);
+
     // Публичные маршруты (без аутентификации)
     Route::post('/register', [AuthController::class, 'register'])
         ->middleware('throttle:auth');
-    
+
     Route::post('/login', [AuthController::class, 'login'])
         ->middleware('throttle:auth');
 
@@ -105,6 +111,17 @@ Route::prefix('v1')->group(function () {
             Route::get('attachments/{attachment}', [AttachmentController::class, 'show']);
             Route::get('attachments/{attachment}/download', [AttachmentController::class, 'download']);
             Route::delete('attachments/{attachment}', [AttachmentController::class, 'destroy']);
+
+            // Telegram — настройки бота (owner only)
+            Route::get('telegram-settings', [TelegramSettingsController::class, 'show']);
+            Route::post('telegram-settings', [TelegramSettingsController::class, 'store']);
+            Route::delete('telegram-settings', [TelegramSettingsController::class, 'destroy']);
+
+            // Telegram — подписка участника
+            Route::get('telegram-subscription', [TelegramSubscriptionController::class, 'show']);
+            Route::post('telegram-subscription', [TelegramSubscriptionController::class, 'store']);
+            Route::put('telegram-subscription', [TelegramSubscriptionController::class, 'update']);
+            Route::delete('telegram-subscription', [TelegramSubscriptionController::class, 'destroy']);
         });
 
         // Работа с файлами в S3 (старый функционал)

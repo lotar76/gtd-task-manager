@@ -31,6 +31,7 @@ import {
   FolderIcon,
   CalendarDaysIcon,
   RectangleStackIcon,
+  Cog6ToothIcon,
 } from '@heroicons/vue/24/outline'
 
 const props = defineProps({
@@ -61,6 +62,7 @@ const iconMap = {
   'calendar-days': CalendarDaysIcon,
   target: FolderIcon, // Заглушка, можно добавить кастомную иконку
   'rectangle-stack': RectangleStackIcon,
+  cog: Cog6ToothIcon,
 }
 
 const iconComponent = computed(() => iconMap[props.icon] || FolderIcon)

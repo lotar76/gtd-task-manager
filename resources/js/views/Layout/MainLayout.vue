@@ -80,40 +80,19 @@
                       v-if="openWorkspaceMenuId === ws.id"
                       class="absolute right-0 mt-1 w-48 bg-white dark:bg-gray-700 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 py-1 z-50"
                     >
-                      <button
-                        @click="handleViewMembers(ws)"
-                        class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
-            >
-                        Участники
-                      </button>
-                      <button
-                        v-if="canManageWorkspace(ws)"
-                        @click="handleRenameWorkspace(ws)"
-                        class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+                      <router-link
+                        :to="`/workspaces/${ws.id}/settings`"
+                        @click="openWorkspaceMenuId = null"
+                        class="block w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
                       >
-                        Переименовать
-                      </button>
-                      <button
-                        v-if="canManageWorkspace(ws)"
-                        @click="handleAddMember(ws)"
-                        class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
-                      >
-                        Добавить пользователя
-                      </button>
+                        Настройки
+                      </router-link>
                       <button
                         v-if="canManageWorkspace(ws) && getWorkspaceTaskCount(ws.id) === 0"
                         @click="handleDeleteWorkspace(ws)"
                         class="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                       >
                         Удалить пространство
-                      </button>
-                      <button
-                        v-if="!canManageWorkspace(ws)"
-                        @click="openWorkspaceMenuId = null"
-                        class="w-full px-4 py-2 text-left text-sm text-gray-500 italic"
-                        disabled
-                      >
-                        Нет доступных действий
                       </button>
                     </div>
                   </Transition>

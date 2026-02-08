@@ -85,6 +85,12 @@ class User extends Authenticatable
         return $this->hasMany(Task::class, 'assigned_to');
     }
 
+    // Подписки на Telegram
+    public function telegramSubscriptions(): HasMany
+    {
+        return $this->hasMany(TelegramSubscription::class);
+    }
+
     // Комментарии пользователя
     public function comments(): HasMany
     {
