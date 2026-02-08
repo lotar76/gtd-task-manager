@@ -265,7 +265,10 @@ const isOwner = computed(() => {
 const workspaceId = computed(() => props.workspace?.id)
 
 const loadData = async () => {
-  if (!workspaceId.value) return
+  if (!workspaceId.value) {
+    loading.value = false
+    return
+  }
 
   loading.value = true
   try {
