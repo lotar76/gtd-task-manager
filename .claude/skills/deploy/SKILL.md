@@ -7,6 +7,19 @@ description: Деплой GTD Task Manager на production сервер
 
 Когда пользователь вызывает `/deploy`, выполни следующие шаги:
 
+## 0. Проверка окружения (КРИТИЧНО!)
+**Проверь что контейнер api_frontend запущен:**
+```bash
+docker ps | grep api_frontend
+```
+
+Если контейнер НЕ запущен, запусти его:
+```bash
+docker-compose -f docker-compose.local.yml up -d frontend
+```
+
+Подожди 5-10 секунд чтобы контейнер полностью стартовал.
+
 ## 1. Сборка фронтенда
 Выполни команду через Bash tool:
 ```bash
@@ -14,25 +27,20 @@ docker exec -e VITE_API_URL=/api api_frontend npm run build
 ```
 **ВАЖНО:** Переменная `VITE_API_URL=/api` обязательна! Без неё контейнер использует dev-URL `http://localhost:9090/api`, который «вшивается» в бандл и ломает production.
 
-## 2. Очистка старых assets и добавление в git
-Удали старые asset-файлы, которых нет в текущем manifest, затем добавь изменения:
+**КРИТИЧЕСКАЯ ПРОВЕРКА:** После сборки ОБЯЗАТЕЛЬНО проверь что появились изменения:
 ```bash
-python3 -c "
-import json, os, glob
-with open('public/.vite/manifest.json') as f:
-    data = json.load(f)
-active = set()
-for key, val in data.items():
-    if 'file' in val: active.add(val['file'])
-    if 'css' in val:
-        for c in val['css']: active.add(c)
-for filepath in glob.glob('public/assets/*'):
-    relative = 'assets/' + os.path.basename(filepath)
-    if relative not in active:
-        os.remove(filepath)
-"
+git status public/
 ```
-Затем выполни `git add .` через Bash tool.
+
+**Если `git status` показывает "nothing to commit, working tree clean"** — ОСТАНОВИСЬ! Сборка не выполнилась. Возможные причины:
+- Контейнер не запущен (см. шаг 0)
+- Нет изменений в исходниках `resources/js/`
+- Проблема с npm/vite внутри контейнера
+
+В этом случае **СПРОСИ ПОЛЬЗОВАТЕЛЯ** что делать, не продолжай деплой!
+
+## 2. Добавление изменений в git
+Выполни `git add public/` через Bash tool.
 
 ## 3. Определение типа деплоя
 - Выполни `git diff --cached --name-only` чтобы получить список изменённых файлов
@@ -81,12 +89,14 @@ ssh root@37.220.82.214 "cd /home/projects/todo && docker-compose -f docker-compo
 
 ## Известные грабли (чтобы не наступать повторно)
 
-1. **VITE_API_URL** — контейнер `api_frontend` имеет `VITE_API_URL=http://localhost:9090/api` из docker-compose.local.yml. При билде ВСЕГДА передавать `-e VITE_API_URL=/api`.
+1. **Незапущенный контейнер api_frontend** (2024-02-09) — если `api_frontend` не запущен, команда `docker exec` завершается без ошибки, но сборка НЕ выполняется. Фронтенд не пересобирается, и на прод попадают только исходники без собранных файлов. **Решение:** ВСЕГДА проверять что контейнер запущен (шаг 0) и ВСЕГДА проверять `git status public/` после сборки (шаг 1).
 
-2. **Route cache** — если удалён/переименован контроллер, а route:cache не очищен, Laravel падает с 500 на ВСЕХ запросах. Поэтому шаг 6 обязателен.
+2. **VITE_API_URL** — контейнер `api_frontend` имеет `VITE_API_URL=http://localhost:9090/api` из docker-compose.local.yml. При билде ВСЕГДА передавать `-e VITE_API_URL=/api`.
 
-3. **Config cache** — новые env-переменные не подхватываются без `config:cache`. После добавления переменных в `.env` на сервере ОБЯЗАТЕЛЬНО пересоздать кэш.
+3. **Route cache** — если удалён/переименован контроллер, а route:cache не очищен, Laravel падает с 500 на ВСЕХ запросах. Поэтому шаг 6 обязателен.
 
-4. **Docker env_file** — `docker-compose.prod.yml` использует `env_file: .env` (не `environment:`). Все env-переменные должны быть в `.env` на сервере.
+4. **Config cache** — новые env-переменные не подхватываются без `config:cache`. После добавления переменных в `.env` на сервере ОБЯЗАТЕЛЬНО пересоздать кэш.
 
-5. **git push** — пушим в текущую ветку (не обязательно main). На сервере `git pull` подтянет правильную ветку.
+5. **Docker env_file** — `docker-compose.prod.yml` использует `env_file: .env` (не `environment:`). Все env-переменные должны быть в `.env` на сервере.
+
+6. **git push** — пушим в текущую ветку (не обязательно main). На сервере `git pull` подтянет правильную ветку.
