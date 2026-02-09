@@ -125,7 +125,7 @@ const handleSaveProject = async (projectData) => {
     }
     showProjectModal.value = false
     selectedProject.value = null
-    await projectsStore.fetchProjectsForSelectedWorkspaces()
+    await projectsStore.fetchAllProjects({ force: true })
   } catch (error) {
     console.error('Error saving project:', error)
     projectError.value = error.response?.data?.message || error.message || 'Ошибка при сохранении проекта'
@@ -145,7 +145,7 @@ const handleArchiveProject = async (project) => {
 
   try {
     await projectsStore.archiveProject(project.id)
-    await projectsStore.fetchProjectsForSelectedWorkspaces()
+    await projectsStore.fetchAllProjects({ force: true })
   } catch (error) {
     console.error('Error archiving project:', error)
     alert('Ошибка при архивировании проекта: ' + (error.response?.data?.message || error.message))
@@ -153,6 +153,6 @@ const handleArchiveProject = async (project) => {
 }
 
 onMounted(async () => {
-  await projectsStore.fetchProjectsForSelectedWorkspaces()
+  await projectsStore.fetchAllProjects()
 })
 </script>

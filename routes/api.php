@@ -59,6 +59,9 @@ Route::prefix('v1')->group(function () {
         // Все задачи пользователя (по всем workspace)
         Route::get('/tasks', [TaskController::class, 'all']);
 
+        // Все проекты пользователя (по всем workspace)
+        Route::get('/projects', [ProjectController::class, 'all']);
+
         // === WORKSPACES (Команды) ===
         Route::apiResource('workspaces', WorkspaceController::class);
         Route::get('workspaces/{workspace}/members', [WorkspaceController::class, 'members']);

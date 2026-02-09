@@ -4,146 +4,167 @@ import api from '@/services/api'
 import { useWorkspaceStore } from './workspace'
 
 export const useProjectsStore = defineStore('projects', () => {
-  const projects = ref([])
+  const allProjects = ref([])
   const loading = ref(false)
+  const loaded = ref(false)
 
   const workspaceStore = useWorkspaceStore()
-  const workspaceId = computed(() => workspaceStore.currentWorkspace?.id)
+
   const selectedWorkspaceIds = computed(() =>
     workspaceStore.selectedWorkspaces.map(ws => ws.id)
   )
 
-  const fetchProjects = async (includeArchived = false) => {
-    if (!workspaceId.value) return
+  // Все проекты, отфильтрованные по выбранным workspace
+  const filteredProjects = computed(() => {
+    const ids = selectedWorkspaceIds.value
+    if (!ids.length) return []
+    return allProjects.value.filter(p => ids.includes(p.workspace_id))
+  })
 
+  // Активные и архивные проекты (отфильтрованные)
+  const activeProjects = computed(() => {
+    return filteredProjects.value.filter(p => p.status === 'active' || !p.status)
+  })
+
+  const archivedProjects = computed(() => {
+    return filteredProjects.value.filter(p => p.status === 'archived')
+  })
+
+  // === Единственный метод загрузки ===
+  const fetchAllProjects = async ({ force = false, includeArchived = false } = {}) => {
+    if (loaded.value && !force) return
     loading.value = true
     try {
       const params = includeArchived ? { include_archived: true } : {}
-      const response = await api.get(`/v1/workspaces/${workspaceId.value}/projects`, { params })
-      // API возвращает { success: true, data: [...], message: '...' }
-      projects.value = response.data.data || response.data || []
+      const response = await api.get('/v1/projects', { params })
+      allProjects.value = response.data.data || response.data || []
+      loaded.value = true
     } finally {
       loading.value = false
     }
   }
 
-  // Загрузить проекты для всех выбранных workspace
-  const fetchProjectsForSelectedWorkspaces = async (includeArchived = false) => {
-    if (selectedWorkspaceIds.value.length === 0) return
-
-    loading.value = true
-    try {
-      const params = includeArchived ? { include_archived: true } : {}
-
-      // Загружаем проекты для каждого выбранного workspace параллельно
-      const responses = await Promise.all(
-        selectedWorkspaceIds.value.map(wsId =>
-          api.get(`/v1/workspaces/${wsId}/projects`, { params })
-            .then(response => ({
-              workspace_id: wsId,
-              projects: response.data.data || response.data || []
-            }))
-            .catch(error => {
-              console.error(`Error fetching projects for workspace ${wsId}:`, error)
-              return { workspace_id: wsId, projects: [] }
-            })
-        )
-      )
-
-      // Объединяем проекты из всех workspace
-      projects.value = responses.flatMap(r => r.projects)
-    } finally {
-      loading.value = false
-    }
-  }
-
-  const fetchProject = async (projectId) => {
-    if (!workspaceId.value) return
-    
-    loading.value = true
-    try {
-      const response = await api.get(`/v1/workspaces/${workspaceId.value}/projects/${projectId}`)
-      // API возвращает { success: true, data: {...}, message: '...' }
-      return response.data.data || response.data
-    } finally {
-      loading.value = false
-    }
-  }
+  // === CRUD с локальным обновлением ===
 
   const createProject = async (projectData) => {
-    // Используем workspace_id из данных формы, если есть, иначе текущий workspace
-    const targetWorkspaceId = projectData.workspace_id || workspaceId.value
-    if (!targetWorkspaceId) return
+    const workspaceId = projectData?.workspace_id || workspaceStore.currentWorkspace?.id
+    if (!workspaceId) {
+      console.error('Cannot create project: workspace_id not found')
+      return
+    }
 
-    const response = await api.post(`/v1/workspaces/${targetWorkspaceId}/projects`, projectData)
-    const project = response.data.data || response.data
-    projects.value.push(project)
-    return project
+    projectData.workspace_id = workspaceId
+
+    const response = await api.post(`/v1/workspaces/${workspaceId}/projects`, projectData)
+    const newProject = response.data.data || response.data
+
+    // Добавляем в начало массива
+    allProjects.value.unshift(newProject)
+    return newProject
   }
 
   const updateProject = async (projectId, projectData) => {
-    // Используем workspace_id из данных формы, если есть, иначе текущий workspace
-    const targetWorkspaceId = projectData.workspace_id || workspaceId.value
-    if (!targetWorkspaceId) return
+    const existingProject = allProjects.value.find(p => p.id === projectId)
+    const wsId = existingProject?.workspace_id || projectData?.workspace_id || workspaceStore.currentWorkspace?.id
 
-    const response = await api.put(`/v1/workspaces/${targetWorkspaceId}/projects/${projectId}`, projectData)
-    const project = response.data.data || response.data
-    const index = projects.value.findIndex(p => p.id === projectId)
-    if (index !== -1) {
-      projects.value[index] = project
+    if (!wsId) {
+      console.error('Cannot update project: workspace_id not found')
+      return
     }
-    return project
+
+    const dataToSend = { ...projectData }
+    delete dataToSend.workspace_id
+
+    const response = await api.put(`/v1/workspaces/${wsId}/projects/${projectId}`, dataToSend)
+    const updated = response.data.data || response.data
+
+    const index = allProjects.value.findIndex(p => p.id === projectId)
+    if (index !== -1) {
+      allProjects.value[index] = updated
+    }
+    return updated
   }
 
   const archiveProject = async (projectId) => {
-    // Находим проект чтобы получить его workspace_id
-    const project = projects.value.find(p => p.id === projectId)
+    const project = allProjects.value.find(p => p.id === projectId)
     return await updateProject(projectId, {
-      workspace_id: project?.workspace_id,
       status: 'archived'
     })
   }
 
   const unarchiveProject = async (projectId) => {
-    // Находим проект чтобы получить его workspace_id
-    const project = projects.value.find(p => p.id === projectId)
+    const project = allProjects.value.find(p => p.id === projectId)
     return await updateProject(projectId, {
-      workspace_id: project?.workspace_id,
       status: 'active'
     })
   }
 
   const deleteProject = async (projectId) => {
-    // Находим проект чтобы получить его workspace_id
-    const project = projects.value.find(p => p.id === projectId)
-    const targetWorkspaceId = project?.workspace_id || workspaceId.value
-    if (!targetWorkspaceId) return
+    const project = allProjects.value.find(p => p.id === projectId)
+    const wsId = project?.workspace_id || workspaceStore.currentWorkspace?.id
 
-    await api.delete(`/v1/workspaces/${targetWorkspaceId}/projects/${projectId}`)
-    projects.value = projects.value.filter(p => p.id !== projectId)
+    if (!wsId) {
+      console.error('Cannot delete project: workspace_id not found')
+      return
+    }
+
+    await api.delete(`/v1/workspaces/${wsId}/projects/${projectId}`)
+    allProjects.value = allProjects.value.filter(p => p.id !== projectId)
   }
 
-  const activeProjects = computed(() => {
-    return projects.value.filter(p => p.status === 'active' || !p.status)
-  })
+  const fetchProject = async (projectId) => {
+    // Сначала проверяем локальный кеш
+    const cached = allProjects.value.find(p => p.id === projectId)
+    if (cached) return cached
 
-  const archivedProjects = computed(() => {
-    return projects.value.filter(p => p.status === 'archived')
-  })
+    // Если нет в кеше, загружаем с сервера
+    const project = allProjects.value.find(p => p.id === projectId)
+    const wsId = project?.workspace_id || workspaceStore.currentWorkspace?.id
+    if (!wsId) return null
+
+    loading.value = true
+    try {
+      const response = await api.get(`/v1/workspaces/${wsId}/projects/${projectId}`)
+      const projectData = response.data.data || response.data
+
+      // Добавляем в кеш если его там нет
+      const index = allProjects.value.findIndex(p => p.id === projectId)
+      if (index === -1) {
+        allProjects.value.push(projectData)
+      } else {
+        allProjects.value[index] = projectData
+      }
+
+      return projectData
+    } finally {
+      loading.value = false
+    }
+  }
+
+  // Фоновая синхронизация
+  let syncInterval = null
+  const startSync = () => {
+    syncInterval = setInterval(() => fetchAllProjects({ force: true }), 5 * 60 * 1000)
+  }
+  const stopSync = () => {
+    if (syncInterval) clearInterval(syncInterval)
+  }
 
   return {
-    projects,
+    allProjects,
+    loading,
+    loaded,
+    filteredProjects,
     activeProjects,
     archivedProjects,
-    loading,
-    fetchProjects,
-    fetchProjectsForSelectedWorkspaces,
+    fetchAllProjects,
     fetchProject,
     createProject,
     updateProject,
     archiveProject,
     unarchiveProject,
     deleteProject,
+    startSync,
+    stopSync,
   }
 })
-

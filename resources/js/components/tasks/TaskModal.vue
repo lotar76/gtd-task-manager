@@ -494,10 +494,10 @@ watch(() => props.show, (newShow) => {
   }
 })
 
-// Загружаем проекты при открытии модалки
+// Загружаем проекты при открытии модалки (если еще не загружены)
 watch(() => props.show, (newShow) => {
-  if (newShow && currentWorkspace.value?.id) {
-    projectsStore.fetchProjects()
+  if (newShow && !projectsStore.loaded) {
+    projectsStore.fetchAllProjects()
   }
 })
 

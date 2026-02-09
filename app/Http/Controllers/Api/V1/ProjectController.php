@@ -14,6 +14,32 @@ use Illuminate\Support\Facades\Auth;
 
 class ProjectController extends Controller
 {
+    // Все проекты пользователя (по всем workspace)
+    public function all(Request $request): JsonResponse
+    {
+        $workspaceIds = $request->user()
+            ->allWorkspaces()
+            ->pluck('id');
+
+        $query = Project::whereIn('workspace_id', $workspaceIds)
+            ->with(['goal', 'creator', 'workspace:id,name'])
+            ->withCount('tasks');
+
+        // Фильтр по статусу (по умолчанию только активные)
+        if ($request->has('include_archived') && $request->include_archived) {
+            // Показываем все проекты
+        } else {
+            $query->where(function($q) {
+                $q->where('status', 'active')
+                  ->orWhereNull('status');
+            });
+        }
+
+        $projects = $query->orderBy('name')->get();
+
+        return ApiResponse::success($projects, 'Список проектов получен');
+    }
+
     // Список проектов
     public function index(Request $request, Workspace $workspace): JsonResponse
     {

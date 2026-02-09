@@ -236,7 +236,7 @@
                           ({{ project.tasks_count }})
                         </span>
                       </div>
-                      <div v-if="selectedWorkspaceIds.length > 1" class="text-xs text-gray-400 dark:text-gray-500 truncate">
+                      <div class="text-xs text-gray-400 dark:text-gray-500 truncate">
                         {{ getWorkspaceName(project.workspace_id) }}
                       </div>
                     </div>
@@ -529,7 +529,7 @@ const handleSaveProject = async (projectData) => {
     }
     showProjectModal.value = false
     selectedProject.value = null
-    await projectsStore.fetchProjects()
+    await projectsStore.fetchAllProjects({ force: true })
   } catch (error) {
     console.error('Error saving project:', error)
     projectError.value = error.response?.data?.message || error.message || 'Ошибка при сохранении проекта'
@@ -549,7 +549,7 @@ const handleArchiveProject = async (project) => {
   
   try {
     await projectsStore.archiveProject(project.id)
-    await projectsStore.fetchProjects()
+    await projectsStore.fetchAllProjects({ force: true })
   } catch (error) {
     console.error('Error archiving project:', error)
     alert('Ошибка при архивировании проекта: ' + (error.response?.data?.message || error.message))
@@ -754,27 +754,25 @@ onMounted(async () => {
     await workspaceStore.fetchWorkspaces()
     await Promise.all([
       tasksStore.fetchAllTasks(),
-      projectsStore.fetchProjectsForSelectedWorkspaces(),
+      projectsStore.fetchAllProjects(),
     ])
   } finally {
     appLoading.value = false
   }
   tasksStore.startSync()
+  projectsStore.startSync()
 
   // Закрываем меню воркспейсов при клике вне его
   document.addEventListener('click', handleClickOutsideWorkspaceMenu)
   document.addEventListener('keydown', handleKeydown)
 })
 
-// Загружаем проекты при смене выбранных workspace
-watch(() => selectedWorkspaceIds.value, () => {
-  if (selectedWorkspaceIds.value.length > 0) {
-    projectsStore.fetchProjectsForSelectedWorkspaces()
-  }
-}, { deep: true })
+// ПРИМЕЧАНИЕ: watch для перезагрузки проектов при смене workspace больше не нужен,
+// т.к. теперь используется локальная фильтрация через computed filteredProjects
 
 onUnmounted(() => {
   tasksStore.stopSync()
+  projectsStore.stopSync()
   document.removeEventListener('click', handleClickOutsideWorkspaceMenu)
   document.removeEventListener('keydown', handleKeydown)
 })
