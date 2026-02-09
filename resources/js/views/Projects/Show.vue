@@ -19,26 +19,29 @@
           </div>
         </div>
         
-        <div class="flex items-center space-x-2">
+        <div class="flex items-center space-x-1">
           <button
             @click="handleEditProject"
-            class="btn btn-secondary"
+            class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            title="Редактировать"
           >
-            Редактировать
+            <PencilIcon class="w-5 h-5" />
           </button>
           <button
             v-if="project?.status !== 'archived'"
             @click="handleArchiveProject"
-            class="btn btn-secondary"
+            class="hidden lg:block p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            title="Архивировать"
           >
-            Архивировать
+            <ArchiveBoxArrowDownIcon class="w-5 h-5" />
           </button>
           <button
             v-else
             @click="handleUnarchiveProject"
-            class="btn btn-secondary"
+            class="hidden lg:block p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            title="Восстановить"
           >
-            Восстановить
+            <ArrowUturnLeftIcon class="w-5 h-5" />
           </button>
         </div>
       </div>
@@ -50,30 +53,39 @@
 
       <!-- Project Tasks -->
       <div v-else>
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        <!-- Empty State -->
+        <div v-if="tasks.length === 0" class="py-12 text-center">
+          <div class="max-w-md mx-auto">
+            <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center">
+              <RectangleStackIcon class="w-8 h-8 text-blue-500" />
+            </div>
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">В проекте пока нет задач</h3>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-6 leading-relaxed">
+              Проект — это любая цель, требующая более одного действия.
+              Разбейте его на конкретные шаги и добавьте первую задачу,
+              чтобы начать двигаться к результату.
+            </p>
+            <button
+              @click="handleCreateTask"
+              class="inline-flex items-center px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors text-sm font-medium"
+            >
+              <PlusIcon class="w-5 h-5 mr-1.5" />
+              Добавить задачу
+            </button>
+          </div>
+        </div>
+
+        <!-- Task List -->
+        <div v-else class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
           <div class="p-4 border-b border-gray-200 dark:border-gray-700">
             <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
               Задачи проекта
-              <span v-if="tasks.length > 0" class="text-sm font-normal text-gray-500 dark:text-gray-400">
+              <span class="text-sm font-normal text-gray-500 dark:text-gray-400">
                 ({{ tasks.length }})
               </span>
             </h2>
           </div>
-
-          <div v-if="tasks.length === 0" class="p-12 text-center text-gray-500 dark:text-gray-400">
-            <svg class="w-16 h-16 mx-auto mb-4 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-            </svg>
-            <p>Нет задач в проекте</p>
-            <button
-              @click="handleCreateTask"
-              class="mt-4 btn btn-primary"
-            >
-              Создать задачу
-            </button>
-          </div>
-
-          <div v-else class="divide-y divide-gray-200 dark:divide-gray-700">
+          <div class="divide-y divide-gray-200 dark:divide-gray-700">
             <TaskList
               :tasks="tasks"
               @task-click="handleTaskClick"
@@ -110,6 +122,8 @@ import { useRoute, useRouter } from 'vue-router'
 import { useProjectsStore } from '@/stores/projects'
 import { useTasksStore } from '@/stores/tasks'
 import { useWorkspaceStore } from '@/stores/workspace'
+import { RectangleStackIcon, PencilIcon, ArchiveBoxArrowDownIcon, ArrowUturnLeftIcon } from '@heroicons/vue/24/outline'
+import { PlusIcon } from '@heroicons/vue/24/solid'
 import TaskList from '@/components/tasks/TaskList.vue'
 import TaskModal from '@/components/tasks/TaskModal.vue'
 import ProjectModal from '@/components/projects/ProjectModal.vue'
@@ -218,14 +232,11 @@ const handleTaskClick = (task) => {
 const handleSaveTask = async (taskData) => {
   taskError.value = ''
   try {
-    // Устанавливаем project_id для новой задачи
-    if (!selectedTask.value) {
-      taskData.project_id = project.value.id
-    }
-    
-    if (selectedTask.value) {
+    if (selectedTask.value?.id) {
       await tasksStore.updateTask(selectedTask.value.id, taskData)
     } else {
+      // Новая задача — привязываем к проекту
+      taskData.project_id = project.value.id
       await tasksStore.createTask(taskData)
     }
     showTaskModal.value = false

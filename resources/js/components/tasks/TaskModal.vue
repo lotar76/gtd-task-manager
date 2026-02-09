@@ -11,7 +11,7 @@
             <!-- Header -->
             <div class="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
               <h3 class="text-xl font-semibold text-gray-900 dark:text-white">
-                {{ task ? 'Редактировать задачу' : 'Новая задача' }}
+                {{ task?.id ? 'Редактировать задачу' : 'Новая задача' }}
               </h3>
               <button @click="$emit('close')" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

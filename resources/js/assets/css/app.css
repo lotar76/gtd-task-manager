@@ -8,6 +8,42 @@
   }
 }
 
+/* Thin scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: theme('colors.gray.300') transparent;
+}
+
+.dark * {
+  scrollbar-color: theme('colors.gray.600') transparent;
+}
+
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: theme('colors.gray.300');
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: theme('colors.gray.400');
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: theme('colors.gray.600');
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: theme('colors.gray.500');
+}
+
 @layer components {
   .btn {
     @apply px-4 py-2 rounded-lg font-medium transition-colors duration-200;
