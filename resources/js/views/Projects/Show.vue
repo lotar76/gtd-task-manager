@@ -155,6 +155,10 @@ const loadProject = async () => {
   loading.value = true
   try {
     const projectData = await projectsStore.fetchProject(projectId)
+    if (!projectData) {
+      router.push(`/workspaces/${workspaceId}/projects`)
+      return
+    }
     project.value = projectData
 
     // Проверяем, что проект принадлежит workspace из URL
@@ -220,6 +224,7 @@ const handleUnarchiveProject = async () => {
 }
 
 const handleCreateTask = () => {
+  if (!project.value) return
   selectedTask.value = { project_id: project.value.id }
   showTaskModal.value = true
 }

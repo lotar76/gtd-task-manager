@@ -23,7 +23,9 @@ class ProjectController extends Controller
 
         $query = Project::whereIn('workspace_id', $workspaceIds)
             ->with(['goal', 'creator', 'workspace:id,name'])
-            ->withCount('tasks');
+            ->withCount(['tasks' => function ($query) {
+                $query->where('status', '!=', 'completed');
+            }]);
 
         // Фильтр по статусу (по умолчанию только активные)
         if ($request->has('include_archived') && $request->include_archived) {
@@ -47,7 +49,9 @@ class ProjectController extends Controller
 
         $query = $workspace->projects()
             ->with(['goal', 'creator'])
-            ->withCount('tasks');
+            ->withCount(['tasks' => function ($query) {
+                $query->where('status', '!=', 'completed');
+            }]);
 
         // Фильтр по статусу (по умолчанию только активные)
         if ($request->has('include_archived') && $request->include_archived) {

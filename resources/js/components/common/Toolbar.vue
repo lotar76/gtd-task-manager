@@ -206,9 +206,11 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useThemeStore } from '@/stores/theme'
-import logo from '@/assets/images/logo.jpg'
+import logoLight from '@/assets/images/logo.jpg'
+import logoDark from '@/assets/images/logo-bg.png'
 
 const themeStore = useThemeStore()
+const logo = computed(() => themeStore.isDark ? logoDark : logoLight)
 
 const props = defineProps({
   user: {

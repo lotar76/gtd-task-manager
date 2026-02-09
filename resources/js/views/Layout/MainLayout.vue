@@ -78,25 +78,21 @@
                     : 'hover:bg-gray-50 dark:hover:bg-gray-700'
                 ]"
               >
-                <!-- Checkbox для выбора workspace -->
-                <label class="flex-1 flex items-center px-3 py-2 text-sm cursor-pointer">
-                  <input
-                    type="checkbox"
-                    :checked="selectedWorkspaceIds.includes(ws.id)"
-                    @change="toggleWorkspace(ws)"
-                    class="mr-3 h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded dark:bg-gray-700"
-                  />
-                  <span 
+                <button
+                  class="flex-1 flex items-center px-3 py-2 text-sm cursor-pointer text-left"
+                  @click="toggleWorkspace(ws)"
+                >
+                  <span
                     :class="[
                       'truncate',
                       selectedWorkspaceIds.includes(ws.id)
                         ? 'text-primary-700 dark:text-primary-400 font-medium'
-                        : 'text-gray-700 dark:text-gray-300'
+                        : 'text-gray-500 dark:text-gray-400'
                     ]"
                   >
                     {{ ws.name }}
                   </span>
-                </label>
+                </button>
                 
                 <!-- Settings gear -->
                 <router-link
@@ -422,10 +418,12 @@ import { useAuthStore } from '@/stores/auth'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useTasksStore } from '@/stores/tasks'
 import { useProjectsStore } from '@/stores/projects'
+import { useThemeStore } from '@/stores/theme'
 import NavLink from '@/components/common/NavLink.vue'
 import DroppableNavLink from '@/components/common/DroppableNavLink.vue'
 import Toolbar from '@/components/common/Toolbar.vue'
-import logo from '@/assets/images/logo.jpg'
+import logoLight from '@/assets/images/logo.jpg'
+import logoDark from '@/assets/images/logo-bg.png'
 import WorkspaceModal from '@/components/workspace/WorkspaceModal.vue'
 import AddMemberModal from '@/components/workspace/AddMemberModal.vue'
 import RenameWorkspaceModal from '@/components/workspace/RenameWorkspaceModal.vue'
@@ -439,6 +437,8 @@ const authStore = useAuthStore()
 const workspaceStore = useWorkspaceStore()
 const tasksStore = useTasksStore()
 const projectsStore = useProjectsStore()
+const themeStore = useThemeStore()
+const logo = computed(() => themeStore.isDark ? logoDark : logoLight)
 const appLoading = ref(true)
 const loadingText = ref('Загрузка...'.split(''))
 const sidebarOpen = ref(false)
