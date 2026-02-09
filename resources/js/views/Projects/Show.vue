@@ -131,21 +131,21 @@ const projectError = ref('')
 
 const loadProject = async () => {
   const projectId = parseInt(route.params.projectId)
-  const workspaceId = workspaceStore.currentWorkspace?.id
-  
+  const workspaceId = parseInt(route.params.id) // Берем из URL, а не из currentWorkspace
+
   if (!workspaceId || !projectId) {
     console.error('Missing workspaceId or projectId', { workspaceId, projectId })
     return
   }
-  
+
   loading.value = true
   try {
     const projectData = await projectsStore.fetchProject(projectId)
     project.value = projectData
-    
-    // Проверяем, что проект принадлежит текущему workspace
+
+    // Проверяем, что проект принадлежит workspace из URL
     if (project.value.workspace_id !== workspaceId) {
-      console.error('Project does not belong to current workspace')
+      console.error('Project does not belong to workspace from URL')
       router.push(`/workspaces/${workspaceId}/projects`)
       return
     }
@@ -154,7 +154,7 @@ const loadProject = async () => {
   } catch (error) {
     console.error('Error loading project:', error)
     console.error('Error details:', error.response?.data)
-    
+
     // Если проект не найден, перенаправляем на список проектов
     if (error.response?.status === 404) {
       router.push(`/workspaces/${workspaceId}/projects`)
@@ -172,8 +172,8 @@ const loadTasks = () => {
     return
   }
 
-  // Фильтруем задачи из store по project_id
-  tasks.value = tasksStore.filteredTasks.filter(t => t.project_id === projectId)
+  // Фильтруем задачи из ALL tasks по project_id (не учитываем выбранные workspace)
+  tasks.value = tasksStore.allTasks.filter(t => t.project_id === projectId)
 }
 
 const handleEditProject = () => {
@@ -184,11 +184,11 @@ const handleArchiveProject = async () => {
   if (!confirm(`Архивировать проект "${project.value?.name}"?`)) {
     return
   }
-  
+
   try {
     await projectsStore.archiveProject(project.value.id)
-    await loadProject()
-    router.push(`/workspaces/${workspaceStore.currentWorkspace?.id}/projects`)
+    // Редиректим на список проектов workspace'а, которому принадлежит проект
+    router.push(`/workspaces/${project.value.workspace_id}/projects`)
   } catch (error) {
     console.error('Error archiving project:', error)
     alert('Ошибка при архивировании проекта')
@@ -206,7 +206,7 @@ const handleUnarchiveProject = async () => {
 }
 
 const handleCreateTask = () => {
-  selectedTask.value = null
+  selectedTask.value = { project_id: project.value.id }
   showTaskModal.value = true
 }
 
@@ -273,19 +273,13 @@ const handleToggleComplete = async (task) => {
   }
 }
 
-// Загружаем проект при монтировании и смене параметров
-watch(() => route.params.projectId, () => {
+// Загружаем проект при монтировании и смене параметров роута
+watch(() => [route.params.projectId, route.params.id], () => {
   loadProject()
 }, { immediate: true })
 
-watch(() => workspaceStore.currentWorkspace?.id, () => {
-  if (route.params.projectId) {
-    loadProject()
-  }
-})
-
 // Автоматически обновляем задачи при изменении store
-watch(() => tasksStore.filteredTasks, () => {
+watch(() => tasksStore.allTasks, () => {
   loadTasks()
 }, { deep: true })
 </script>

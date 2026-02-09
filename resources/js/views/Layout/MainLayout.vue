@@ -216,10 +216,15 @@
                 <div
                   v-for="project in activeProjects"
                   :key="project.id"
-                  class="flex items-center justify-between group px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  :class="[
+                    'flex items-center justify-between group px-3 py-2 rounded-lg transition-colors',
+                    isProjectActive(project.id)
+                      ? 'bg-primary-50 dark:bg-primary-900/30'
+                      : 'hover:bg-gray-50 dark:hover:bg-gray-700'
+                  ]"
                 >
                   <router-link
-                    :to="`/workspaces/${currentWorkspace?.id}/projects/${project.id}`"
+                    :to="`/workspaces/${project.workspace_id}/projects/${project.id}`"
                     class="flex items-center space-x-2 flex-1 min-w-0"
                   >
                     <div
@@ -228,7 +233,14 @@
                     ></div>
                     <div class="flex-1 min-w-0">
                       <div class="flex items-center space-x-1">
-                        <span class="text-sm text-gray-700 dark:text-gray-300 truncate">{{ project.name }}</span>
+                        <span
+                          :class="[
+                            'text-sm truncate',
+                            isProjectActive(project.id)
+                              ? 'text-primary-700 dark:text-primary-400 font-medium'
+                              : 'text-gray-700 dark:text-gray-300'
+                          ]"
+                        >{{ project.name }}</span>
                         <span
                           v-if="project.tasks_count > 0"
                           class="text-xs text-gray-500 flex-shrink-0"
@@ -405,7 +417,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useTasksStore } from '@/stores/tasks'
@@ -422,6 +434,7 @@ import ProjectModal from '@/components/projects/ProjectModal.vue'
 import TaskModal from '@/components/tasks/TaskModal.vue'
 
 const router = useRouter()
+const route = useRoute()
 const authStore = useAuthStore()
 const workspaceStore = useWorkspaceStore()
 const tasksStore = useTasksStore()
@@ -784,6 +797,10 @@ const handleClickOutsideWorkspaceMenu = () => {
 const getWorkspaceName = (workspaceId) => {
   const workspace = workspaces.value.find(ws => ws.id === workspaceId)
   return workspace?.name || ''
+}
+
+const isProjectActive = (projectId) => {
+  return route.path.includes(`/projects/${projectId}`)
 }
 
 </script>
