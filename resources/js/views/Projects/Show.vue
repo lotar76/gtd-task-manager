@@ -110,7 +110,6 @@ import { useRoute, useRouter } from 'vue-router'
 import { useProjectsStore } from '@/stores/projects'
 import { useTasksStore } from '@/stores/tasks'
 import { useWorkspaceStore } from '@/stores/workspace'
-import api from '@/services/api'
 import TaskList from '@/components/tasks/TaskList.vue'
 import TaskModal from '@/components/tasks/TaskModal.vue'
 import ProjectModal from '@/components/projects/ProjectModal.vue'
@@ -150,8 +149,8 @@ const loadProject = async () => {
       router.push(`/workspaces/${workspaceId}/projects`)
       return
     }
-    
-    await loadTasks()
+
+    loadTasks()
   } catch (error) {
     console.error('Error loading project:', error)
     console.error('Error details:', error.response?.data)
@@ -165,20 +164,16 @@ const loadProject = async () => {
   }
 }
 
-const loadTasks = async () => {
+const loadTasks = () => {
   const projectId = parseInt(route.params.projectId)
-  const workspaceId = workspaceStore.currentWorkspace?.id
-  
-  if (!workspaceId || !projectId) return
-  
-  try {
-    const response = await api.get(`/v1/workspaces/${workspaceId}/projects/${projectId}/tasks`)
-    // API возвращает { success: true, data: [...], message: '...' }
-    tasks.value = response.data.data || response.data || []
-  } catch (error) {
-    console.error('Error loading tasks:', error)
+
+  if (!projectId) {
     tasks.value = []
+    return
   }
+
+  // Фильтруем задачи из store по project_id
+  tasks.value = tasksStore.filteredTasks.filter(t => t.project_id === projectId)
 }
 
 const handleEditProject = () => {
@@ -235,7 +230,7 @@ const handleSaveTask = async (taskData) => {
     }
     showTaskModal.value = false
     selectedTask.value = null
-    await loadTasks()
+    loadTasks()
   } catch (error) {
     console.error('Error saving task:', error)
     taskError.value = error.response?.data?.message || error.message || 'Ошибка при сохранении задачи'
@@ -272,7 +267,7 @@ const handleToggleComplete = async (task) => {
     } else {
       await tasksStore.completeTask(task.id)
     }
-    await loadTasks()
+    loadTasks()
   } catch (error) {
     console.error('Error toggling task:', error)
   }
@@ -288,5 +283,10 @@ watch(() => workspaceStore.currentWorkspace?.id, () => {
     loadProject()
   }
 })
+
+// Автоматически обновляем задачи при изменении store
+watch(() => tasksStore.filteredTasks, () => {
+  loadTasks()
+}, { deep: true })
 </script>
 

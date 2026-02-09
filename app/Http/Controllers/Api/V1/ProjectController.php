@@ -103,7 +103,7 @@ class ProjectController extends Controller
         $this->authorize('view', $project);
 
         $tasks = $project->tasks()
-            ->with(['context', 'assignee', 'tags'])
+            ->with(['project', 'context', 'assignee', 'tags', 'workspace'])
             ->orderBy('position')
             ->get();
 

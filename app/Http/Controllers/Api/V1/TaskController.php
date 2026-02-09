@@ -142,7 +142,7 @@ class TaskController extends Controller
         $tasks = $workspace->tasks()
             ->where('assigned_to', Auth::id())
             ->whereNotIn('status', ['completed'])
-            ->with(['workspace', 'project', 'context', 'tags'])
+            ->with(['workspace', 'project', 'context', 'assignee', 'tags'])
             ->orderBy('due_date', 'asc')
             ->get();
 

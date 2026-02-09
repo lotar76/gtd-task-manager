@@ -45,7 +45,7 @@ class TagController extends Controller
     {
         $this->authorize('view', $workspace);
 
-        $tag->load('tasks');
+        $tag->load(['tasks.workspace', 'tasks.project', 'tasks.context', 'tasks.assignee', 'tasks.tags']);
 
         return ApiResponse::success($tag, 'Тег получен');
     }

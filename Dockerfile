@@ -34,13 +34,27 @@ WORKDIR /var/www/html
 # Копирование файлов проекта
 COPY . .
 
+# Создание необходимых директорий если их нет
+RUN mkdir -p /var/www/html/storage/framework/{sessions,views,cache} \
+    && mkdir -p /var/www/html/storage/logs \
+    && mkdir -p /var/www/html/bootstrap/cache
+
 # Установка прав доступа
 RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 755 /var/www/html/storage \
     && chmod -R 755 /var/www/html/bootstrap/cache
 
-# Установка зависимостей Composer
-RUN composer install --no-dev --optimize-autoloader --no-interaction
+# Аргумент для определения окружения
+ARG APP_ENV=production
+
+# Установка зависимостей Composer (пропускаем если vendor уже есть)
+RUN if [ ! -d "vendor" ]; then \
+        if [ "$APP_ENV" = "production" ]; then \
+            COMPOSER_PROCESS_TIMEOUT=600 composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist; \
+        else \
+            COMPOSER_PROCESS_TIMEOUT=600 composer install --optimize-autoloader --no-interaction --prefer-dist; \
+        fi \
+    fi
 
 # Копирование кастомного конфига PHP-FPM (без user/group директив)
 COPY docker/php-fpm/www.conf /usr/local/etc/php-fpm.d/www.conf

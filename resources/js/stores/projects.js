@@ -38,18 +38,22 @@ export const useProjectsStore = defineStore('projects', () => {
   }
 
   const createProject = async (projectData) => {
-    if (!workspaceId.value) return
-    
-    const response = await api.post(`/v1/workspaces/${workspaceId.value}/projects`, projectData)
+    // Используем workspace_id из данных формы, если есть, иначе текущий workspace
+    const targetWorkspaceId = projectData.workspace_id || workspaceId.value
+    if (!targetWorkspaceId) return
+
+    const response = await api.post(`/v1/workspaces/${targetWorkspaceId}/projects`, projectData)
     const project = response.data.data || response.data
     projects.value.push(project)
     return project
   }
 
   const updateProject = async (projectId, projectData) => {
-    if (!workspaceId.value) return
-    
-    const response = await api.put(`/v1/workspaces/${workspaceId.value}/projects/${projectId}`, projectData)
+    // Используем workspace_id из данных формы, если есть, иначе текущий workspace
+    const targetWorkspaceId = projectData.workspace_id || workspaceId.value
+    if (!targetWorkspaceId) return
+
+    const response = await api.put(`/v1/workspaces/${targetWorkspaceId}/projects/${projectId}`, projectData)
     const project = response.data.data || response.data
     const index = projects.value.findIndex(p => p.id === projectId)
     if (index !== -1) {
@@ -59,17 +63,30 @@ export const useProjectsStore = defineStore('projects', () => {
   }
 
   const archiveProject = async (projectId) => {
-    return await updateProject(projectId, { status: 'archived' })
+    // Находим проект чтобы получить его workspace_id
+    const project = projects.value.find(p => p.id === projectId)
+    return await updateProject(projectId, {
+      workspace_id: project?.workspace_id,
+      status: 'archived'
+    })
   }
 
   const unarchiveProject = async (projectId) => {
-    return await updateProject(projectId, { status: 'active' })
+    // Находим проект чтобы получить его workspace_id
+    const project = projects.value.find(p => p.id === projectId)
+    return await updateProject(projectId, {
+      workspace_id: project?.workspace_id,
+      status: 'active'
+    })
   }
 
   const deleteProject = async (projectId) => {
-    if (!workspaceId.value) return
-    
-    await api.delete(`/v1/workspaces/${workspaceId.value}/projects/${projectId}`)
+    // Находим проект чтобы получить его workspace_id
+    const project = projects.value.find(p => p.id === projectId)
+    const targetWorkspaceId = project?.workspace_id || workspaceId.value
+    if (!targetWorkspaceId) return
+
+    await api.delete(`/v1/workspaces/${targetWorkspaceId}/projects/${projectId}`)
     projects.value = projects.value.filter(p => p.id !== projectId)
   }
 

@@ -311,6 +311,7 @@ class TelegramWebhookController extends Controller
         $user = $subscription->user;
 
         $task = Task::where('id', $taskId)
+            ->with(['project'])
             ->where(function ($q) use ($user) {
                 $q->where('assigned_to', $user->id)
                   ->orWhere('created_by', $user->id);

@@ -6,6 +6,7 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [vue()],
     root: 'resources',
+    publicDir: '../public',
     resolve: {
       alias: {
         '@': resolve(__dirname, 'resources/js'),

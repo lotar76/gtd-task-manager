@@ -4,12 +4,26 @@
     <Transition name="fade">
       <div v-if="appLoading" class="fixed inset-0 z-[100] bg-white dark:bg-gray-900 flex items-center justify-center">
         <div class="text-center">
-          <div class="relative w-16 h-16 mx-auto mb-6">
-            <div class="absolute inset-0 rounded-full border-4 border-gray-200 dark:border-gray-700"></div>
-            <div class="absolute inset-0 rounded-full border-4 border-transparent border-t-primary-600 animate-spin"></div>
+          <!-- Logo -->
+          <div class="mb-6 flex justify-center">
+            <img
+              :src="logo"
+              alt="GTD TODO"
+              class="w-48 h-48 object-contain"
+              @error="handleLogoError"
+            />
           </div>
           <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">GTD TODO</h2>
-          <p class="text-sm text-gray-500 dark:text-gray-400">Загрузка...</p>
+          <p class="text-sm text-gray-500 dark:text-gray-400 flex justify-center">
+            <span
+              v-for="(letter, index) in loadingText"
+              :key="index"
+              :style="{ animationDelay: `${index * 0.1}s` }"
+              class="loading-letter"
+            >
+              {{ letter }}
+            </span>
+          </p>
         </div>
       </div>
     </Transition>
@@ -25,7 +39,14 @@
         <div class="flex flex-col h-full">
           <!-- Logo (только десктоп) -->
           <div class="hidden lg:flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-            <h1 class="text-xl font-bold text-gray-900 dark:text-white">GTD TODO</h1>
+            <div class="flex items-center space-x-3">
+              <img
+                :src="logo"
+                alt="GTD TODO"
+                class="h-10 w-10 object-contain"
+              />
+              <h1 class="text-xl font-bold text-gray-900 dark:text-white">GTD TODO</h1>
+            </div>
           </div>
 
           <!-- Workspace Section -->
@@ -385,6 +406,7 @@ import { useProjectsStore } from '@/stores/projects'
 import NavLink from '@/components/common/NavLink.vue'
 import DroppableNavLink from '@/components/common/DroppableNavLink.vue'
 import Toolbar from '@/components/common/Toolbar.vue'
+import logo from '@/assets/images/logo.jpg'
 import WorkspaceModal from '@/components/workspace/WorkspaceModal.vue'
 import AddMemberModal from '@/components/workspace/AddMemberModal.vue'
 import RenameWorkspaceModal from '@/components/workspace/RenameWorkspaceModal.vue'
@@ -398,6 +420,7 @@ const workspaceStore = useWorkspaceStore()
 const tasksStore = useTasksStore()
 const projectsStore = useProjectsStore()
 const appLoading = ref(true)
+const loadingText = ref('Загрузка...'.split(''))
 const sidebarOpen = ref(false)
 const showUserMenu = ref(false)
 const showWorkspaceModal = ref(false)
@@ -575,6 +598,11 @@ const handleProfile = () => {
 
 const handleSettings = () => {
   router.push('/settings')
+}
+
+const handleLogoError = (event) => {
+  // Скрываем логотип если он не загружен
+  event.target.style.display = 'none'
 }
 
 const canManageWorkspace = (workspace) => {
@@ -768,6 +796,20 @@ const handleClickOutsideWorkspaceMenu = () => {
 
 .fade-leave-to {
   opacity: 0;
+}
+
+.loading-letter {
+  display: inline-block;
+  animation: letterFade 2s ease-in-out infinite;
+}
+
+@keyframes letterFade {
+  0%, 100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 1;
+  }
 }
 </style>
 

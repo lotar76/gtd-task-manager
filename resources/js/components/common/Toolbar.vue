@@ -11,6 +11,15 @@
         </svg>
       </button>
 
+      <!-- Logo (только мобильные) -->
+      <div class="lg:hidden flex items-center mr-3">
+        <img
+          :src="logo"
+          alt="GTD TODO"
+          class="h-8 w-8 object-contain"
+        />
+      </div>
+
       <!-- Left: Search -->
       <div class="flex-1 max-w-2xl">
         <div class="relative">
@@ -213,6 +222,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useThemeStore } from '@/stores/theme'
+import logo from '@/assets/images/logo.jpg'
 
 const themeStore = useThemeStore()
 

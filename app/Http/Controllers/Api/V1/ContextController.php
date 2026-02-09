@@ -46,7 +46,7 @@ class ContextController extends Controller
     {
         $this->authorize('view', $workspace);
 
-        $context->load('tasks');
+        $context->load(['tasks.workspace', 'tasks.project', 'tasks.context', 'tasks.assignee', 'tasks.tags']);
 
         return ApiResponse::success($context, 'Контекст получен');
     }
