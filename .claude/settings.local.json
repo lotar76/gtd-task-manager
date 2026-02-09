@@ -18,7 +18,10 @@
       "Bash(npm --prefix resources run build)",
       "Bash(cmd.exe /c \"set VITE_API_URL=/api && npm run build\")",
       "Bash(npm install:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(docker exec:*)",
+      "Bash(docker-compose:*)",
+      "Bash(docker ps:*)"
     ]
   }
 }

@@ -2,24 +2,24 @@
   <div class="p-4 lg:p-8">
     <div class="max-w-4xl mx-auto">
       <!-- Header -->
-      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-6">
-        <div class="flex items-center space-x-3 mb-4 lg:mb-0">
+      <div class="flex items-center justify-between mb-6">
+        <div class="flex items-center space-x-3 min-w-0 flex-1">
           <div
             v-if="project"
-            class="w-4 h-4 rounded-full"
+            class="w-4 h-4 rounded-full flex-shrink-0"
             :style="{ backgroundColor: project.color || '#3B82F6' }"
           ></div>
-          <div>
-            <h1 class="text-xl lg:text-2xl font-semibold text-gray-900 dark:text-white">
+          <div class="min-w-0">
+            <h1 class="text-xl lg:text-2xl font-semibold text-gray-900 dark:text-white truncate">
               {{ project?.name || 'Загрузка...' }}
             </h1>
-            <p v-if="project?.description" class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+            <p v-if="project?.description" class="text-sm text-gray-600 dark:text-gray-400 mt-1 truncate">
               {{ project.description }}
             </p>
           </div>
         </div>
-        
-        <div class="flex items-center space-x-1">
+
+        <div class="flex items-center space-x-1 flex-shrink-0 ml-2">
           <button
             @click="handleEditProject"
             class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
@@ -30,7 +30,7 @@
           <button
             v-if="project?.status !== 'archived'"
             @click="handleArchiveProject"
-            class="hidden lg:block p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
             title="Архивировать"
           >
             <ArchiveBoxArrowDownIcon class="w-5 h-5" />
@@ -38,7 +38,7 @@
           <button
             v-else
             @click="handleUnarchiveProject"
-            class="hidden lg:block p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
             title="Восстановить"
           >
             <ArrowUturnLeftIcon class="w-5 h-5" />

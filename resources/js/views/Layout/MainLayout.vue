@@ -249,15 +249,6 @@
                       </div>
                     </div>
                   </router-link>
-                  <button
-                    @click.stop="handleArchiveProject(project)"
-                    class="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 transition-opacity"
-                    title="Архивировать"
-                  >
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
-                    </svg>
-                  </button>
                 </div>
                 <div v-if="activeProjects.length === 0" class="px-3 py-2 text-sm text-gray-500 text-center">
                   Нет проектов
