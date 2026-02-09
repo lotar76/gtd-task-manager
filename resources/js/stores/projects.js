@@ -9,16 +9,49 @@ export const useProjectsStore = defineStore('projects', () => {
 
   const workspaceStore = useWorkspaceStore()
   const workspaceId = computed(() => workspaceStore.currentWorkspace?.id)
+  const selectedWorkspaceIds = computed(() =>
+    workspaceStore.selectedWorkspaces.map(ws => ws.id)
+  )
 
   const fetchProjects = async (includeArchived = false) => {
     if (!workspaceId.value) return
-    
+
     loading.value = true
     try {
       const params = includeArchived ? { include_archived: true } : {}
       const response = await api.get(`/v1/workspaces/${workspaceId.value}/projects`, { params })
       // API возвращает { success: true, data: [...], message: '...' }
       projects.value = response.data.data || response.data || []
+    } finally {
+      loading.value = false
+    }
+  }
+
+  // Загрузить проекты для всех выбранных workspace
+  const fetchProjectsForSelectedWorkspaces = async (includeArchived = false) => {
+    if (selectedWorkspaceIds.value.length === 0) return
+
+    loading.value = true
+    try {
+      const params = includeArchived ? { include_archived: true } : {}
+
+      // Загружаем проекты для каждого выбранного workspace параллельно
+      const responses = await Promise.all(
+        selectedWorkspaceIds.value.map(wsId =>
+          api.get(`/v1/workspaces/${wsId}/projects`, { params })
+            .then(response => ({
+              workspace_id: wsId,
+              projects: response.data.data || response.data || []
+            }))
+            .catch(error => {
+              console.error(`Error fetching projects for workspace ${wsId}:`, error)
+              return { workspace_id: wsId, projects: [] }
+            })
+        )
+      )
+
+      // Объединяем проекты из всех workspace
+      projects.value = responses.flatMap(r => r.projects)
     } finally {
       loading.value = false
     }
@@ -104,6 +137,7 @@ export const useProjectsStore = defineStore('projects', () => {
     archivedProjects,
     loading,
     fetchProjects,
+    fetchProjectsForSelectedWorkspaces,
     fetchProject,
     createProject,
     updateProject,

@@ -226,13 +226,20 @@
                       class="w-3 h-3 rounded-full flex-shrink-0"
                       :style="{ backgroundColor: project.color || '#3B82F6' }"
                     ></div>
-                    <span class="text-sm text-gray-700 dark:text-gray-300 truncate">{{ project.name }}</span>
-                    <span
-                      v-if="project.tasks_count > 0"
-                      class="text-xs text-gray-500"
-                    >
-                      ({{ project.tasks_count }})
-                    </span>
+                    <div class="flex-1 min-w-0">
+                      <div class="flex items-center space-x-1">
+                        <span class="text-sm text-gray-700 dark:text-gray-300 truncate">{{ project.name }}</span>
+                        <span
+                          v-if="project.tasks_count > 0"
+                          class="text-xs text-gray-500 flex-shrink-0"
+                        >
+                          ({{ project.tasks_count }})
+                        </span>
+                      </div>
+                      <div v-if="selectedWorkspaceIds.length > 1" class="text-xs text-gray-400 dark:text-gray-500 truncate">
+                        {{ getWorkspaceName(project.workspace_id) }}
+                      </div>
+                    </div>
                   </router-link>
                   <button
                     @click.stop="handleArchiveProject(project)"
@@ -747,7 +754,7 @@ onMounted(async () => {
     await workspaceStore.fetchWorkspaces()
     await Promise.all([
       tasksStore.fetchAllTasks(),
-      projectsStore.fetchProjects(),
+      projectsStore.fetchProjectsForSelectedWorkspaces(),
     ])
   } finally {
     appLoading.value = false
@@ -759,12 +766,12 @@ onMounted(async () => {
   document.addEventListener('keydown', handleKeydown)
 })
 
-// Загружаем проекты при смене workspace
-watch(() => workspaceStore.currentWorkspace?.id, (newWorkspaceId) => {
-  if (newWorkspaceId) {
-    projectsStore.fetchProjects()
+// Загружаем проекты при смене выбранных workspace
+watch(() => selectedWorkspaceIds.value, () => {
+  if (selectedWorkspaceIds.value.length > 0) {
+    projectsStore.fetchProjectsForSelectedWorkspaces()
   }
-})
+}, { deep: true })
 
 onUnmounted(() => {
   tasksStore.stopSync()
@@ -774,6 +781,11 @@ onUnmounted(() => {
 
 const handleClickOutsideWorkspaceMenu = () => {
   openWorkspaceMenuId.value = null
+}
+
+const getWorkspaceName = (workspaceId) => {
+  const workspace = workspaces.value.find(ws => ws.id === workspaceId)
+  return workspace?.name || ''
 }
 
 </script>
