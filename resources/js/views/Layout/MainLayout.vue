@@ -312,7 +312,7 @@
         </button>
 
         <!-- Calendar button -->
-        <div class="flex flex-col gap-2 items-center">
+        <div class="flex items-center gap-2">
           <!-- Calendar view options (показываются только на странице календаря) -->
           <Transition name="slide-fade-day">
             <button
