@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\V1\AttachmentController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CommentController;
 use App\Http\Controllers\Api\V1\ContextController;
+use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\FileController;
 use App\Http\Controllers\Api\V1\GoalController;
 use App\Http\Controllers\Api\V1\ProjectController;
@@ -61,6 +62,9 @@ Route::prefix('v1')->group(function () {
 
         // Все проекты пользователя (по всем workspace)
         Route::get('/projects', [ProjectController::class, 'all']);
+
+        // Dashboard статистика
+        Route::get('/dashboard/stats', [DashboardController::class, 'getStats']);
 
         // === WORKSPACES (Команды) ===
         Route::apiResource('workspaces', WorkspaceController::class);
