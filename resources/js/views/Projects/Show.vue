@@ -95,6 +95,15 @@
         </div>
       </div>
 
+      <!-- Task View -->
+      <TaskView
+        :show="showTaskView"
+        :task="selectedTask"
+        @close="showTaskView = false; selectedTask = null"
+        @enter-edit="handleEnterEdit"
+        @complete-task="handleCompleteTask"
+      />
+
       <!-- Task Modal -->
       <TaskModal
         :show="showTaskModal"
@@ -126,6 +135,7 @@ import { RectangleStackIcon, PencilIcon, ArchiveBoxArrowDownIcon, ArrowUturnLeft
 import { PlusIcon } from '@heroicons/vue/24/solid'
 import TaskList from '@/components/tasks/TaskList.vue'
 import TaskModal from '@/components/tasks/TaskModal.vue'
+import TaskView from '@/components/tasks/TaskView.vue'
 import ProjectModal from '@/components/projects/ProjectModal.vue'
 
 const route = useRoute()
@@ -138,6 +148,7 @@ const project = ref(null)
 const tasks = ref([])
 const loading = ref(false)
 const showTaskModal = ref(false)
+const showTaskView = ref(false)
 const showProjectModal = ref(false)
 const selectedTask = ref(null)
 const taskError = ref('')
@@ -231,7 +242,20 @@ const handleCreateTask = () => {
 
 const handleTaskClick = (task) => {
   selectedTask.value = task
+  showTaskView.value = true
+}
+
+const handleEnterEdit = () => {
+  showTaskView.value = false
   showTaskModal.value = true
+}
+
+const handleCompleteTask = async (task) => {
+  try {
+    await tasksStore.completeTask(task.id)
+  } catch (error) {
+    console.error('Error completing task:', error)
+  }
 }
 
 const handleSaveTask = async (taskData) => {

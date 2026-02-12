@@ -21,6 +21,20 @@
             <span class="ml-1.5 opacity-75">{{ section.count }}</span>
           </button>
 
+          <!-- Фильтр просроченных задач -->
+          <button
+            v-if="overdueCount > 0"
+            @click="filterOverdue = !filterOverdue"
+            class="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-full border transition-colors"
+            :class="filterOverdue
+              ? 'border-transparent bg-red-500 text-white'
+              : 'border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950'"
+          >
+            <ExclamationTriangleIcon class="w-3.5 h-3.5 mr-1.5" />
+            Просроченные
+            <span class="ml-1.5 opacity-75">{{ overdueCount }}</span>
+          </button>
+
           <!-- Разделитель -->
           <div class="w-px bg-gray-200 dark:bg-gray-600 mx-1 self-stretch"></div>
 
@@ -58,7 +72,7 @@
 
       <template v-else>
         <!-- Счётчик результатов -->
-        <div v-if="allTasks.length > 0 && (filterSection || filterWorkspaceId)" class="mb-3 flex items-center justify-between">
+        <div v-if="allTasks.length > 0 && (filterSection || filterWorkspaceId || filterOverdue)" class="mb-3 flex items-center justify-between">
           <span class="text-sm text-gray-500 dark:text-gray-400">
             Показано {{ filteredTasks.length }} из {{ allTasks.length }}
           </span>
@@ -111,6 +125,14 @@
         </div>
       </template>
 
+      <TaskView
+        :show="showTaskView"
+        :task="selectedTask"
+        @close="showTaskView = false; selectedTask = null"
+        @enter-edit="handleEnterEdit"
+        @complete-task="handleCompleteTask"
+      />
+
       <TaskModal
         :show="showTaskModal"
         :task="selectedTask"
@@ -128,6 +150,7 @@ import { useTasksStore } from '@/stores/tasks'
 import { useWorkspaceStore } from '@/stores/workspace'
 import TaskList from '@/components/tasks/TaskList.vue'
 import TaskModal from '@/components/tasks/TaskModal.vue'
+import TaskView from '@/components/tasks/TaskView.vue'
 import {
   RectangleStackIcon,
   PlusIcon,
@@ -137,6 +160,7 @@ import {
   BoltIcon,
   ClockIcon,
   ArchiveBoxIcon,
+  ExclamationTriangleIcon,
 } from '@heroicons/vue/24/outline'
 
 const tasksStore = useTasksStore()
@@ -145,11 +169,13 @@ const workspaceStore = useWorkspaceStore()
 const allTasks = computed(() => tasksStore.filteredTasks)
 const loading = computed(() => tasksStore.loading)
 const showTaskModal = ref(false)
+const showTaskView = ref(false)
 const selectedTask = ref(null)
 const taskError = ref('')
 
 const filterSection = ref(null)
 const filterWorkspaceId = ref(null)
+const filterOverdue = ref(false)
 
 // Конфигурация секций
 const sectionConfig = {
@@ -181,6 +207,16 @@ const availableSections = computed(() => {
     .sort((a, b) => a.order - b.order)
 })
 
+// Количество просроченных задач
+const overdueCount = computed(() => {
+  const now = new Date()
+  return allTasks.value.filter(task => {
+    if (!task.due_date || task.status === 'completed') return false
+    const dueDate = new Date(task.due_date)
+    return dueDate < now
+  }).length
+})
+
 // Все пространства пользователя с количеством задач
 const workspacesList = computed(() => {
   const counts = {}
@@ -203,6 +239,14 @@ const filteredTasks = computed(() => {
   if (filterWorkspaceId.value) {
     result = result.filter(t => t.workspace_id === filterWorkspaceId.value)
   }
+  if (filterOverdue.value) {
+    const now = new Date()
+    result = result.filter(t => {
+      if (!t.due_date || t.status === 'completed') return false
+      const dueDate = new Date(t.due_date)
+      return dueDate < now
+    })
+  }
   return result
 })
 
@@ -213,16 +257,30 @@ const toggleSectionFilter = (value) => {
 const clearFilters = () => {
   filterSection.value = null
   filterWorkspaceId.value = null
+  filterOverdue.value = false
 }
 
 const handleTaskClick = (task) => {
   selectedTask.value = task
-  showTaskModal.value = true
+  showTaskView.value = true
 }
 
 const handleAddTask = () => {
   selectedTask.value = null
   showTaskModal.value = true
+}
+
+const handleEnterEdit = () => {
+  showTaskView.value = false
+  showTaskModal.value = true
+}
+
+const handleCompleteTask = async (task) => {
+  try {
+    await tasksStore.completeTask(task.id)
+  } catch (error) {
+    console.error('Error completing task:', error)
+  }
 }
 
 const handleToggleComplete = async (task) => {

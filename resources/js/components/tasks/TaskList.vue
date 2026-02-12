@@ -16,7 +16,7 @@
       <div class="flex items-start space-x-3">
         <!-- Checkbox -->
         <button
-          @click.stop="$emit('toggle-complete', task)"
+          @click.stop="handleToggleComplete(task)"
           class="mt-1 flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors duration-200"
           :class="task.status === 'completed'
             ? 'bg-green-500 border-green-500'
@@ -160,6 +160,18 @@
     <h3 class="mt-2 text-sm font-medium text-gray-900">Нет задач</h3>
     <p class="mt-1 text-sm text-gray-500">Создайте первую задачу чтобы начать</p>
   </div>
+
+  <!-- Confirm Dialog -->
+  <ConfirmDialog
+    :show="showConfirm"
+    :title="confirmTitle"
+    :message="confirmMessage"
+    confirm-text="Завершить"
+    cancel-text="Отмена"
+    variant="success"
+    @confirm="confirmComplete"
+    @cancel="cancelComplete"
+  />
 </template>
 
 <script setup>
@@ -167,6 +179,7 @@ import { ref } from 'vue'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
 import relativeTime from 'dayjs/plugin/relativeTime'
+import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 
 dayjs.extend(relativeTime)
 dayjs.locale('ru')
@@ -182,6 +195,10 @@ const emit = defineEmits(['task-click', 'toggle-complete', 'task-drag-start', 't
 
 const isDragging = ref(false)
 const draggedTask = ref(null)
+const showConfirm = ref(false)
+const taskToComplete = ref(null)
+const confirmTitle = ref('Завершить задачу?')
+const confirmMessage = ref('')
 
 const handleDragStart = (event, task) => {
   isDragging.value = true
@@ -198,6 +215,32 @@ const handleDragEnd = () => {
   isDragging.value = false
   draggedTask.value = null
   emit('task-drag-end')
+}
+
+const handleToggleComplete = (task) => {
+  // Если задача уже завершена, сразу отменяем завершение без подтверждения
+  if (task.status === 'completed') {
+    emit('toggle-complete', task)
+    return
+  }
+
+  // Если задача не завершена, показываем подтверждение
+  taskToComplete.value = task
+  confirmMessage.value = `Вы уверены, что хотите завершить задачу "${task.title}"?`
+  showConfirm.value = true
+}
+
+const confirmComplete = () => {
+  if (taskToComplete.value) {
+    emit('toggle-complete', taskToComplete.value)
+  }
+  showConfirm.value = false
+  taskToComplete.value = null
+}
+
+const cancelComplete = () => {
+  showConfirm.value = false
+  taskToComplete.value = null
 }
 
 const formatDate = (date) => {

@@ -21,7 +21,16 @@
       "Bash(git add:*)",
       "Bash(docker exec:*)",
       "Bash(docker-compose:*)",
-      "Bash(docker ps:*)"
+      "Bash(docker ps:*)",
+      "Bash(python3:*)",
+      "Bash(pip3 install:*)",
+      "Bash(ssh root@37.220.82.214 \"cat /home/projects/todo/.env\")",
+      "Bash(grep:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(ssh-keyscan:*)",
+      "Bash(~/.ssh/known_hosts)",
+      "Bash(git remote set-url:*)"
     ]
   }
 }

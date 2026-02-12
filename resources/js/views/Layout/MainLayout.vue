@@ -7,7 +7,7 @@
           <!-- Logo -->
           <div class="mb-6 flex justify-center">
             <img
-              :src="logo"
+              :src="loadingLogo"
               alt="GTD TODO"
               class="w-48 h-48 object-contain"
               @error="handleLogoError"
@@ -41,7 +41,7 @@
           <div class="hidden lg:flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
             <div class="flex items-center space-x-3">
               <img
-                :src="logo"
+                :src="sidebarLogo"
                 alt="GTD TODO"
                 class="h-10 w-10 object-contain"
               />
@@ -53,7 +53,7 @@
           <div class="p-4 border-b border-gray-200 dark:border-gray-700">
             <div class="flex items-center justify-between mb-3">
               <h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Рабочие пространства
+                Ваши пространства
               </h3>
               <button
                 @click="showWorkspaceModal = true"
@@ -114,12 +114,13 @@
           <nav class="flex-1 overflow-y-auto p-4">
             <div class="space-y-1">
               <!-- Входящие - отдельно -->
-              <DroppableNavLink 
-                to="/workspaces/:id/inbox" 
-                icon="inbox" 
+              <DroppableNavLink
+                to="/workspaces/:id/inbox"
+                icon="inbox"
                 :count="taskCounts.inbox"
                 drop-status="inbox"
                 @task-dropped="handleTaskDropped"
+                @close-sidebar="sidebarOpen = false"
               >
                 Входящие
               </DroppableNavLink>
@@ -127,54 +128,63 @@
 
             <div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700 space-y-1">
               <!-- Сегодня -->
-              <DroppableNavLink 
-                to="/workspaces/:id/today" 
-                icon="calendar" 
+              <DroppableNavLink
+                to="/workspaces/:id/today"
+                icon="calendar"
                 :count="taskCounts.today"
                 drop-status="today"
                 @task-dropped="handleTaskDropped"
+                @close-sidebar="sidebarOpen = false"
               >
                 Сегодня
               </DroppableNavLink>
-              
+
               <!-- Следующие -->
-              <DroppableNavLink 
-                to="/workspaces/:id/next-actions" 
-                icon="lightning" 
+              <DroppableNavLink
+                to="/workspaces/:id/next-actions"
+                icon="lightning"
                 :count="taskCounts.next_actions"
                 drop-status="next_action"
                 @task-dropped="handleTaskDropped"
+                @close-sidebar="sidebarOpen = false"
               >
                 Следующие
               </DroppableNavLink>
-              
+
               <!-- Завтра -->
-              <DroppableNavLink 
-                to="/workspaces/:id/tomorrow" 
-                icon="calendar-days" 
+              <DroppableNavLink
+                to="/workspaces/:id/tomorrow"
+                icon="calendar-days"
                 :count="taskCounts.tomorrow"
                 drop-status="tomorrow"
                 @task-dropped="handleTaskDropped"
+                @close-sidebar="sidebarOpen = false"
               >
                 Завтра
               </DroppableNavLink>
-              
+
               <!-- Календарь -->
-              <NavLink to="/workspaces/:id/calendar" icon="calendar-days" :count="calendarMonthCount">
+              <NavLink
+                to="/workspaces/:id/calendar"
+                icon="calendar-days"
+                :count="calendarMonthCount"
+                @close-sidebar="sidebarOpen = false"
+              >
                 Календарь
               </NavLink>
-              
+
               <!-- Когда-нибудь -->
-              <DroppableNavLink 
-                to="/workspaces/:id/someday" 
-                icon="archive" 
+              <DroppableNavLink
+                to="/workspaces/:id/someday"
+                icon="archive"
                 :count="taskCounts.someday"
                 drop-status="someday"
                 @task-dropped="handleTaskDropped"
+                @close-sidebar="sidebarOpen = false"
               >
                 Когда-нибудь
               </DroppableNavLink>
-              
+
               <!-- Ожидание -->
               <DroppableNavLink
                 to="/workspaces/:id/waiting"
@@ -182,12 +192,18 @@
                 :count="taskCounts.waiting"
                 drop-status="waiting"
                 @task-dropped="handleTaskDropped"
+                @close-sidebar="sidebarOpen = false"
               >
                 Ожидание
               </DroppableNavLink>
 
               <!-- Все задачи -->
-              <NavLink to="/workspaces/:id/all" icon="rectangle-stack" :count="totalTaskCount">
+              <NavLink
+                to="/workspaces/:id/all"
+                icon="rectangle-stack"
+                :count="totalTaskCount"
+                @close-sidebar="sidebarOpen = false"
+              >
                 Все задачи
               </NavLink>
             </div>
@@ -221,6 +237,7 @@
                 >
                   <router-link
                     :to="`/workspaces/${project.workspace_id}/projects/${project.id}`"
+                    @click="handleProjectLinkClick"
                     class="flex items-center space-x-2 flex-1 min-w-0"
                   >
                     <div
@@ -261,7 +278,11 @@
                 Организация
               </h3>
               <div class="space-y-1">
-                <NavLink to="/workspaces/:id/goals" icon="target">
+                <NavLink
+                  to="/workspaces/:id/goals"
+                  icon="target"
+                  @close-sidebar="sidebarOpen = false"
+                >
                   Цели
                 </NavLink>
               </div>
@@ -283,16 +304,57 @@
         <!-- Add task -->
         <button
           @click="showTaskModal = true"
-          class="w-10 h-10 bg-green-500 hover:bg-green-600 text-white rounded-full shadow-lg flex items-center justify-center active:scale-95 transition-transform"
+          class="w-10 h-10 bg-green-500 hover:bg-green-600 text-white rounded-full shadow-lg inline-flex items-center justify-center active:scale-95 transition-transform"
         >
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
           </svg>
         </button>
+
+        <!-- Calendar button -->
+        <div class="flex flex-col gap-2 items-center">
+          <!-- Calendar view options (показываются только на странице календаря) -->
+          <Transition name="slide-fade-day">
+            <button
+              v-if="isCalendarPage"
+              @click="changeCalendarView('day')"
+              class="w-10 h-10 bg-purple-500 hover:bg-purple-600 text-white rounded-full shadow-lg inline-flex items-center justify-center active:scale-95 transition-all"
+              title="Сегодня"
+            >
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+              </svg>
+            </button>
+          </Transition>
+
+          <Transition name="slide-fade-week">
+            <button
+              v-if="isCalendarPage"
+              @click="changeCalendarView('week')"
+              class="w-10 h-10 bg-purple-500 hover:bg-purple-600 text-white rounded-full shadow-lg inline-flex items-center justify-center active:scale-95 transition-all"
+              title="Неделя"
+            >
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
+            </button>
+          </Transition>
+
+          <!-- Calendar main button -->
+          <button
+            @click="handleCalendarClick"
+            class="w-10 h-10 bg-purple-600 hover:bg-purple-700 text-white rounded-full shadow-lg inline-flex items-center justify-center active:scale-95 transition-transform"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          </button>
+        </div>
+
         <!-- Open sidebar -->
         <button
           @click="sidebarOpen = true"
-          class="w-12 h-12 bg-primary-600 hover:bg-primary-700 text-white rounded-full shadow-lg flex items-center justify-center active:scale-95 transition-transform"
+          class="w-12 h-12 bg-primary-600 hover:bg-primary-700 text-white rounded-full shadow-lg inline-flex items-center justify-center active:scale-95 transition-transform"
         >
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
@@ -413,8 +475,12 @@ import { useThemeStore } from '@/stores/theme'
 import NavLink from '@/components/common/NavLink.vue'
 import DroppableNavLink from '@/components/common/DroppableNavLink.vue'
 import Toolbar from '@/components/common/Toolbar.vue'
-import logoLight from '@/assets/images/logo.jpg'
-import logoDark from '@/assets/images/logo-bg.png'
+// Логотипы для заставки (старые файлы)
+import loadingLogoLight from '@/assets/images/logo.jpg'
+import loadingLogoDark from '@/assets/images/logo-bg.png'
+// Логотипы для сайдбара (новые SVG)
+import sidebarLogoLight from '@/assets/images/logo.svg'
+import sidebarLogoDark from '@/assets/images/logo-dark.svg'
 import WorkspaceModal from '@/components/workspace/WorkspaceModal.vue'
 import AddMemberModal from '@/components/workspace/AddMemberModal.vue'
 import RenameWorkspaceModal from '@/components/workspace/RenameWorkspaceModal.vue'
@@ -429,7 +495,10 @@ const workspaceStore = useWorkspaceStore()
 const tasksStore = useTasksStore()
 const projectsStore = useProjectsStore()
 const themeStore = useThemeStore()
-const logo = computed(() => themeStore.isDark ? logoDark : logoLight)
+// Логотип для заставки (старые файлы)
+const loadingLogo = computed(() => themeStore.isDark ? loadingLogoDark : loadingLogoLight)
+// Логотип для сайдбара (новые SVG)
+const sidebarLogo = computed(() => themeStore.isDark ? sidebarLogoDark : sidebarLogoLight)
 const appLoading = ref(true)
 const loadingText = ref('Загрузка...'.split(''))
 const sidebarOpen = ref(false)
@@ -483,6 +552,10 @@ const userInitials = computed(() => {
     .slice(0, 2)
 })
 
+const isCalendarPage = computed(() => {
+  return route.path.includes('/calendar')
+})
+
 const toggleWorkspace = (workspace) => {
   workspaceStore.toggleSelectedWorkspace(workspace)
 
@@ -492,9 +565,23 @@ const toggleWorkspace = (workspace) => {
   const currentFolder = pathSegments[pathSegments.length - 1]
   const validFolders = ['inbox', 'next-actions', 'today', 'waiting', 'someday', 'calendar', 'projects', 'goals']
   const targetFolder = validFolders.includes(currentFolder) ? currentFolder : 'inbox'
-  
+
   const activeWorkspaceId = workspaceStore.currentWorkspace?.id || workspace.id
   router.push(`/workspaces/${activeWorkspaceId}/${targetFolder}`)
+}
+
+const changeCalendarView = (view) => {
+  router.push({ query: { view } })
+}
+
+const handleCalendarClick = () => {
+  if (isCalendarPage.value) {
+    // Если уже на странице календаря - переключаем вид на месяц
+    changeCalendarView('month')
+  } else {
+    // Если не на странице календаря - переходим на календарь
+    router.push(`/workspaces/${currentWorkspace.value?.id || 1}/calendar`)
+  }
 }
 
 const handleCreateWorkspace = async (formData) => {
@@ -595,6 +682,13 @@ const handleTaskDropped = async ({ taskId, newStatus }) => {
   } catch (error) {
     console.error('Error updating task status:', error)
     alert(error.response?.data?.message || 'Ошибка при обновлении задачи')
+  }
+}
+
+const handleProjectLinkClick = () => {
+  // Закрываем сайдбар только на мобилке (lg breakpoint = 1024px)
+  if (window.innerWidth < 1024) {
+    sidebarOpen.value = false
   }
 }
 
@@ -828,6 +922,46 @@ const isProjectActive = (projectId) => {
   50% {
     opacity: 1;
   }
+}
+
+/* Calendar Speed Dial animations */
+.slide-fade-day-enter-active {
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition-delay: 0.2s;
+}
+
+.slide-fade-day-leave-active {
+  transition: all 0.2s ease-in;
+  transition-delay: 0.05s;
+}
+
+.slide-fade-day-enter-from {
+  transform: translateX(60px);
+  opacity: 0;
+}
+
+.slide-fade-day-leave-to {
+  transform: translateX(60px);
+  opacity: 0;
+}
+
+.slide-fade-week-enter-active {
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition-delay: 0.1s;
+}
+
+.slide-fade-week-leave-active {
+  transition: all 0.2s ease-in;
+}
+
+.slide-fade-week-enter-from {
+  transform: translateX(60px);
+  opacity: 0;
+}
+
+.slide-fade-week-leave-to {
+  transform: translateX(60px);
+  opacity: 0;
 }
 </style>
 

@@ -10,6 +10,7 @@
   >
     <router-link
       :to="computedTo"
+      @click="handleLinkClick"
       class="flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors"
       :class="isActive ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'"
     >
@@ -61,11 +62,18 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits(['task-dropped'])
+const emit = defineEmits(['task-dropped', 'close-sidebar'])
 
 const route = useRoute()
 const workspaceStore = useWorkspaceStore()
 const isDragOver = ref(false)
+
+const handleLinkClick = () => {
+  // Закрываем сайдбар только на мобилке (lg breakpoint = 1024px)
+  if (window.innerWidth < 1024) {
+    emit('close-sidebar')
+  }
+}
 
 const iconMap = {
   inbox: InboxIcon,

@@ -39,6 +39,14 @@
         </div>
       </template>
 
+      <TaskView
+        :show="showTaskView"
+        :task="selectedTask"
+        @close="showTaskView = false; selectedTask = null"
+        @enter-edit="handleEnterEdit"
+        @complete-task="handleCompleteTask"
+      />
+
       <TaskModal
         :show="showTaskModal"
         :task="selectedTask"
@@ -55,6 +63,7 @@ import { ref, computed } from 'vue'
 import { useTasksStore } from '@/stores/tasks'
 import TaskList from '@/components/tasks/TaskList.vue'
 import TaskModal from '@/components/tasks/TaskModal.vue'
+import TaskView from '@/components/tasks/TaskView.vue'
 import { BoltIcon, PlusIcon } from '@heroicons/vue/24/outline'
 
 const tasksStore = useTasksStore()
@@ -62,17 +71,31 @@ const tasksStore = useTasksStore()
 const tasks = computed(() => tasksStore.nextActionTasks)
 const loading = computed(() => tasksStore.loading)
 const showTaskModal = ref(false)
+const showTaskView = ref(false)
 const selectedTask = ref(null)
 const taskError = ref('')
 
 const handleTaskClick = (task) => {
   selectedTask.value = task
-  showTaskModal.value = true
+  showTaskView.value = true
 }
 
 const handleAddTask = () => {
   selectedTask.value = null
   showTaskModal.value = true
+}
+
+const handleEnterEdit = () => {
+  showTaskView.value = false
+  showTaskModal.value = true
+}
+
+const handleCompleteTask = async (task) => {
+  try {
+    await tasksStore.completeTask(task.id)
+  } catch (error) {
+    console.error('Error completing task:', error)
+  }
 }
 
 const handleToggleComplete = async (task) => {

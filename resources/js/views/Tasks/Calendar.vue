@@ -576,6 +576,15 @@
         </div>
       </div>
 
+      <!-- Task View -->
+      <TaskView
+        :show="showTaskView"
+        :task="selectedTask"
+        @close="showTaskView = false; selectedTask = null"
+        @enter-edit="handleEnterEdit"
+        @complete-task="handleCompleteTask"
+      />
+
       <!-- Task Modal -->
       <TaskModal
         :show="showTaskModal"
@@ -590,9 +599,11 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { useTasksStore } from '@/stores/tasks'
 import TaskModal from '@/components/tasks/TaskModal.vue'
+import TaskView from '@/components/tasks/TaskView.vue'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
 import isSameOrAfter from 'dayjs/plugin/isSameOrAfter'
@@ -603,12 +614,21 @@ dayjs.extend(isSameOrAfter)
 dayjs.extend(isSameOrBefore)
 dayjs.locale('ru')
 
+const route = useRoute()
 const tasksStore = useTasksStore()
 
 const currentDate = ref(dayjs())
 const loading = computed(() => tasksStore.loading)
 const viewMode = ref('month')
+
+// Следим за изменениями query параметра view
+watch(() => route.query.view, (newView) => {
+  if (newView && ['day', 'week', 'month'].includes(newView)) {
+    viewMode.value = newView
+  }
+}, { immediate: true })
 const showTaskModal = ref(false)
+const showTaskView = ref(false)
 const selectedTask = ref(null)
 const taskError = ref('')
 const newTaskDate = ref('')
@@ -1065,7 +1085,20 @@ const getPriorityLabel = (priority) => {
 const handleTaskClick = (task) => {
   selectedTask.value = task
   newTaskDate.value = ''
+  showTaskView.value = true
+}
+
+const handleEnterEdit = () => {
+  showTaskView.value = false
   showTaskModal.value = true
+}
+
+const handleCompleteTask = async (task) => {
+  try {
+    await tasksStore.completeTask(task.id)
+  } catch (error) {
+    console.error('Error completing task:', error)
+  }
 }
 
 const handleAddTaskForDay = (dateString) => {
