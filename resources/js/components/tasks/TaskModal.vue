@@ -271,7 +271,15 @@ const workspaceStore = useWorkspaceStore()
 const projectsStore = useProjectsStore()
 const workspaces = computed(() => workspaceStore.workspaces)
 const currentWorkspace = computed(() => workspaceStore.currentWorkspace)
-const activeProjects = computed(() => projectsStore.activeProjects)
+
+// Фильтруем проекты по workspace_id из формы (не по selectedWorkspaces!)
+const activeProjects = computed(() => {
+  const workspaceId = form.value.workspace_id
+  if (!workspaceId) return []
+
+  return projectsStore.allProjects
+    .filter(p => p.workspace_id === workspaceId && (p.status === 'active' || !p.status))
+})
 
 // Определяем статус по текущему роуту
 const getDefaultStatusFromRoute = () => {
@@ -314,6 +322,7 @@ const form = ref({
   end_time: '',
   workspace_id: null,
   project_id: null,
+  completed_at: null,
 })
 
 const loading = ref(false)
@@ -350,22 +359,18 @@ const selectStatus = (status) => {
 }
 
 // Computed свойство для определения, выполнена ли задача
-const isCompleted = computed(() => form.value.status === 'completed')
+const isCompleted = computed(() => !!form.value.completed_at)
 
 // Обработчик переключения статуса выполнения
 const handleToggleCompleted = (event) => {
   const checked = event.target.checked
-  
+
   if (checked) {
-    // Отмечаем как выполненную - сохраняем текущий статус и меняем на completed
-    if (form.value.status !== 'completed') {
-      previousStatus.value = form.value.status
-      form.value.status = 'completed'
-    }
+    // Отмечаем как выполненную - устанавливаем completed_at (не меняем status!)
+    form.value.completed_at = new Date().toISOString()
   } else {
-    // Восстанавливаем предыдущий статус или ставим inbox по умолчанию
-    form.value.status = previousStatus.value || 'inbox'
-    previousStatus.value = null
+    // Возвращаем в работу - очищаем completed_at
+    form.value.completed_at = null
   }
 }
 
@@ -401,28 +406,20 @@ watch(() => props.task, (newTask, oldTask) => {
       end_time: '',
       workspace_id: currentWorkspace.value?.id,
       project_id: null,
+      completed_at: null,
     }
     previousStatus.value = null
     error.value = ''
     statusDropdownOpen.value = false
     return
   }
-  
+
   if (newTask) {
     // Редактируем существующую задачу
     console.log('Task received:', newTask)
     console.log('Original due_date:', newTask.due_date)
     console.log('Formatted due_date:', formatDateForInput(newTask.due_date))
-    
-    // Если задача выполнена, сохраняем предыдущий статус из completed_at или используем inbox
-    if (newTask.status === 'completed') {
-      // Пытаемся восстановить предыдущий статус из истории или используем inbox
-      previousStatus.value = newTask.previous_status || 'inbox'
-    } else {
-      // Сохраняем текущий статус как предыдущий на случай если отметят как выполненную
-      previousStatus.value = newTask.status || 'inbox'
-    }
-    
+
     form.value = {
       title: newTask.title || '',
       description: newTask.description || '',
@@ -433,6 +430,7 @@ watch(() => props.task, (newTask, oldTask) => {
       end_time: formatTimeForInput(newTask.end_time),
       workspace_id: newTask.workspace_id || currentWorkspace.value?.id,
       project_id: newTask.project_id || null,
+      completed_at: newTask.completed_at || null,
     }
   } else {
     // Создаем новую задачу - подставляем текущий workspace, статус и дату из роута
@@ -448,6 +446,7 @@ watch(() => props.task, (newTask, oldTask) => {
       end_time: '',
       workspace_id: currentWorkspace.value?.id,
       project_id: null,
+      completed_at: null,
     }
   }
   error.value = ''
@@ -522,15 +521,31 @@ watch(() => currentWorkspace.value?.id, (newWorkspaceId) => {
   }
 })
 
+// Следим за изменениями workspace_id - обнуляем project_id если проект из другого workspace
+watch(() => form.value.workspace_id, (newWorkspaceId, oldWorkspaceId) => {
+  // Пропускаем если это первая инициализация или workspace не изменился
+  if (!oldWorkspaceId || newWorkspaceId === oldWorkspaceId) return
+
+  // Проверяем: принадлежит ли текущий проект новому workspace
+  if (form.value.project_id) {
+    const currentProject = projectsStore.allProjects.find(p => p.id === form.value.project_id)
+
+    // Если проект из другого workspace - обнуляем
+    if (currentProject && currentProject.workspace_id !== newWorkspaceId) {
+      form.value.project_id = null
+    }
+  }
+})
+
 // Следим за изменениями due_date и автоматически меняем статус
 watch(() => form.value.due_date, (newDueDate) => {
-  if (!newDueDate || form.value.status === 'completed') return
-  
+  if (!newDueDate || form.value.completed_at) return
+
   const today = new Date().toISOString().split('T')[0]
   const tomorrow = new Date()
   tomorrow.setDate(tomorrow.getDate() + 1)
   const tomorrowStr = tomorrow.toISOString().split('T')[0]
-  
+
   // Если дата = сегодня - меняем статус на today
   if (newDueDate === today) {
     form.value.status = 'today'

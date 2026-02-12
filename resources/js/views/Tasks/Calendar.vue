@@ -127,7 +127,7 @@
       <!-- Week View -->
       <div v-if="viewMode === 'week'" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
         <!-- Desktop: Grid Layout with Time Grid -->
-        <div class="hidden lg:block overflow-x-auto">
+        <div class="hidden lg:block overflow-x-auto h-[calc(100vh-16rem)] overflow-y-auto">
           <!-- Days Header -->
           <div class="grid border-b border-gray-200 dark:border-gray-700" :style="{ gridTemplateColumns: '60px repeat(7, 1fr)' }">
             <div class="border-r border-gray-200 dark:border-gray-700"></div>
@@ -194,7 +194,7 @@
                     @click.stop="handleTaskClick(task)"
                     class="absolute left-1 right-1 rounded cursor-pointer p-1.5 text-xs touch-manipulation border-l-2 shadow-sm z-10"
                     :class="[
-                      task.status === 'completed'
+                      task.completed_at
                         ? 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 line-through border-gray-300 dark:border-gray-500'
                         : getDurationGradientClass(task) + ' text-primary-700 dark:text-primary-300 border-primary-500'
                     ]"
@@ -204,17 +204,17 @@
                       <button
                         @click.stop="handleToggleComplete(task)"
                         class="flex-shrink-0 w-3.5 h-3.5 mt-0.5 rounded border flex items-center justify-center transition-colors"
-                        :class="task.status === 'completed'
+                        :class="task.completed_at
                           ? 'bg-green-500 border-green-500'
                           : 'border-gray-400 hover:border-primary-500'"
                       >
-                        <svg v-if="task.status === 'completed'" class="w-2 h-2 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg v-if="task.completed_at" class="w-2 h-2 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
                         </svg>
                       </button>
                       <div class="flex-1 min-w-0">
-                        <div class="font-medium truncate">{{ task.title }}</div>
-                        <div v-if="task.estimated_time || task.end_time" class="text-[10px] opacity-75 mt-0.5">
+                        <div class="font-medium truncate text-[11px]">{{ task.title }}</div>
+                        <div v-if="task.estimated_time || task.end_time" class="text-[9px] opacity-75 mt-0.5">
                           <span v-if="task.estimated_time && task.end_time">
                             {{ formatTime(task.estimated_time) }} - {{ formatTime(task.end_time) }}
                           </span>
@@ -225,7 +225,22 @@
                             {{ formatTime(task.estimated_time) }}
                           </span>
                         </div>
+                        <!-- Compact badges -->
+                        <div class="flex flex-wrap gap-0.5 mt-0.5">
+                          <span v-if="task.project" class="inline-block px-0.5 rounded text-[8px] font-medium" :style="{ backgroundColor: task.project.color + '20', color: task.project.color }">{{ task.project.name }}</span>
+                          <span v-if="task.assignee" class="inline-block px-0.5 rounded text-[8px] font-medium bg-gray-200 dark:bg-gray-600">{{ task.assignee.name }}</span>
+                        </div>
                       </div>
+                      <!-- Priority dot -->
+                      <div
+                        v-if="task.priority !== 'medium'"
+                        class="flex-shrink-0 w-1.5 h-1.5 rounded-full mt-0.5"
+                        :class="{
+                          'bg-red-500': task.priority === 'urgent',
+                          'bg-orange-500': task.priority === 'high',
+                          'bg-blue-500': task.priority === 'low'
+                        }"
+                      />
                     </div>
                   </div>
                 </div>
@@ -253,24 +268,44 @@
                   @click.stop="handleTaskClick(task)"
                   class="p-1.5 rounded cursor-pointer text-xs touch-manipulation border-l-2 w-full max-w-full overflow-hidden"
                   :class="[
-                    task.status === 'completed'
+                    task.completed_at
                       ? 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 line-through border-gray-300 dark:border-gray-500'
                       : getDurationGradientClass(task) + ' text-primary-700 dark:text-primary-300 border-primary-500'
                   ]"
                 >
-                  <div class="flex items-center gap-1">
+                  <div class="flex items-start gap-1">
                     <button
                       @click.stop="handleToggleComplete(task)"
-                      class="flex-shrink-0 w-3.5 h-3.5 rounded border flex items-center justify-center transition-colors"
-                      :class="task.status === 'completed'
+                      class="flex-shrink-0 w-3.5 h-3.5 mt-0.5 rounded border flex items-center justify-center transition-colors"
+                      :class="task.completed_at
                         ? 'bg-green-500 border-green-500'
                         : 'border-gray-400 hover:border-primary-500'"
                     >
-                      <svg v-if="task.status === 'completed'" class="w-2 h-2 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg v-if="task.completed_at" class="w-2 h-2 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
                       </svg>
                     </button>
-                    <div class="font-medium truncate block">{{ task.title }}</div>
+                    <div class="flex-1 min-w-0">
+                      <div class="font-medium truncate block text-[11px]">{{ task.title }}</div>
+                      <!-- Meta badges -->
+                      <div class="flex flex-wrap gap-0.5 mt-0.5">
+                        <span v-if="task.project" class="inline-block px-1 py-0 rounded text-[9px] font-medium" :style="{ backgroundColor: task.project.color + '20', color: task.project.color }">{{ task.project.name }}</span>
+                        <span v-if="task.workspace" class="inline-block px-1 py-0 rounded text-[9px] font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400">{{ task.workspace.name }}</span>
+                        <span v-if="task.assignee" class="inline-block px-1 py-0 rounded text-[9px] font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">{{ task.assignee.name }}</span>
+                        <span v-if="task.context" class="inline-block px-1 py-0 rounded text-[9px] font-medium" :style="{ backgroundColor: task.context.color + '20', color: task.context.color }">{{ task.context.name }}</span>
+                        <span v-for="tag in task.tags" :key="tag.id" class="inline-block px-1 py-0 rounded text-[9px] font-medium" :style="{ backgroundColor: tag.color + '20', color: tag.color }">{{ tag.name }}</span>
+                      </div>
+                    </div>
+                    <!-- Priority dot -->
+                    <div
+                      v-if="task.priority !== 'medium'"
+                      class="flex-shrink-0 w-1.5 h-1.5 rounded-full mt-1"
+                      :class="{
+                        'bg-red-500': task.priority === 'urgent',
+                        'bg-orange-500': task.priority === 'high',
+                        'bg-blue-500': task.priority === 'low'
+                      }"
+                    />
                   </div>
                 </div>
               </div>
@@ -310,7 +345,7 @@
                   @click="handleTaskClick(task)"
                   class="p-3 rounded-lg cursor-pointer touch-manipulation border-l-4"
                   :class="[
-                    task.status === 'completed'
+                    task.completed_at
                       ? 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 line-through border-gray-300 dark:border-gray-500'
                       : getDurationGradientClass(task) + ' text-primary-700 dark:text-primary-300 border-primary-500'
                   ]"
@@ -319,28 +354,85 @@
                     <button
                       @click.stop="handleToggleComplete(task)"
                       class="flex-shrink-0 w-4 h-4 mt-0.5 rounded border-2 flex items-center justify-center transition-colors"
-                      :class="task.status === 'completed'
+                      :class="task.completed_at
                         ? 'bg-green-500 border-green-500'
                         : 'border-gray-400 hover:border-primary-500'"
                     >
-                      <svg v-if="task.status === 'completed'" class="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg v-if="task.completed_at" class="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
                       </svg>
                     </button>
                     <div class="flex-1 min-w-0">
                       <div class="font-medium text-sm mb-1">{{ task.title }}</div>
+
+                      <!-- Meta информация -->
+                      <div class="flex flex-wrap items-center gap-1.5 mt-1.5">
+                        <!-- Workspace -->
+                        <span
+                          v-if="task.workspace"
+                          class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400"
+                        >
+                          {{ task.workspace.name }}
+                        </span>
+
+                        <!-- Проект -->
+                        <span
+                          v-if="task.project"
+                          class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium"
+                          :style="{ backgroundColor: task.project.color + '20', color: task.project.color }"
+                        >
+                          {{ task.project.name }}
+                        </span>
+
+                        <!-- Время -->
+                        <span v-if="task.estimated_time || task.end_time" class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                          <span v-if="task.estimated_time && task.end_time">
+                            {{ formatTime(task.estimated_time) }} - {{ formatTime(task.end_time) }}
+                          </span>
+                          <span v-else-if="task.estimated_time">
+                            {{ formatTime(task.estimated_time) }}
+                          </span>
+                          <span v-else-if="task.end_time">
+                            до {{ formatTime(task.end_time) }}
+                          </span>
+                        </span>
+
+                        <!-- Assignee -->
+                        <span v-if="task.assignee" class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">
+                          {{ task.assignee.name }}
+                        </span>
+
+                        <!-- Context -->
+                        <span
+                          v-if="task.context"
+                          class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium"
+                          :style="{ backgroundColor: task.context.color + '20', color: task.context.color }"
+                        >
+                          {{ task.context.name }}
+                        </span>
+
+                        <!-- Tags -->
+                        <span
+                          v-for="tag in task.tags"
+                          :key="tag.id"
+                          class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium"
+                          :style="{ backgroundColor: tag.color + '20', color: tag.color }"
+                        >
+                          {{ tag.name }}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                  <div v-if="task.estimated_time || task.end_time" class="text-xs text-gray-600 dark:text-gray-400 mt-1 ml-6">
-                    ⏱ <span v-if="task.estimated_time && task.end_time">
-                      {{ formatTime(task.estimated_time) }} - {{ formatTime(task.end_time) }}
-                    </span>
-                    <span v-else-if="task.estimated_time">
-                      {{ formatTime(task.estimated_time) }}
-                    </span>
-                    <span v-else-if="task.end_time">
-                      до {{ formatTime(task.end_time) }}
-                    </span>
+
+                    <!-- Priority Badge -->
+                    <div
+                      v-if="task.priority !== 'medium'"
+                      class="flex-shrink-0 w-2 h-2 rounded-full mt-2"
+                      :class="{
+                        'bg-red-500': task.priority === 'urgent',
+                        'bg-orange-500': task.priority === 'high',
+                        'bg-blue-500': task.priority === 'low'
+                      }"
+                    />
                   </div>
                 </div>
                 <div v-if="day.tasks.length === 0" class="text-xs text-gray-400 dark:text-gray-500 text-center py-4">
@@ -404,7 +496,7 @@
                     @click.stop="handleTaskClick(task)"
                     class="absolute left-2 right-2 rounded-lg cursor-pointer p-2 sm:p-3 border-l-4 shadow-sm z-10 touch-manipulation"
                     :class="[
-                      task.status === 'completed'
+                      task.completed_at
                         ? 'bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-500 line-through'
                         : getDurationGradientClass(task) + ' border-primary-500'
                     ]"
@@ -414,11 +506,11 @@
                       <button
                         @click.stop="handleToggleComplete(task)"
                         class="flex-shrink-0 w-5 h-5 mt-0.5 rounded border-2 flex items-center justify-center transition-colors"
-                        :class="task.status === 'completed'
+                        :class="task.completed_at
                           ? 'bg-green-500 border-green-500'
                           : 'border-gray-300 hover:border-primary-500'"
                       >
-                        <svg v-if="task.status === 'completed'" class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg v-if="task.completed_at" class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
                         </svg>
                       </button>
@@ -449,6 +541,47 @@
                           >
                             {{ getPriorityLabel(task.priority) }}
                           </span>
+
+                          <!-- Workspace -->
+                          <span
+                            v-if="task.workspace"
+                            class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400"
+                          >
+                            {{ task.workspace.name }}
+                          </span>
+
+                          <!-- Project -->
+                          <span
+                            v-if="task.project"
+                            class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
+                            :style="{ backgroundColor: task.project.color + '20', color: task.project.color }"
+                          >
+                            {{ task.project.name }}
+                          </span>
+
+                          <!-- Assignee -->
+                          <span v-if="task.assignee" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">
+                            {{ task.assignee.name }}
+                          </span>
+
+                          <!-- Context -->
+                          <span
+                            v-if="task.context"
+                            class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
+                            :style="{ backgroundColor: task.context.color + '20', color: task.context.color }"
+                          >
+                            {{ task.context.name }}
+                          </span>
+
+                          <!-- Tags -->
+                          <span
+                            v-for="tag in task.tags"
+                            :key="tag.id"
+                            class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
+                            :style="{ backgroundColor: tag.color + '20', color: tag.color }"
+                          >
+                            {{ tag.name }}
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -471,7 +604,7 @@
                   @click.stop="handleTaskClick(task)"
                   class="p-3 rounded-lg cursor-pointer border-l-4 touch-manipulation"
                   :class="[
-                    task.status === 'completed'
+                    task.completed_at
                       ? 'bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-500 line-through'
                       : getDurationGradientClass(task) + ' border-primary-500'
                   ]"
@@ -480,11 +613,11 @@
                     <button
                       @click.stop="handleToggleComplete(task)"
                       class="flex-shrink-0 w-5 h-5 mt-0.5 rounded border-2 flex items-center justify-center transition-colors"
-                      :class="task.status === 'completed'
+                      :class="task.completed_at
                         ? 'bg-green-500 border-green-500'
                         : 'border-gray-300 hover:border-primary-500'"
                     >
-                      <svg v-if="task.status === 'completed'" class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg v-if="task.completed_at" class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
                       </svg>
                     </button>
@@ -492,6 +625,21 @@
                       <div class="font-medium text-sm sm:text-base text-gray-900 dark:text-white mb-1">{{ task.title }}</div>
                       <div v-if="task.description" class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">{{ task.description }}</div>
                       <div class="flex flex-wrap items-center gap-2 mt-2">
+                        <!-- Time -->
+                        <span v-if="task.estimated_time || task.end_time" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                          <ClockIcon class="w-3 h-3 mr-1" />
+                          <span v-if="task.estimated_time && task.end_time">
+                            {{ formatTime(task.estimated_time) }} - {{ formatTime(task.end_time) }}
+                          </span>
+                          <span v-else-if="task.estimated_time">
+                            {{ formatTime(task.estimated_time) }}
+                          </span>
+                          <span v-else-if="task.end_time">
+                            до {{ formatTime(task.end_time) }}
+                          </span>
+                        </span>
+
+                        <!-- Priority -->
                         <span
                           class="text-xs px-2 py-0.5 rounded-full"
                           :class="{
@@ -502,6 +650,47 @@
                           }"
                         >
                           {{ getPriorityLabel(task.priority) }}
+                        </span>
+
+                        <!-- Workspace -->
+                        <span
+                          v-if="task.workspace"
+                          class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400"
+                        >
+                          {{ task.workspace.name }}
+                        </span>
+
+                        <!-- Project -->
+                        <span
+                          v-if="task.project"
+                          class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
+                          :style="{ backgroundColor: task.project.color + '20', color: task.project.color }"
+                        >
+                          {{ task.project.name }}
+                        </span>
+
+                        <!-- Assignee -->
+                        <span v-if="task.assignee" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">
+                          {{ task.assignee.name }}
+                        </span>
+
+                        <!-- Context -->
+                        <span
+                          v-if="task.context"
+                          class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
+                          :style="{ backgroundColor: task.context.color + '20', color: task.context.color }"
+                        >
+                          {{ task.context.name }}
+                        </span>
+
+                        <!-- Tags -->
+                        <span
+                          v-for="tag in task.tags"
+                          :key="tag.id"
+                          class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
+                          :style="{ backgroundColor: tag.color + '20', color: tag.color }"
+                        >
+                          {{ tag.name }}
                         </span>
                       </div>
                     </div>
@@ -521,7 +710,7 @@
               @click="handleTaskClick(task)"
               class="p-3 sm:p-4 rounded-lg cursor-pointer border-l-4 touch-manipulation active:scale-[0.98] transition-transform"
               :class="[
-                task.status === 'completed'
+                task.completed_at
                   ? 'bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-500 line-through'
                   : getDurationGradientClass(task) + ' border-primary-500'
               ]"
@@ -530,11 +719,11 @@
                 <button
                   @click.stop="handleToggleComplete(task)"
                   class="flex-shrink-0 w-5 h-5 mt-0.5 rounded border-2 flex items-center justify-center transition-colors"
-                  :class="task.status === 'completed'
+                  :class="task.completed_at
                     ? 'bg-green-500 border-green-500'
                     : 'border-gray-300 hover:border-primary-500'"
                 >
-                  <svg v-if="task.status === 'completed'" class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg v-if="task.completed_at" class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
                   </svg>
                 </button>
@@ -565,6 +754,47 @@
                     >
                       {{ getPriorityLabel(task.priority) }}
                     </span>
+
+                    <!-- Workspace -->
+                    <span
+                      v-if="task.workspace"
+                      class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400"
+                    >
+                      {{ task.workspace.name }}
+                    </span>
+
+                    <!-- Проект -->
+                    <span
+                      v-if="task.project"
+                      class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
+                      :style="{ backgroundColor: task.project.color + '20', color: task.project.color }"
+                    >
+                      {{ task.project.name }}
+                    </span>
+
+                    <!-- Assignee -->
+                    <span v-if="task.assignee" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">
+                      {{ task.assignee.name }}
+                    </span>
+
+                    <!-- Context -->
+                    <span
+                      v-if="task.context"
+                      class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
+                      :style="{ backgroundColor: task.context.color + '20', color: task.context.color }"
+                    >
+                      {{ task.context.name }}
+                    </span>
+
+                    <!-- Tags -->
+                    <span
+                      v-for="tag in task.tags"
+                      :key="tag.id"
+                      class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
+                      :style="{ backgroundColor: tag.color + '20', color: tag.color }"
+                    >
+                      {{ tag.name }}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -583,6 +813,7 @@
         @close="showTaskView = false; selectedTask = null"
         @enter-edit="handleEnterEdit"
         @complete-task="handleCompleteTask"
+        @uncomplete-task="handleUncompleteTask"
       />
 
       <!-- Task Modal -->
@@ -594,6 +825,18 @@
         @close="handleCloseTaskModal"
         @submit="handleSaveTask"
       />
+
+      <!-- Confirm Dialog -->
+      <ConfirmDialog
+        :show="showConfirm"
+        :title="confirmTitle"
+        :message="confirmMessage"
+        confirm-text="Завершить"
+        cancel-text="Отмена"
+        variant="success"
+        @confirm="confirmComplete"
+        @cancel="cancelComplete"
+      />
     </div>
   </div>
 </template>
@@ -604,6 +847,7 @@ import { useRoute } from 'vue-router'
 import { useTasksStore } from '@/stores/tasks'
 import TaskModal from '@/components/tasks/TaskModal.vue'
 import TaskView from '@/components/tasks/TaskView.vue'
+import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
 import isSameOrAfter from 'dayjs/plugin/isSameOrAfter'
@@ -633,6 +877,12 @@ const selectedTask = ref(null)
 const taskError = ref('')
 const newTaskDate = ref('')
 const currentTime = ref(dayjs())
+
+// Состояния для ConfirmDialog
+const showConfirm = ref(false)
+const taskToComplete = ref(null)
+const confirmTitle = ref('Завершить задачу?')
+const confirmMessage = ref('')
 
 // Вычисляемый диапазон дат для текущего вида
 const dateRange = computed(() => {
@@ -670,7 +920,7 @@ const monthTaskCount = computed(() => {
   const endOfMonth = currentDate.value.endOf('month')
   
   const count = tasks.value.filter(task => {
-    if (!task.due_date || task.status === 'completed') return false
+    if (!task.due_date || task.completed_at) return false
     
     // Парсим дату - может быть в формате YYYY-MM-DD или ISO
     const taskDate = dayjs(task.due_date)
@@ -791,10 +1041,11 @@ const dayHours = computed(() => {
   return getHoursRange(dayTasksWithTime.value)
 })
 
-// Часы для недельного вида (на основе всех задач недели)
+// Часы для недельного вида (полные сутки для заполнения экрана)
 const weekHours = computed(() => {
-  const allWeekTasks = weekDaysData.value.flatMap(day => getTasksForDayWithTime(day.date))
-  return getHoursRange(allWeekTasks)
+  // Показываем полные сутки 0:00 - 23:00 (24 часа)
+  // Высота: 24 × 64px = 1536px - заполняет весь экран с прокруткой
+  return Array.from({ length: 24 }, (_, i) => i)
 })
 
 const calendarDays = computed(() => {
@@ -1007,7 +1258,7 @@ const getTaskDuration = (task) => {
 
 // Получение класса градиента в зависимости от продолжительности
 const getDurationGradientClass = (task) => {
-  if (task.status === 'completed') {
+  if (task.completed_at) {
     return 'bg-gray-100 dark:bg-gray-700'
   }
 
@@ -1101,6 +1352,14 @@ const handleCompleteTask = async (task) => {
   }
 }
 
+const handleUncompleteTask = async (task) => {
+  try {
+    await tasksStore.uncompleteTask(task.id)
+  } catch (error) {
+    console.error('Error uncompleting task:', error)
+  }
+}
+
 const handleAddTaskForDay = (dateString) => {
   selectedTask.value = null
   newTaskDate.value = dateString
@@ -1142,16 +1401,34 @@ const handleCloseTaskModal = () => {
   taskError.value = ''
 }
 
-const handleToggleComplete = async (task) => {
-  try {
-    if (task.status === 'completed') {
-      await tasksStore.updateTask(task.id, { status: 'next_action' })
-    } else {
-      await tasksStore.completeTask(task.id)
-    }
-  } catch (error) {
-    console.error('Error toggling task:', error)
+const handleToggleComplete = (task) => {
+  // Если задача уже завершена, сразу отменяем завершение без подтверждения
+  if (task.completed_at) {
+    handleUncompleteTask(task)
+    return
   }
+
+  // Если задача не завершена, показываем подтверждение
+  taskToComplete.value = task
+  confirmMessage.value = `Вы уверены, что хотите завершить задачу "${task.title}"?`
+  showConfirm.value = true
+}
+
+const confirmComplete = async () => {
+  if (taskToComplete.value) {
+    try {
+      await tasksStore.completeTask(taskToComplete.value.id)
+    } catch (error) {
+      console.error('Error completing task:', error)
+    }
+  }
+  showConfirm.value = false
+  taskToComplete.value = null
+}
+
+const cancelComplete = () => {
+  showConfirm.value = false
+  taskToComplete.value = null
 }
 
 // Обновление линии текущего времени

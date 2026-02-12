@@ -18,12 +18,12 @@
         <button
           @click.stop="handleToggleComplete(task)"
           class="mt-1 flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors duration-200"
-          :class="task.status === 'completed'
+          :class="task.completed_at
             ? 'bg-green-500 border-green-500'
             : 'border-gray-300 hover:border-primary-500'"
         >
           <svg
-            v-if="task.status === 'completed'"
+            v-if="task.completed_at"
             class="w-3 h-3 text-white"
             fill="none" stroke="currentColor" viewBox="0 0 24 24"
           >
@@ -35,7 +35,7 @@
         <div class="flex-1 min-w-0">
           <h3
             class="text-sm font-medium transition-all duration-200"
-            :class="task.status === 'completed'
+            :class="task.completed_at
               ? 'text-gray-400 line-through'
               : 'text-gray-900 dark:text-white'"
           >
@@ -219,7 +219,7 @@ const handleDragEnd = () => {
 
 const handleToggleComplete = (task) => {
   // Если задача уже завершена, сразу отменяем завершение без подтверждения
-  if (task.status === 'completed') {
+  if (task.completed_at) {
     emit('toggle-complete', task)
     return
   }
@@ -267,7 +267,7 @@ const formatTime = (time) => {
 }
 
 const getDueDateClass = (task) => {
-  if (task.status === 'completed') {
+  if (task.completed_at) {
     return 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
   }
 
@@ -316,7 +316,7 @@ const getTaskDuration = (task) => {
 
 // Получение класса градиента в зависимости от продолжительности
 const getDurationGradientClass = (task) => {
-  if (task.status === 'completed') {
+  if (task.completed_at) {
     return 'bg-white dark:bg-gray-800'
   }
 

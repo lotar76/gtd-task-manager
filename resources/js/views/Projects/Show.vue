@@ -102,6 +102,7 @@
         @close="showTaskView = false; selectedTask = null"
         @enter-edit="handleEnterEdit"
         @complete-task="handleCompleteTask"
+        @uncomplete-task="handleUncompleteTask"
       />
 
       <!-- Task Modal -->
@@ -258,6 +259,14 @@ const handleCompleteTask = async (task) => {
   }
 }
 
+const handleUncompleteTask = async (task) => {
+  try {
+    await tasksStore.uncompleteTask(task.id)
+  } catch (error) {
+    console.error('Error uncompleting task:', error)
+  }
+}
+
 const handleSaveTask = async (taskData) => {
   taskError.value = ''
   try {
@@ -302,8 +311,8 @@ const handleCloseProjectModal = () => {
 
 const handleToggleComplete = async (task) => {
   try {
-    if (task.status === 'completed') {
-      await tasksStore.updateTask(task.id, { status: 'inbox' })
+    if (task.completed_at) {
+      await tasksStore.uncompleteTask(task.id)
     } else {
       await tasksStore.completeTask(task.id)
     }

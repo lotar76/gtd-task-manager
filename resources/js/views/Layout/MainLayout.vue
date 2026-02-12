@@ -112,6 +112,17 @@
 
           <!-- Navigation -->
           <nav class="flex-1 overflow-y-auto p-4">
+            <!-- Дашборд -->
+            <div class="space-y-1 mb-6 pb-6 border-b border-gray-200 dark:border-gray-700">
+              <NavLink
+                to="/"
+                icon="chart-bar"
+                @close-sidebar="sidebarOpen = false"
+              >
+                Дашборд
+              </NavLink>
+            </div>
+
             <div class="space-y-1">
               <!-- Входящие - отдельно -->
               <DroppableNavLink
@@ -287,6 +298,19 @@
                 </NavLink>
               </div>
             </div>
+
+            <div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+              <div class="space-y-1">
+                <NavLink
+                  to="/workspaces/:id/archive"
+                  icon="archive-box"
+                  :count="archivedCount"
+                  @close-sidebar="sidebarOpen = false"
+                >
+                  Архив
+                </NavLink>
+              </div>
+            </div>
           </nav>
 
         </div>
@@ -311,14 +335,15 @@
           </svg>
         </button>
 
-        <!-- Calendar button -->
-        <div class="flex items-center gap-2">
+        <!-- Calendar button (with optional day/week buttons) -->
+        <div class="relative">
           <!-- Calendar view options (показываются только на странице календаря) -->
+          <!-- Кнопки появляются слева от основной кнопки календаря -->
           <Transition name="slide-fade-day">
             <button
               v-if="isCalendarPage"
               @click="changeCalendarView('day')"
-              class="w-10 h-10 bg-purple-500 hover:bg-purple-600 text-white rounded-full shadow-lg inline-flex items-center justify-center active:scale-95 transition-all"
+              class="absolute right-full mr-2 top-0 w-10 h-10 bg-purple-500 hover:bg-purple-600 text-white rounded-full shadow-lg inline-flex items-center justify-center active:scale-95 transition-all"
               title="Сегодня"
             >
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
@@ -331,7 +356,7 @@
             <button
               v-if="isCalendarPage"
               @click="changeCalendarView('week')"
-              class="w-10 h-10 bg-purple-500 hover:bg-purple-600 text-white rounded-full shadow-lg inline-flex items-center justify-center active:scale-95 transition-all"
+              class="absolute right-full mr-14 top-0 w-10 h-10 bg-purple-500 hover:bg-purple-600 text-white rounded-full shadow-lg inline-flex items-center justify-center active:scale-95 transition-all"
               title="Неделя"
             >
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
@@ -530,6 +555,9 @@ const selectedWorkspaceIds = computed(() =>
 // Используем scheduled задачи (задачи с датой, не today/tomorrow)
 // + today и tomorrow задачи (они тоже отображаются в календаре)
 const totalTaskCount = computed(() => tasksStore.filteredTasks.length)
+
+// Счетчик архивных задач
+const archivedCount = computed(() => tasksStore.archivedTasks.length)
 
 const calendarMonthCount = computed(() => {
   if (selectedWorkspaceIds.value.length === 0) return 0

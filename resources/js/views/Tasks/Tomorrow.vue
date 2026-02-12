@@ -45,6 +45,7 @@
         @close="showTaskView = false; selectedTask = null"
         @enter-edit="handleEnterEdit"
         @complete-task="handleCompleteTask"
+        @uncomplete-task="handleUncompleteTask"
       />
 
       <TaskModal
@@ -98,10 +99,18 @@ const handleCompleteTask = async (task) => {
   }
 }
 
+const handleUncompleteTask = async (task) => {
+  try {
+    await tasksStore.uncompleteTask(task.id)
+  } catch (error) {
+    console.error('Error uncompleting task:', error)
+  }
+}
+
 const handleToggleComplete = async (task) => {
   try {
-    if (task.status === 'completed') {
-      await tasksStore.updateTask(task.id, { status: 'tomorrow' })
+    if (task.completed_at) {
+      await tasksStore.uncompleteTask(task.id)
     } else {
       await tasksStore.completeTask(task.id)
     }

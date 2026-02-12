@@ -23,7 +23,7 @@ class TaskController extends Controller
     ) {
     }
 
-    // Все активные задачи пользователя (по всем workspace)
+    // Все задачи пользователя (по всем workspace, включая завершённые)
     public function all(Request $request): JsonResponse
     {
         $workspaceIds = $request->user()
@@ -31,7 +31,6 @@ class TaskController extends Controller
             ->pluck('id');
 
         $tasks = Task::whereIn('workspace_id', $workspaceIds)
-            ->where('status', '!=', 'completed')
             ->with(['workspace:id,name', 'project:id,name', 'context:id,name', 'assignee:id,name', 'tags:id,name'])
             ->orderBy('created_at', 'desc')
             ->get();
@@ -141,7 +140,7 @@ class TaskController extends Controller
 
         $tasks = $workspace->tasks()
             ->where('assigned_to', Auth::id())
-            ->whereNotIn('status', ['completed'])
+            ->whereNull('completed_at')
             ->with(['workspace', 'project', 'context', 'assignee', 'tags'])
             ->orderBy('due_date', 'asc')
             ->get();

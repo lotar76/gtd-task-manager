@@ -110,7 +110,7 @@ class Task extends Model
 
     public function scopeCompleted($query)
     {
-        return $query->where('status', 'completed');
+        return $query->whereNotNull('completed_at');
     }
 
     // Scope для фильтрации задач на сегодня (по статусу)
@@ -122,7 +122,7 @@ class Task extends Model
     public function scopeOverdue($query)
     {
         return $query->whereDate('due_date', '<', now()->toDateString())
-            ->whereNotIn('status', ['completed']);
+            ->whereNull('completed_at');
     }
 
     public function scopeUpcoming($query)
@@ -134,9 +134,9 @@ class Task extends Model
     // Проверка просрочена ли задача
     public function getIsOverdueAttribute(): bool
     {
-        return $this->due_date && 
-               $this->due_date->isPast() && 
-               $this->status !== 'completed';
+        return $this->due_date &&
+               $this->due_date->isPast() &&
+               !$this->completed_at;
     }
 
     // Проверка на сегодня

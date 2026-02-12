@@ -131,6 +131,7 @@
         @close="showTaskView = false; selectedTask = null"
         @enter-edit="handleEnterEdit"
         @complete-task="handleCompleteTask"
+        @uncomplete-task="handleUncompleteTask"
       />
 
       <TaskModal
@@ -211,7 +212,7 @@ const availableSections = computed(() => {
 const overdueCount = computed(() => {
   const now = new Date()
   return allTasks.value.filter(task => {
-    if (!task.due_date || task.status === 'completed') return false
+    if (!task.due_date || task.completed_at) return false
     const dueDate = new Date(task.due_date)
     return dueDate < now
   }).length
@@ -242,7 +243,7 @@ const filteredTasks = computed(() => {
   if (filterOverdue.value) {
     const now = new Date()
     result = result.filter(t => {
-      if (!t.due_date || t.status === 'completed') return false
+      if (!t.due_date || t.completed_at) return false
       const dueDate = new Date(t.due_date)
       return dueDate < now
     })
@@ -283,10 +284,18 @@ const handleCompleteTask = async (task) => {
   }
 }
 
+const handleUncompleteTask = async (task) => {
+  try {
+    await tasksStore.uncompleteTask(task.id)
+  } catch (error) {
+    console.error('Error uncompleting task:', error)
+  }
+}
+
 const handleToggleComplete = async (task) => {
   try {
-    if (task.status === 'completed') {
-      await tasksStore.updateTask(task.id, { status: 'inbox' })
+    if (task.completed_at) {
+      await tasksStore.uncompleteTask(task.id)
     } else {
       await tasksStore.completeTask(task.id)
     }

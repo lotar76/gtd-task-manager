@@ -15,11 +15,11 @@ export const useTasksStore = defineStore('tasks', () => {
     workspaceStore.selectedWorkspaces.map(ws => ws.id)
   )
 
-  // Все задачи, отфильтрованные по выбранным workspace
+  // Все задачи, отфильтрованные по выбранным workspace (без completed)
   const filteredTasks = computed(() => {
     const ids = selectedWorkspaceIds.value
     if (!ids.length) return []
-    return allTasks.value.filter(t => ids.includes(t.workspace_id))
+    return allTasks.value.filter(t => ids.includes(t.workspace_id) && !t.completed_at)
   })
 
   // Computed-фильтры по секциям GTD
@@ -30,6 +30,16 @@ export const useTasksStore = defineStore('tasks', () => {
   const waitingTasks = computed(() => filteredTasks.value.filter(t => t.status === 'waiting'))
   const somedayTasks = computed(() => filteredTasks.value.filter(t => t.status === 'someday'))
   const scheduledTasks = computed(() => filteredTasks.value.filter(t => t.status === 'scheduled'))
+
+  // Архивные задачи (завершённые) - последние 20
+  const archivedTasks = computed(() => {
+    const ids = selectedWorkspaceIds.value
+    if (!ids.length) return []
+    return allTasks.value
+      .filter(t => ids.includes(t.workspace_id) && t.completed_at)
+      .sort((a, b) => new Date(b.completed_at || b.updated_at) - new Date(a.completed_at || a.updated_at))
+      .slice(0, 20)
+  })
 
   // Counts — вычисляются автоматически
   const counts = computed(() => ({
@@ -87,16 +97,15 @@ export const useTasksStore = defineStore('tasks', () => {
 
     const response = await api.post(`/v1/workspaces/${workspaceId}/tasks`, dataToSend)
     const newTask = response.data.data || response.data
-    // Добавляем в начало массива (если не completed)
-    if (newTask.status !== 'completed') {
-      allTasks.value.unshift(newTask)
-    }
+    // Добавляем в начало массива (все задачи, включая completed)
+    allTasks.value.unshift(newTask)
     return newTask
   }
 
   const updateTask = async (taskId, taskData) => {
     const existingTask = allTasks.value.find(t => t.id === taskId)
-    const wsId = existingTask?.workspace_id || taskData?.workspace_id || workspaceStore.currentWorkspace?.id
+    // Используем новый workspace_id из taskData если он указан, иначе текущий
+    const wsId = taskData?.workspace_id || existingTask?.workspace_id || workspaceStore.currentWorkspace?.id
 
     if (!wsId) {
       console.error('Cannot update task: workspace_id not found')
@@ -104,19 +113,16 @@ export const useTasksStore = defineStore('tasks', () => {
     }
 
     const dataToSend = sanitizeData(taskData)
-    delete dataToSend.workspace_id
+    // НЕ удаляем workspace_id - разрешаем изменение workspace
+    // delete dataToSend.workspace_id  // ❌ УДАЛЕНО!
 
     const response = await api.put(`/v1/workspaces/${wsId}/tasks/${taskId}`, dataToSend)
     const updated = response.data.data || response.data
 
     const index = allTasks.value.findIndex(t => t.id === taskId)
     if (index !== -1) {
-      if (updated.status === 'completed') {
-        // Completed задачи убираем из массива
-        allTasks.value.splice(index, 1)
-      } else {
-        allTasks.value[index] = updated
-      }
+      // Обновляем задачу в массиве (включая completed)
+      allTasks.value[index] = updated
     }
     return updated
   }
@@ -133,15 +139,44 @@ export const useTasksStore = defineStore('tasks', () => {
       return
     }
 
-    // Optimistic: сразу убираем из списка
+    // Optimistic: устанавливаем completed_at (не меняем status!)
     const backup = { ...task }
-    allTasks.value.splice(taskIndex, 1)
+    allTasks.value[taskIndex] = { ...task, completed_at: new Date().toISOString() }
 
     try {
-      await api.post(`/v1/workspaces/${wsId}/tasks/${taskId}/complete`)
+      const response = await api.post(`/v1/workspaces/${wsId}/tasks/${taskId}/complete`)
+      const updated = response.data.data || response.data
+      allTasks.value[taskIndex] = updated
     } catch (error) {
-      // Ошибка — возвращаем задачу на место
-      allTasks.value.splice(taskIndex, 0, backup)
+      // Ошибка — возвращаем задачу в исходное состояние
+      allTasks.value[taskIndex] = backup
+      throw error
+    }
+  }
+
+  const uncompleteTask = async (taskId) => {
+    const taskIndex = allTasks.value.findIndex(t => t.id === taskId)
+    if (taskIndex === -1) return
+
+    const task = allTasks.value[taskIndex]
+    const wsId = task.workspace_id || workspaceStore.currentWorkspace?.id
+
+    if (!wsId) {
+      console.error('Cannot uncomplete task: workspace_id not found')
+      return
+    }
+
+    // Optimistic: очищаем completed_at (не меняем status!)
+    const backup = { ...task }
+    allTasks.value[taskIndex] = { ...task, completed_at: null }
+
+    try {
+      const response = await api.post(`/v1/workspaces/${wsId}/tasks/${taskId}/uncomplete`)
+      const updated = response.data.data || response.data
+      allTasks.value[taskIndex] = updated
+    } catch (error) {
+      // Ошибка — возвращаем задачу в исходное состояние
+      allTasks.value[taskIndex] = backup
       throw error
     }
   }
@@ -185,6 +220,7 @@ export const useTasksStore = defineStore('tasks', () => {
     waitingTasks,
     somedayTasks,
     scheduledTasks,
+    archivedTasks,
     counts,
     calendarTasks,
     viewMode,
@@ -192,6 +228,7 @@ export const useTasksStore = defineStore('tasks', () => {
     createTask,
     updateTask,
     completeTask,
+    uncompleteTask,
     deleteTask,
     setViewMode,
     startSync,

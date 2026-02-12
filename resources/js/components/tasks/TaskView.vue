@@ -36,7 +36,7 @@
             <div class="flex-1 overflow-y-auto p-6 space-y-4">
 
               <!-- Completed badge -->
-              <div v-if="task.status === 'completed'" class="flex items-center space-x-2 text-green-600 dark:text-green-400">
+              <div v-if="task.completed_at" class="flex items-center space-x-2 text-green-600 dark:text-green-400">
                 <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
                   <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
                 </svg>
@@ -83,12 +83,54 @@
                   {{ formatDate(task.due_date) }}
                 </span>
 
-                <!-- Estimated time -->
-                <span v-if="task.estimated_time" class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
+                <!-- Time range -->
+                <span v-if="task.estimated_time || task.end_time" class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
                   <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  {{ task.estimated_time }}
+                  <span v-if="task.estimated_time && task.end_time">
+                    {{ formatTime(task.estimated_time) }} - {{ formatTime(task.end_time) }}
+                  </span>
+                  <span v-else-if="task.estimated_time">
+                    {{ formatTime(task.estimated_time) }}
+                  </span>
+                  <span v-else-if="task.end_time">
+                    до {{ formatTime(task.end_time) }}
+                  </span>
+                </span>
+
+                <!-- Assignee -->
+                <span v-if="task.assignee" class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
+                  <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                  {{ task.assignee.name }}
+                </span>
+
+                <!-- Context -->
+                <span
+                  v-if="task.context"
+                  class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium"
+                  :style="{ backgroundColor: task.context.color + '20', color: task.context.color }"
+                >
+                  <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  {{ task.context.name }}
+                </span>
+
+                <!-- Tags -->
+                <span
+                  v-for="tag in task.tags"
+                  :key="tag.id"
+                  class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium"
+                  :style="{ backgroundColor: tag.color + '20', color: tag.color }"
+                >
+                  <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                  </svg>
+                  {{ tag.name }}
                 </span>
               </div>
 
@@ -100,33 +142,57 @@
               </div>
 
               <!-- Workspace/Project -->
-              <div v-if="task.workspace_name || task.project_name" class="flex items-center gap-3 pt-4 mt-4 border-t border-gray-200 dark:border-gray-700 text-sm text-gray-500 dark:text-gray-400">
-                <span v-if="task.workspace_name" class="flex items-center">
-                  <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div v-if="task.workspace || task.project" class="flex flex-wrap items-center gap-2 pt-4 mt-4 border-t border-gray-200 dark:border-gray-700">
+                <!-- Workspace -->
+                <span
+                  v-if="task.workspace"
+                  class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400"
+                >
+                  <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                  </svg>
+                  {{ task.workspace.name }}
+                </span>
+
+                <!-- Project -->
+                <span
+                  v-if="task.project"
+                  class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium"
+                  :style="{ backgroundColor: task.project.color + '20', color: task.project.color }"
+                >
+                  <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
                   </svg>
-                  {{ task.workspace_name }}
-                </span>
-                <span v-if="task.project_name" class="flex items-center">
-                  <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
-                  </svg>
-                  {{ task.project_name }}
+                  {{ task.project.name }}
                 </span>
               </div>
 
             </div>
 
-            <!-- Footer with button (only mobile) -->
-            <div v-if="task.status !== 'completed'" class="md:hidden border-t border-gray-200 dark:border-gray-700 p-4">
+            <!-- Footer with button -->
+            <div class="border-t border-gray-200 dark:border-gray-700 p-4">
+              <!-- Кнопка для активных задач -->
               <button
+                v-if="!task.completed_at"
                 @click="handleComplete"
-                class="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 shadow-sm flex items-center justify-center space-x-2"
+                class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 shadow-sm flex items-center justify-center space-x-2"
               >
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                 </svg>
-                <span>Выполнено</span>
+                <span>Завершить задачу</span>
+              </button>
+
+              <!-- Кнопка для завершённых задач -->
+              <button
+                v-else
+                @click="handleUncomplete"
+                class="w-full bg-gray-600 hover:bg-gray-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 shadow-sm flex items-center justify-center space-x-2"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                <span>Вернуть в работу</span>
               </button>
             </div>
           </div>
@@ -152,7 +218,7 @@ const props = defineProps({
   task: Object
 })
 
-const emit = defineEmits(['close', 'enter-edit', 'complete-task'])
+const emit = defineEmits(['close', 'enter-edit', 'complete-task', 'uncomplete-task'])
 
 // Handle complete button
 const handleComplete = () => {
@@ -160,10 +226,25 @@ const handleComplete = () => {
   emit('close')
 }
 
+// Handle uncomplete button
+const handleUncomplete = () => {
+  emit('uncomplete-task', props.task)
+  emit('close')
+}
+
 // Format date
 const formatDate = (dateString) => {
   const date = new Date(dateString)
   return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })
+}
+
+// Format time
+const formatTime = (time) => {
+  if (!time) return ''
+  // Если время уже в формате HH:mm, возвращаем как есть
+  if (/^\d{2}:\d{2}$/.test(time)) return time
+  // Иначе извлекаем HH:mm из формата HH:mm:ss
+  return time.substring(0, 5)
 }
 
 // Status icon mapping

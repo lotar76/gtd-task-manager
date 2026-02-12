@@ -95,6 +95,11 @@ const routes = [
             component: () => import('@/views/Goals/Index.vue'),
           },
           {
+            path: 'archive',
+            name: 'Archive',
+            component: () => import('@/views/Tasks/Archive.vue'),
+          },
+          {
             path: 'settings',
             name: 'WorkspaceSettings',
             component: () => import('@/views/Workspaces/Settings.vue'),

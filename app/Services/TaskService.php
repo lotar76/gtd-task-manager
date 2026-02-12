@@ -23,7 +23,10 @@ class TaskService
     // GTD: Входящие (inbox)
     public function getInbox(Workspace $workspace, ?int $userId = null): Collection
     {
-        $query = $workspace->tasks()->inbox()->with(['workspace', 'project', 'context', 'assignee', 'tags']);
+        $query = $workspace->tasks()
+            ->inbox()
+            ->whereNull('completed_at')
+            ->with(['workspace', 'project', 'context', 'assignee', 'tags']);
 
         if ($userId) {
             $query->where('assigned_to', $userId);
@@ -35,7 +38,10 @@ class TaskService
     // GTD: Следующие действия (next_action)
     public function getNextActions(Workspace $workspace, ?int $userId = null): Collection
     {
-        $query = $workspace->tasks()->nextAction()->with(['workspace', 'project', 'context', 'assignee', 'tags']);
+        $query = $workspace->tasks()
+            ->nextAction()
+            ->whereNull('completed_at')
+            ->with(['workspace', 'project', 'context', 'assignee', 'tags']);
 
         if ($userId) {
             $query->where('assigned_to', $userId);
@@ -49,7 +55,10 @@ class TaskService
     // GTD: Ожидание (waiting)
     public function getWaiting(Workspace $workspace, ?int $userId = null): Collection
     {
-        $query = $workspace->tasks()->waiting()->with(['workspace', 'project', 'context', 'assignee', 'tags']);
+        $query = $workspace->tasks()
+            ->waiting()
+            ->whereNull('completed_at')
+            ->with(['workspace', 'project', 'context', 'assignee', 'tags']);
 
         if ($userId) {
             $query->where('assigned_to', $userId);
@@ -61,7 +70,10 @@ class TaskService
     // GTD: Когда-нибудь (someday)
     public function getSomeday(Workspace $workspace, ?int $userId = null): Collection
     {
-        $query = $workspace->tasks()->someday()->with(['workspace', 'project', 'context', 'assignee', 'tags']);
+        $query = $workspace->tasks()
+            ->someday()
+            ->whereNull('completed_at')
+            ->with(['workspace', 'project', 'context', 'assignee', 'tags']);
 
         if ($userId) {
             $query->where('assigned_to', $userId);
@@ -73,7 +85,10 @@ class TaskService
     // Задачи на сегодня
     public function getToday(Workspace $workspace, ?int $userId = null): Collection
     {
-        $query = $workspace->tasks()->today()->with(['workspace', 'project', 'context', 'assignee', 'tags']);
+        $query = $workspace->tasks()
+            ->today()
+            ->whereNull('completed_at')
+            ->with(['workspace', 'project', 'context', 'assignee', 'tags']);
 
         if ($userId) {
             $query->where('assigned_to', $userId);
@@ -85,7 +100,10 @@ class TaskService
     // Задачи на завтра
     public function getTomorrow(Workspace $workspace, ?int $userId = null): Collection
     {
-        $query = $workspace->tasks()->where('status', 'tomorrow')->with(['workspace', 'project', 'context', 'assignee', 'tags']);
+        $query = $workspace->tasks()
+            ->where('status', 'tomorrow')
+            ->whereNull('completed_at')
+            ->with(['workspace', 'project', 'context', 'assignee', 'tags']);
 
         if ($userId) {
             $query->where('assigned_to', $userId);
@@ -97,7 +115,10 @@ class TaskService
     // Просроченные задачи
     public function getOverdue(Workspace $workspace, ?int $userId = null): Collection
     {
-        $query = $workspace->tasks()->overdue()->with(['workspace', 'project', 'context', 'assignee', 'tags']);
+        $query = $workspace->tasks()
+            ->overdue()
+            ->whereNull('completed_at')
+            ->with(['workspace', 'project', 'context', 'assignee', 'tags']);
 
         if ($userId) {
             $query->where('assigned_to', $userId);
@@ -109,7 +130,10 @@ class TaskService
     // Предстоящие задачи (на неделю)
     public function getUpcoming(Workspace $workspace, ?int $userId = null): Collection
     {
-        $query = $workspace->tasks()->upcoming()->with(['workspace', 'project', 'context', 'assignee', 'tags']);
+        $query = $workspace->tasks()
+            ->upcoming()
+            ->whereNull('completed_at')
+            ->with(['workspace', 'project', 'context', 'assignee', 'tags']);
 
         if ($userId) {
             $query->where('assigned_to', $userId);
@@ -216,19 +240,15 @@ class TaskService
 
         $task->update($updateData);
 
-        // Если завершена - ставим дату
+        // LEGACY: Поддержка старого способа с status='completed'
+        // В новой логике используем completeTask() вместо changeStatus($task, 'completed')
         if ($status === 'completed' && !$task->completed_at) {
             $task->update(['completed_at' => now()]);
-        }
 
-        // Если снова активна - убираем дату завершения
-        if ($status !== 'completed' && $task->completed_at) {
-            $task->update(['completed_at' => null]);
-        }
-
-        // Уведомляем участников при завершении задачи
-        if ($status === 'completed' && $actorUserId) {
-            $this->notifyMembers($task, $actorUserId, 'completed');
+            // Уведомляем участников
+            if ($actorUserId) {
+                $this->notifyMembers($task, $actorUserId, 'completed');
+            }
         }
 
         return $task->fresh();
@@ -237,13 +257,24 @@ class TaskService
     // Завершение задачи
     public function completeTask(Task $task, ?int $actorUserId = null): Task
     {
-        return $this->changeStatus($task, 'completed', $actorUserId);
+        // Не меняем status, только устанавливаем completed_at
+        $task->update(['completed_at' => now()]);
+        $task = $task->fresh();
+
+        // Уведомляем участников при завершении задачи
+        if ($actorUserId) {
+            $this->notifyMembers($task, $actorUserId, 'completed');
+        }
+
+        return $task;
     }
 
     // Возврат задачи в работу
     public function uncompleteTask(Task $task): Task
     {
-        return $this->changeStatus($task, 'next_action');
+        // Не меняем status, только очищаем completed_at
+        $task->update(['completed_at' => null]);
+        return $task->fresh();
     }
 
     // Назначение задачи
@@ -283,6 +314,7 @@ class TaskService
         $query = $workspace->tasks()
             ->whereNotNull('due_date')
             ->whereBetween('due_date', [$startDate, $endDate])
+            ->whereNull('completed_at')
             ->with(['workspace', 'project', 'context', 'assignee', 'tags']);
 
         if ($userId) {
@@ -295,7 +327,7 @@ class TaskService
     // Получить счетчики задач для навигации
     public function getTaskCounts(Workspace $workspace, ?int $userId = null): array
     {
-        $query = $workspace->tasks();
+        $query = $workspace->tasks()->whereNull('completed_at');
 
         if ($userId) {
             $query->where('assigned_to', $userId);
