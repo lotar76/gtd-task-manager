@@ -17,9 +17,15 @@ class Workspace extends Model
 
     protected $fillable = [
         'name',
+        'emoji',
         'slug',
         'description',
+        'faith_enabled',
         'owner_id',
+    ];
+
+    protected $casts = [
+        'faith_enabled' => 'boolean',
     ];
 
     // Владелец workspace
@@ -34,6 +40,12 @@ class Workspace extends Model
         return $this->belongsToMany(User::class, 'workspace_members')
             ->withPivot('role')
             ->withTimestamps();
+    }
+
+    // Сферы жизни
+    public function lifeSpheres(): HasMany
+    {
+        return $this->hasMany(LifeSphere::class);
     }
 
     // Цели

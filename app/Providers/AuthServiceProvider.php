@@ -6,11 +6,13 @@ namespace App\Providers;
 
 use App\Models\Comment;
 use App\Models\Goal;
+use App\Models\LifeSphere;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\Workspace;
 use App\Policies\CommentPolicy;
 use App\Policies\GoalPolicy;
+use App\Policies\LifeSpherePolicy;
 use App\Policies\ProjectPolicy;
 use App\Policies\TaskPolicy;
 use App\Policies\WorkspacePolicy;
@@ -29,6 +31,7 @@ class AuthServiceProvider extends ServiceProvider
         Task::class => TaskPolicy::class,
         Project::class => ProjectPolicy::class,
         Goal::class => GoalPolicy::class,
+        LifeSphere::class => LifeSpherePolicy::class,
         Comment::class => CommentPolicy::class,
     ];
 

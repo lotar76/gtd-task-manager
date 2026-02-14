@@ -193,6 +193,8 @@ class TaskController extends Controller
             'priority' => 'nullable|in:low,medium,high,urgent',
             'workspace_id' => 'nullable|exists:workspaces,id',
             'project_id' => 'nullable|exists:projects,id',
+            'goal_id' => 'nullable|exists:goals,id',
+            'life_sphere_id' => 'nullable|exists:life_spheres,id',
             'context_id' => 'nullable|exists:contexts,id',
             'assigned_to' => 'nullable|exists:users,id',
             'due_date' => 'nullable|date',
@@ -217,7 +219,7 @@ class TaskController extends Controller
         if (isset($validated['project_id'])) {
             $project = Project::find($validated['project_id']);
             if (!$project || $project->workspace_id !== $targetWorkspaceId) {
-                return ApiResponse::error('Проект не принадлежит выбранному workspace', 422);
+                return ApiResponse::error('Поток не принадлежит выбранному workspace', 422);
             }
         }
 
@@ -283,6 +285,8 @@ class TaskController extends Controller
             'status' => 'sometimes|in:inbox,next_action,today,tomorrow,waiting,someday,scheduled,completed',
             'priority' => 'sometimes|in:low,medium,high,urgent',
             'project_id' => 'nullable|exists:projects,id',
+            'goal_id' => 'nullable|exists:goals,id',
+            'life_sphere_id' => 'nullable|exists:life_spheres,id',
             'context_id' => 'nullable|exists:contexts,id',
             'assigned_to' => 'nullable|exists:users,id',
             'due_date' => 'nullable|date',
@@ -296,7 +300,7 @@ class TaskController extends Controller
         if (isset($validated['project_id'])) {
             $project = Project::find($validated['project_id']);
             if (!$project || $project->workspace_id !== $workspace->id) {
-                return ApiResponse::error('Проект не принадлежит данному workspace', 422);
+                return ApiResponse::error('Поток не принадлежит данному workspace', 422);
             }
         }
 

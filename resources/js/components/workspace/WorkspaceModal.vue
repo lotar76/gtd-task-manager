@@ -3,7 +3,7 @@
     <Transition name="modal">
       <div v-if="show" class="fixed inset-0 z-50 overflow-y-auto" @click.self="$emit('close')">
         <div class="fixed inset-0 bg-black bg-opacity-50 transition-opacity"></div>
-        
+
         <div class="flex min-h-screen items-center justify-center p-4">
           <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-auto" @click.stop>
             <div class="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
@@ -22,14 +22,34 @@
                 <label for="name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Название *
                 </label>
-                <input
-                  id="name"
-                  v-model="form.name"
-                  type="text"
-                  required
-                  class="input"
-                  placeholder="Например: Команда разработки"
-                />
+                <div class="flex items-center gap-2">
+                  <div class="relative">
+                    <button
+                      type="button"
+                      @click="showEmojiPicker = !showEmojiPicker"
+                      class="emoji-btn flex-shrink-0 w-10 h-10 flex items-center justify-center text-xl border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                      title="Выбрать иконку"
+                    >
+                      {{ form.emoji || '◆' }}
+                    </button>
+                    <div v-if="showEmojiPicker" class="absolute top-12 left-0 z-10 emoji-picker-mono">
+                      <EmojiPicker
+                        :native="true"
+                        :disable-skin-tones="true"
+                        :display-recent="true"
+                        @select="handleEmojiSelect"
+                      />
+                    </div>
+                  </div>
+                  <input
+                    id="name"
+                    v-model="form.name"
+                    type="text"
+                    required
+                    class="input flex-1"
+                    placeholder="Например: Команда разработки"
+                  />
+                </div>
               </div>
 
               <div>
@@ -75,6 +95,8 @@
 
 <script setup>
 import { ref, watch, onMounted, onUnmounted } from 'vue'
+import EmojiPicker from 'vue3-emoji-picker'
+import 'vue3-emoji-picker/css'
 
 const props = defineProps({
   show: {
@@ -93,20 +115,29 @@ onUnmounted(() => document.removeEventListener('keydown', handleKeydown))
 
 const form = ref({
   name: '',
+  emoji: '',
   description: '',
 })
 
 const loading = ref(false)
 const error = ref('')
+const showEmojiPicker = ref(false)
+
+const handleEmojiSelect = (emoji) => {
+  form.value.emoji = emoji.i
+  showEmojiPicker.value = false
+}
 
 watch(() => props.show, (newShow) => {
   if (!newShow) {
     form.value = {
       name: '',
+      emoji: '',
       description: '',
     }
     loading.value = false
     error.value = ''
+    showEmojiPicker.value = false
   }
 })
 
@@ -127,5 +158,12 @@ const handleSubmit = () => {
 .modal-leave-to {
   opacity: 0;
 }
-</style>
 
+.emoji-btn {
+  filter: grayscale(1);
+}
+
+.emoji-picker-mono :deep(.v3-emoji-picker) {
+  filter: grayscale(1);
+}
+</style>

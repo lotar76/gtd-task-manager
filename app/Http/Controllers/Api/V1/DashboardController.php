@@ -1,24 +1,77 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Responses\ApiResponse;
 use App\Models\Task;
+use App\Services\AiMirrorService;
+use App\Services\DashboardService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
 class DashboardController extends Controller
 {
+    public function __construct(
+        private readonly DashboardService $dashboardService,
+        private readonly AiMirrorService $aiMirrorService,
+    ) {
+    }
+
     /**
-     * Получить статистику для дашборда
+     * Зеркало жизни — основные данные дашборда
+     */
+    public function getLifeMirror(Request $request): JsonResponse
+    {
+        $request->validate([
+            'workspace_id' => 'required|integer|exists:workspaces,id',
+            'period' => 'sometimes|string|in:day,week,month,year',
+        ]);
+
+        $workspaceId = (int) $request->input('workspace_id');
+        $period = $request->input('period', 'day');
+
+        $data = $this->dashboardService->getLifeMirrorData($workspaceId, $period);
+
+        return ApiResponse::success($data, 'Данные зеркала жизни');
+    }
+
+    /**
+     * AI-сообщение для дашборда
+     */
+    public function getAiMessage(Request $request): JsonResponse
+    {
+        $request->validate([
+            'workspace_id' => 'required|integer|exists:workspaces,id',
+            'period' => 'required|string|in:day,week,month,year',
+        ]);
+
+        $workspaceId = (int) $request->input('workspace_id');
+        $period = $request->input('period');
+
+        // Получаем данные для AI
+        $mirrorData = $this->dashboardService->getLifeMirrorData($workspaceId, $period);
+
+        // Вызываем AI-сервис (с кешем и fallback)
+        $message = $this->aiMirrorService->getMessage($workspaceId, $period, $mirrorData);
+
+        return ApiResponse::success($message, 'AI-сообщение');
+    }
+
+    // ─── Старый метод для обратной совместимости ──────────
+
+    /**
+     * Получить статистику для дашборда (legacy)
      */
     public function getStats(Request $request)
     {
         $workspaceId = $request->input('workspace_id');
-        $period = $request->input('period', 'week'); // day, week, month
+        $period = $request->input('period', 'week');
 
-        // Определяем диапазон дат
         $now = Carbon::now();
         $startDate = match ($period) {
             'day' => $now->copy()->startOfDay(),
@@ -27,21 +80,17 @@ class DashboardController extends Controller
             default => $now->copy()->startOfWeek(),
         };
 
-        // Базовый запрос
         $query = Task::where('workspace_id', $workspaceId);
 
-        // Статистика за текущий период
         $completedThisPeriod = (clone $query)
             ->whereNotNull('completed_at')
             ->where('completed_at', '>=', $startDate)
             ->count();
 
-        // Всего задач (активных)
         $totalActiveTasks = (clone $query)
             ->whereNull('completed_at')
             ->count();
 
-        // Задачи на сегодня
         $todayTasks = (clone $query)
             ->whereNull('completed_at')
             ->where(function ($q) {
@@ -50,7 +99,6 @@ class DashboardController extends Controller
             })
             ->count();
 
-        // Задачи на неделю
         $weekTasks = (clone $query)
             ->whereNull('completed_at')
             ->whereBetween('due_date', [
@@ -59,13 +107,11 @@ class DashboardController extends Controller
             ])
             ->count();
 
-        // Просроченные задачи
         $overdueTasks = (clone $query)
             ->whereNull('completed_at')
             ->where('due_date', '<', Carbon::today()->toDateString())
             ->count();
 
-        // График за последние 7 дней
         $chartData = [];
         for ($i = 6; $i >= 0; $i--) {
             $date = Carbon::now()->subDays($i);
@@ -79,7 +125,6 @@ class DashboardController extends Controller
             ];
         }
 
-        // Продуктивность (процент выполненных от общего числа за период)
         $totalTasksInPeriod = (clone $query)
             ->where(function ($q) use ($startDate) {
                 $q->where('created_at', '>=', $startDate)
@@ -91,7 +136,6 @@ class DashboardController extends Controller
             ? round(($completedThisPeriod / $totalTasksInPeriod) * 100)
             : 0;
 
-        // Топ проекты
         $topProjects = Task::where('workspace_id', $workspaceId)
             ->whereNotNull('project_id')
             ->whereNotNull('completed_at')

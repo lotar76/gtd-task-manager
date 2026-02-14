@@ -22,9 +22,13 @@ class ProjectController extends Controller
             ->pluck('id');
 
         $query = Project::whereIn('workspace_id', $workspaceIds)
-            ->with(['goal', 'creator', 'workspace:id,name'])
-            ->withCount(['tasks' => function ($query) {
-                $query->where('status', '!=', 'completed');
+            ->with(['goal:id,name', 'creator', 'workspace:id,name,emoji'])
+            ->withCount('tasks as total_tasks_count')
+            ->withCount(['tasks as completed_tasks_count' => function ($query) {
+                $query->whereNotNull('completed_at');
+            }])
+            ->withCount(['tasks as tasks_count' => function ($query) {
+                $query->whereNull('completed_at');
             }]);
 
         // Фильтр по статусу (по умолчанию только активные)
@@ -39,7 +43,7 @@ class ProjectController extends Controller
 
         $projects = $query->orderBy('name')->get();
 
-        return ApiResponse::success($projects, 'Список проектов получен');
+        return ApiResponse::success($projects, 'Список потоков получен');
     }
 
     // Список проектов
@@ -49,8 +53,12 @@ class ProjectController extends Controller
 
         $query = $workspace->projects()
             ->with(['goal', 'creator'])
-            ->withCount(['tasks' => function ($query) {
-                $query->where('status', '!=', 'completed');
+            ->withCount('tasks as total_tasks_count')
+            ->withCount(['tasks as completed_tasks_count' => function ($query) {
+                $query->whereNotNull('completed_at');
+            }])
+            ->withCount(['tasks as tasks_count' => function ($query) {
+                $query->whereNull('completed_at');
             }]);
 
         // Фильтр по статусу (по умолчанию только активные)
@@ -65,7 +73,7 @@ class ProjectController extends Controller
 
         $projects = $query->orderBy('name')->get();
 
-        return ApiResponse::success($projects, 'Список проектов получен');
+        return ApiResponse::success($projects, 'Список потоков получен');
     }
 
     // Создание проекта
@@ -86,7 +94,7 @@ class ProjectController extends Controller
 
         $project = Project::create($validated);
 
-        return ApiResponse::success($project, 'Проект создан', 201);
+        return ApiResponse::success($project, 'Поток создан', 201);
     }
 
     // Получение проекта
@@ -96,7 +104,7 @@ class ProjectController extends Controller
 
         $project->load(['goal', 'creator', 'tasks']);
 
-        return ApiResponse::success($project, 'Проект получен');
+        return ApiResponse::success($project, 'Поток получен');
     }
 
     // Обновление проекта
@@ -114,7 +122,7 @@ class ProjectController extends Controller
 
         $project->update($validated);
 
-        return ApiResponse::success($project->fresh(), 'Проект обновлен');
+        return ApiResponse::success($project->fresh(), 'Поток обновлен');
     }
 
     // Удаление проекта
@@ -124,7 +132,7 @@ class ProjectController extends Controller
 
         $project->delete();
 
-        return ApiResponse::success(null, 'Проект удален');
+        return ApiResponse::success(null, 'Поток удален');
     }
 
     // Задачи проекта
@@ -137,7 +145,7 @@ class ProjectController extends Controller
             ->orderBy('position')
             ->get();
 
-        return ApiResponse::success($tasks, 'Задачи проекта получены');
+        return ApiResponse::success($tasks, 'Задачи потока получены');
     }
 }
 

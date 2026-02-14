@@ -95,6 +95,11 @@ const routes = [
             component: () => import('@/views/Goals/Index.vue'),
           },
           {
+            path: 'goals/:goalId',
+            name: 'GoalShow',
+            component: () => import('@/views/Goals/Show.vue'),
+          },
+          {
             path: 'archive',
             name: 'Archive',
             component: () => import('@/views/Tasks/Archive.vue'),

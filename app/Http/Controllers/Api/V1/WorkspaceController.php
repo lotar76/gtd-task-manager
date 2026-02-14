@@ -32,6 +32,7 @@ class WorkspaceController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
+            'emoji' => 'nullable|string|max:10',
             'slug' => 'nullable|string|unique:workspaces,slug',
             'description' => 'nullable|string',
         ]);
@@ -58,7 +59,9 @@ class WorkspaceController extends Controller
 
         $validated = $request->validate([
             'name' => 'sometimes|string|max:255',
+            'emoji' => 'nullable|string|max:10',
             'description' => 'nullable|string',
+            'faith_enabled' => 'sometimes|boolean',
         ]);
 
         $workspace = $this->workspaceService->updateWorkspace($workspace, $validated);

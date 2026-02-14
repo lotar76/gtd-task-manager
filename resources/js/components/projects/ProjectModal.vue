@@ -8,7 +8,7 @@
           <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full mx-auto" @click.stop>
             <div class="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
               <h3 class="text-xl font-semibold text-gray-900 dark:text-white">
-                {{ project ? 'Редактировать проект' : 'Новый проект' }}
+                {{ project ? 'Редактировать поток' : 'Новый поток' }}
               </h3>
               <button @click="$emit('close')" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -38,7 +38,7 @@
               <!-- Name -->
               <div>
                 <label for="name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Название проекта *
+                  Название потока *
                 </label>
                 <input
                   id="name"
@@ -46,8 +46,25 @@
                   type="text"
                   required
                   class="input"
-                  placeholder="Введите название проекта"
+                  placeholder="Введите название потока"
                 />
+              </div>
+
+              <!-- Goal -->
+              <div>
+                <label for="goal_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Цель
+                </label>
+                <select
+                  id="goal_id"
+                  v-model="form.goal_id"
+                  class="input"
+                >
+                  <option :value="null">Без цели</option>
+                  <option v-for="goal in availableGoals" :key="goal.id" :value="goal.id">
+                    {{ goal.name }}
+                  </option>
+                </select>
               </div>
 
               <!-- Description -->
@@ -60,30 +77,8 @@
                   v-model="form.description"
                   rows="3"
                   class="input"
-                  placeholder="Добавьте описание проекта"
+                  placeholder="Добавьте описание потока"
                 ></textarea>
-              </div>
-
-              <!-- Color -->
-              <div>
-                <label for="color" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Цвет
-                </label>
-                <div class="flex items-center space-x-3">
-                  <input
-                    id="color"
-                    v-model="form.color"
-                    type="color"
-                    class="w-16 h-10 rounded border border-gray-300 dark:border-gray-600 cursor-pointer"
-                  />
-                  <input
-                    v-model="form.color"
-                    type="text"
-                    pattern="^#[0-9A-Fa-f]{6}$"
-                    class="input flex-1"
-                    placeholder="#3B82F6"
-                  />
-                </div>
               </div>
 
               <div v-if="error" class="text-red-600 dark:text-red-400 text-sm bg-red-50 dark:bg-red-900/20 p-3 rounded-lg">
@@ -117,6 +112,7 @@
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useWorkspaceStore } from '@/stores/workspace'
+import { useGoalsStore } from '@/stores/goals'
 
 const props = defineProps({
   show: {
@@ -136,8 +132,15 @@ const props = defineProps({
 const emit = defineEmits(['close', 'submit'])
 
 const workspaceStore = useWorkspaceStore()
+const goalsStore = useGoalsStore()
 const workspaces = computed(() => workspaceStore.workspaces)
 const currentWorkspace = computed(() => workspaceStore.currentWorkspace)
+
+const availableGoals = computed(() => {
+  const wsId = form.value.workspace_id
+  if (!wsId) return goalsStore.activeGoals
+  return goalsStore.activeGoals.filter(g => g.workspace_id === wsId)
+})
 
 const handleKeydown = (e) => {
   if (e.key === 'Escape' && props.show) emit('close')
@@ -147,9 +150,9 @@ onUnmounted(() => document.removeEventListener('keydown', handleKeydown))
 
 const form = ref({
   workspace_id: null,
+  goal_id: null,
   name: '',
   description: '',
-  color: '#3B82F6',
 })
 
 const loading = ref(false)
@@ -159,16 +162,16 @@ watch(() => props.project, (newProject) => {
   if (newProject) {
     form.value = {
       workspace_id: newProject.workspace_id || currentWorkspace.value?.id,
+      goal_id: newProject.goal_id || null,
       name: newProject.name || '',
       description: newProject.description || '',
-      color: newProject.color || '#3B82F6',
     }
   } else {
     form.value = {
       workspace_id: currentWorkspace.value?.id,
+      goal_id: null,
       name: '',
       description: '',
-      color: '#3B82F6',
     }
   }
   error.value = ''

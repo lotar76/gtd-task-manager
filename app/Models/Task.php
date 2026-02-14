@@ -17,6 +17,8 @@ class Task extends Model
     protected $fillable = [
         'workspace_id',
         'project_id',
+        'goal_id',
+        'life_sphere_id',
         'context_id',
         'parent_id',
         'title',
@@ -45,6 +47,16 @@ class Task extends Model
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
+    }
+
+    public function goal(): BelongsTo
+    {
+        return $this->belongsTo(Goal::class);
+    }
+
+    public function lifeSphere(): BelongsTo
+    {
+        return $this->belongsTo(LifeSphere::class);
     }
 
     public function context(): BelongsTo

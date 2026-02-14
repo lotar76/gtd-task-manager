@@ -4,22 +4,53 @@
       <!-- Header -->
       <div class="flex items-center justify-between mb-6">
         <div class="flex items-center space-x-3 min-w-0 flex-1">
-          <div
-            v-if="project"
-            class="w-4 h-4 rounded-full flex-shrink-0"
-            :style="{ backgroundColor: project.color || '#3B82F6' }"
-          ></div>
           <div class="min-w-0">
-            <h1 class="text-xl lg:text-2xl font-semibold text-gray-900 dark:text-white truncate">
-              {{ project?.name || 'Загрузка...' }}
-            </h1>
+            <div class="flex items-center gap-3">
+              <h1 class="text-xl lg:text-2xl font-semibold text-gray-900 dark:text-white truncate">
+                {{ project?.name || 'Загрузка...' }}
+              </h1>
+              <span v-if="allTasks.length > 0" class="text-sm text-gray-400 dark:text-gray-500 flex-shrink-0">
+                {{ allTasks.length }}
+              </span>
+            </div>
+            <div v-if="projectWorkspace" class="flex items-center gap-1.5 mt-1 text-sm text-gray-500 dark:text-gray-400">
+              <span v-if="projectWorkspace.emoji" class="grayscale">{{ projectWorkspace.emoji }}</span>
+              <span>{{ projectWorkspace.name }}</span>
+            </div>
             <p v-if="project?.description" class="text-sm text-gray-600 dark:text-gray-400 mt-1 truncate">
               {{ project.description }}
             </p>
+            <!-- Progress cubes -->
+            <div v-if="allTasks.length > 0" class="flex items-center gap-1 mt-2" :title="`${completedTasks.length} / ${allTasks.length} выполнено`">
+              <template v-if="allTasks.length <= 20">
+                <div
+                  v-for="i in allTasks.length"
+                  :key="i"
+                  class="w-2.5 h-2.5 rounded-sm"
+                  :class="i <= completedTasks.length ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'"
+                ></div>
+              </template>
+              <template v-else>
+                <div
+                  v-for="i in 20"
+                  :key="i"
+                  class="w-2.5 h-2.5 rounded-sm"
+                  :class="i <= Math.round(completedTasks.length / allTasks.length * 20) ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'"
+                ></div>
+                <span class="text-xs text-gray-400 ml-1">{{ completedTasks.length }}/{{ allTasks.length }}</span>
+              </template>
+            </div>
           </div>
         </div>
 
         <div class="flex items-center space-x-1 flex-shrink-0 ml-2">
+          <button
+            @click="handleCreateTask"
+            class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            title="Добавить задачу"
+          >
+            <PlusIcon class="w-5 h-5" />
+          </button>
           <button
             @click="handleEditProject"
             class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
@@ -52,16 +83,16 @@
       </div>
 
       <!-- Project Tasks -->
-      <div v-else>
+      <template v-else>
         <!-- Empty State -->
-        <div v-if="tasks.length === 0" class="py-12 text-center">
+        <div v-if="allTasks.length === 0" class="py-12 text-center">
           <div class="max-w-md mx-auto">
             <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center">
               <RectangleStackIcon class="w-8 h-8 text-blue-500" />
             </div>
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">В проекте пока нет задач</h3>
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">В потоке пока нет задач</h3>
             <p class="text-sm text-gray-500 dark:text-gray-400 mb-6 leading-relaxed">
-              Проект — это любая цель, требующая более одного действия.
+              Поток — это любая цель, требующая более одного действия.
               Разбейте его на конкретные шаги и добавьте первую задачу,
               чтобы начать двигаться к результату.
             </p>
@@ -75,25 +106,30 @@
           </div>
         </div>
 
-        <!-- Task List -->
-        <div v-else class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-          <div class="p-4 border-b border-gray-200 dark:border-gray-700">
-            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
-              Задачи проекта
-              <span class="text-sm font-normal text-gray-500 dark:text-gray-400">
-                ({{ tasks.length }})
-              </span>
-            </h2>
+        <template v-else>
+          <!-- Active Tasks -->
+          <TaskList
+            v-if="activeTasks.length > 0"
+            :tasks="activeTasks"
+            @task-click="handleTaskClick"
+            @toggle-complete="handleToggleComplete"
+          />
+
+          <!-- Completed Tasks -->
+          <div v-if="completedTasks.length > 0" class="mt-6">
+            <h3 class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3 px-1">
+              Выполненные
+            </h3>
+            <div class="opacity-50">
+              <TaskList
+                :tasks="completedTasks"
+                @task-click="handleTaskClick"
+                @toggle-complete="handleToggleComplete"
+              />
+            </div>
           </div>
-          <div class="divide-y divide-gray-200 dark:divide-gray-700">
-            <TaskList
-              :tasks="tasks"
-              @task-click="handleTaskClick"
-              @toggle-complete="handleToggleComplete"
-            />
-          </div>
-        </div>
-      </div>
+        </template>
+      </template>
 
       <!-- Task View -->
       <TaskView
@@ -127,7 +163,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useProjectsStore } from '@/stores/projects'
 import { useTasksStore } from '@/stores/tasks'
@@ -146,7 +182,6 @@ const tasksStore = useTasksStore()
 const workspaceStore = useWorkspaceStore()
 
 const project = ref(null)
-const tasks = ref([])
 const loading = ref(false)
 const showTaskModal = ref(false)
 const showTaskView = ref(false)
@@ -155,9 +190,22 @@ const selectedTask = ref(null)
 const taskError = ref('')
 const projectError = ref('')
 
+const allTasks = computed(() => {
+  const projectId = parseInt(route.params.projectId)
+  if (!projectId) return []
+  return tasksStore.allTasks.filter(t => t.project_id === projectId)
+})
+
+const activeTasks = computed(() => allTasks.value.filter(t => !t.completed_at))
+const completedTasks = computed(() => allTasks.value.filter(t => t.completed_at))
+const projectWorkspace = computed(() => {
+  if (!project.value) return null
+  return workspaceStore.workspaces.find(w => w.id === project.value.workspace_id)
+})
+
 const loadProject = async () => {
   const projectId = parseInt(route.params.projectId)
-  const workspaceId = parseInt(route.params.id) // Берем из URL, а не из currentWorkspace
+  const workspaceId = parseInt(route.params.id)
 
   if (!workspaceId || !projectId) {
     console.error('Missing workspaceId or projectId', { workspaceId, projectId })
@@ -173,19 +221,13 @@ const loadProject = async () => {
     }
     project.value = projectData
 
-    // Проверяем, что проект принадлежит workspace из URL
     if (project.value.workspace_id !== workspaceId) {
       console.error('Project does not belong to workspace from URL')
       router.push(`/workspaces/${workspaceId}/projects`)
       return
     }
-
-    loadTasks()
   } catch (error) {
     console.error('Error loading project:', error)
-    console.error('Error details:', error.response?.data)
-
-    // Если проект не найден, перенаправляем на список проектов
     if (error.response?.status === 404) {
       router.push(`/workspaces/${workspaceId}/projects`)
     }
@@ -194,34 +236,21 @@ const loadProject = async () => {
   }
 }
 
-const loadTasks = () => {
-  const projectId = parseInt(route.params.projectId)
-
-  if (!projectId) {
-    tasks.value = []
-    return
-  }
-
-  // Фильтруем задачи из ALL tasks по project_id (не учитываем выбранные workspace)
-  tasks.value = tasksStore.allTasks.filter(t => t.project_id === projectId)
-}
-
 const handleEditProject = () => {
   showProjectModal.value = true
 }
 
 const handleArchiveProject = async () => {
-  if (!confirm(`Архивировать проект "${project.value?.name}"?`)) {
+  if (!confirm(`Архивировать поток "${project.value?.name}"?`)) {
     return
   }
 
   try {
     await projectsStore.archiveProject(project.value.id)
-    // Редиректим на список проектов workspace'а, которому принадлежит проект
     router.push(`/workspaces/${project.value.workspace_id}/projects`)
   } catch (error) {
     console.error('Error archiving project:', error)
-    alert('Ошибка при архивировании проекта')
+    alert('Ошибка при архивировании потока')
   }
 }
 
@@ -231,7 +260,7 @@ const handleUnarchiveProject = async () => {
     await loadProject()
   } catch (error) {
     console.error('Error unarchiving project:', error)
-    alert('Ошибка при восстановлении проекта')
+    alert('Ошибка при восстановлении потока')
   }
 }
 
@@ -273,13 +302,11 @@ const handleSaveTask = async (taskData) => {
     if (selectedTask.value?.id) {
       await tasksStore.updateTask(selectedTask.value.id, taskData)
     } else {
-      // Новая задача — привязываем к проекту
       taskData.project_id = project.value.id
       await tasksStore.createTask(taskData)
     }
     showTaskModal.value = false
     selectedTask.value = null
-    loadTasks()
   } catch (error) {
     console.error('Error saving task:', error)
     taskError.value = error.response?.data?.message || error.message || 'Ошибка при сохранении задачи'
@@ -300,7 +327,7 @@ const handleSaveProject = async (projectData) => {
     await loadProject()
   } catch (error) {
     console.error('Error saving project:', error)
-    projectError.value = error.response?.data?.message || error.message || 'Ошибка при сохранении проекта'
+    projectError.value = error.response?.data?.message || error.message || 'Ошибка при сохранении потока'
   }
 }
 
@@ -316,20 +343,12 @@ const handleToggleComplete = async (task) => {
     } else {
       await tasksStore.completeTask(task.id)
     }
-    loadTasks()
   } catch (error) {
     console.error('Error toggling task:', error)
   }
 }
 
-// Загружаем проект при монтировании и смене параметров роута
 watch(() => [route.params.projectId, route.params.id], () => {
   loadProject()
 }, { immediate: true })
-
-// Автоматически обновляем задачи при изменении store
-watch(() => tasksStore.allTasks, () => {
-  loadTasks()
-}, { deep: true })
 </script>
-

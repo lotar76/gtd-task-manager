@@ -227,7 +227,7 @@
                         </div>
                         <!-- Compact badges -->
                         <div class="flex flex-wrap gap-0.5 mt-0.5">
-                          <span v-if="task.project" class="inline-block px-0.5 rounded text-[8px] font-medium" :style="{ backgroundColor: task.project.color + '20', color: task.project.color }">{{ task.project.name }}</span>
+                          <span v-if="task.project" class="inline-block px-0.5 rounded text-[8px] font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">{{ task.project.name }}</span>
                           <span v-if="task.assignee" class="inline-block px-0.5 rounded text-[8px] font-medium bg-gray-200 dark:bg-gray-600">{{ task.assignee.name }}</span>
                         </div>
                       </div>
@@ -289,7 +289,7 @@
                       <div class="font-medium truncate block text-[11px]">{{ task.title }}</div>
                       <!-- Meta badges -->
                       <div class="flex flex-wrap gap-0.5 mt-0.5">
-                        <span v-if="task.project" class="inline-block px-1 py-0 rounded text-[9px] font-medium" :style="{ backgroundColor: task.project.color + '20', color: task.project.color }">{{ task.project.name }}</span>
+                        <span v-if="task.project" class="inline-block px-1 py-0 rounded text-[9px] font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">{{ task.project.name }}</span>
                         <span v-if="task.workspace" class="inline-block px-1 py-0 rounded text-[9px] font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400">{{ task.workspace.name }}</span>
                         <span v-if="task.assignee" class="inline-block px-1 py-0 rounded text-[9px] font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">{{ task.assignee.name }}</span>
                         <span v-if="task.context" class="inline-block px-1 py-0 rounded text-[9px] font-medium" :style="{ backgroundColor: task.context.color + '20', color: task.context.color }">{{ task.context.name }}</span>
@@ -378,8 +378,7 @@
                         <!-- Проект -->
                         <span
                           v-if="task.project"
-                          class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium"
-                          :style="{ backgroundColor: task.project.color + '20', color: task.project.color }"
+                          class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
                         >
                           {{ task.project.name }}
                         </span>
@@ -553,8 +552,7 @@
                           <!-- Project -->
                           <span
                             v-if="task.project"
-                            class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
-                            :style="{ backgroundColor: task.project.color + '20', color: task.project.color }"
+                            class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
                           >
                             {{ task.project.name }}
                           </span>
@@ -663,8 +661,7 @@
                         <!-- Project -->
                         <span
                           v-if="task.project"
-                          class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
-                          :style="{ backgroundColor: task.project.color + '20', color: task.project.color }"
+                          class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
                         >
                           {{ task.project.name }}
                         </span>
@@ -766,8 +763,7 @@
                     <!-- Проект -->
                     <span
                       v-if="task.project"
-                      class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
-                      :style="{ backgroundColor: task.project.color + '20', color: task.project.color }"
+                      class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
                     >
                       {{ task.project.name }}
                     </span>

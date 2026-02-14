@@ -30,7 +30,11 @@
       "Bash(git push:*)",
       "Bash(ssh-keyscan:*)",
       "Bash(~/.ssh/known_hosts)",
-      "Bash(git remote set-url:*)"
+      "Bash(git remote set-url:*)",
+      "Bash(ssh root@37.220.82.214 \"cd /home/projects/todo && git checkout -- . && git clean -fd public/assets/ && git pull\")",
+      "Bash(ssh:*)",
+      "Bash(git pull:*)",
+      "Bash(curl:*)"
     ]
   }
 }

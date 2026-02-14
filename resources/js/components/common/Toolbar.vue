@@ -1,19 +1,72 @@
 <template>
   <header class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-20">
     <div class="flex items-center justify-between px-4 lg:px-8 py-3">
-      <!-- Logo (только мобильные) -->
-      <div class="lg:hidden flex items-center mr-3">
+      <!-- Mobile: Logo + Nav Icons + Date -->
+      <div class="lg:hidden flex items-center gap-2">
         <img
           :src="logo"
           alt="GTD TODO"
           class="h-8 w-8 object-contain"
         />
+        <router-link
+          to="/"
+          class="p-1.5 rounded-lg transition-colors"
+          :class="isDashboardActive ? 'text-primary-600 dark:text-primary-400' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'"
+        >
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+          </svg>
+        </router-link>
+        <router-link
+          :to="inboxRoute"
+          class="relative p-1.5 rounded-lg transition-colors"
+          :class="isInboxActive ? 'text-primary-600 dark:text-primary-400' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'"
+        >
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+          </svg>
+          <span
+            v-if="inboxCount > 0"
+            class="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 text-[10px] font-bold text-white bg-red-500 rounded-full flex items-center justify-center"
+          >
+            {{ inboxCount }}
+          </span>
+        </router-link>
+        <span class="text-sm font-medium text-gray-700 dark:text-gray-300 ml-1">
+          {{ currentDate }}
+        </span>
       </div>
 
-      <!-- Date (только мобильные) -->
-      <div class="lg:hidden text-sm font-medium text-gray-700 dark:text-gray-300">
-        {{ currentDate }}
-      </div>
+      <!-- Nav Links (desktop) -->
+      <nav class="hidden lg:flex items-center space-x-1 ml-4">
+        <router-link
+          to="/"
+          class="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+          :class="isDashboardActive ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+          </svg>
+          <span>Дашборд</span>
+        </router-link>
+        <router-link
+          :to="inboxRoute"
+          class="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+          :class="isInboxActive ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+          </svg>
+          <span>Входящие</span>
+          <span
+            v-if="inboxCount > 0"
+            class="px-1.5 py-0.5 text-xs font-semibold rounded-full"
+            :class="isInboxActive ? 'bg-primary-600 text-white' : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300'"
+          >
+            {{ inboxCount }}
+          </span>
+        </router-link>
+      </nav>
 
       <!-- Spacer -->
       <div class="flex-1"></div>
@@ -57,7 +110,7 @@
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
                   </svg>
-                  <span>Проект</span>
+                  <span>Поток</span>
                 </div>
               </button>
               <button
@@ -159,11 +212,15 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { useThemeStore } from '@/stores/theme'
+import { useWorkspaceStore } from '@/stores/workspace'
 import logoLight from '@/assets/images/logo.svg'
 import logoDark from '@/assets/images/logo-dark.svg'
 
+const route = useRoute()
 const themeStore = useThemeStore()
+const workspaceStore = useWorkspaceStore()
 const logo = computed(() => themeStore.isDark ? logoDark : logoLight)
 
 const props = defineProps({
@@ -171,7 +228,19 @@ const props = defineProps({
     type: Object,
     default: null,
   },
+  inboxCount: {
+    type: Number,
+    default: 0,
+  },
 })
+
+const inboxRoute = computed(() => {
+  const wsId = workspaceStore.currentWorkspace?.id || 1
+  return `/workspaces/${wsId}/inbox`
+})
+
+const isDashboardActive = computed(() => route.path === '/')
+const isInboxActive = computed(() => route.path === inboxRoute.value)
 
 const emit = defineEmits(['quick-add', 'quick-add-task', 'quick-add-project', 'quick-add-goal', 'search', 'logout', 'profile', 'settings'])
 

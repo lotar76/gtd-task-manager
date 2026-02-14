@@ -184,14 +184,14 @@
               <!-- Project -->
               <div>
                 <label for="project_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Проект
+                  Поток
                 </label>
                 <select
                   id="project_id"
                   v-model="form.project_id"
                   class="input"
                 >
-                  <option :value="null">Без проекта</option>
+                  <option :value="null">Без потока</option>
                   <option
                     v-for="project in activeProjects"
                     :key="project.id"
@@ -200,6 +200,51 @@
                     {{ project.name }}
                   </option>
                 </select>
+              </div>
+
+              <!-- Row: Sphere & Goal -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Life Sphere -->
+                <div>
+                  <label for="life_sphere_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Сфера жизни
+                  </label>
+                  <select
+                    id="life_sphere_id"
+                    v-model="form.life_sphere_id"
+                    class="input"
+                  >
+                    <option :value="null">Без сферы</option>
+                    <option
+                      v-for="sphere in workspaceSpheres"
+                      :key="sphere.id"
+                      :value="sphere.id"
+                    >
+                      {{ sphere.emoji || '' }} {{ sphere.name }}
+                    </option>
+                  </select>
+                </div>
+
+                <!-- Goal -->
+                <div>
+                  <label for="goal_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Цель
+                  </label>
+                  <select
+                    id="goal_id"
+                    v-model="form.goal_id"
+                    class="input"
+                  >
+                    <option :value="null">Без цели</option>
+                    <option
+                      v-for="goal in workspaceGoals"
+                      :key="goal.id"
+                      :value="goal.id"
+                    >
+                      {{ goal.name }}
+                    </option>
+                  </select>
+                </div>
               </div>
 
               <!-- Error Message -->
@@ -243,6 +288,8 @@ import {
 } from '@heroicons/vue/24/outline'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useProjectsStore } from '@/stores/projects'
+import { useLifeSpheresStore } from '@/stores/lifeSpheres'
+import { useGoalsStore } from '@/stores/goals'
 import { useRoute } from 'vue-router'
 
 const props = defineProps({
@@ -269,6 +316,8 @@ const emit = defineEmits(['close', 'submit'])
 const route = useRoute()
 const workspaceStore = useWorkspaceStore()
 const projectsStore = useProjectsStore()
+const spheresStore = useLifeSpheresStore()
+const goalsStore = useGoalsStore()
 const workspaces = computed(() => workspaceStore.workspaces)
 const currentWorkspace = computed(() => workspaceStore.currentWorkspace)
 
@@ -279,6 +328,20 @@ const activeProjects = computed(() => {
 
   return projectsStore.allProjects
     .filter(p => p.workspace_id === workspaceId && (p.status === 'active' || !p.status))
+})
+
+// Сферы жизни текущего workspace
+const workspaceSpheres = computed(() => {
+  const workspaceId = form.value.workspace_id
+  if (!workspaceId) return []
+  return spheresStore.allSpheres.filter(s => s.workspace_id === workspaceId)
+})
+
+// Цели текущего workspace (активные)
+const workspaceGoals = computed(() => {
+  const workspaceId = form.value.workspace_id
+  if (!workspaceId) return []
+  return goalsStore.allGoals.filter(g => g.workspace_id === workspaceId && (g.status === 'active' || !g.status))
 })
 
 // Определяем статус по текущему роуту
@@ -322,6 +385,8 @@ const form = ref({
   end_time: '',
   workspace_id: null,
   project_id: null,
+  goal_id: null,
+  life_sphere_id: null,
   completed_at: null,
 })
 
@@ -406,6 +471,8 @@ watch(() => props.task, (newTask, oldTask) => {
       end_time: '',
       workspace_id: currentWorkspace.value?.id,
       project_id: null,
+      goal_id: null,
+      life_sphere_id: null,
       completed_at: null,
     }
     previousStatus.value = null
@@ -430,6 +497,8 @@ watch(() => props.task, (newTask, oldTask) => {
       end_time: formatTimeForInput(newTask.end_time),
       workspace_id: newTask.workspace_id || currentWorkspace.value?.id,
       project_id: newTask.project_id || null,
+      goal_id: newTask.goal_id || null,
+      life_sphere_id: newTask.life_sphere_id || null,
       completed_at: newTask.completed_at || null,
     }
   } else {
@@ -446,6 +515,8 @@ watch(() => props.task, (newTask, oldTask) => {
       end_time: '',
       workspace_id: currentWorkspace.value?.id,
       project_id: null,
+      goal_id: null,
+      life_sphere_id: null,
       completed_at: null,
     }
   }
@@ -485,6 +556,9 @@ watch(() => props.show, (newShow) => {
       end_time: '',
       workspace_id: currentWorkspace.value?.id,
       project_id: null,
+      goal_id: null,
+      life_sphere_id: null,
+      completed_at: null,
     }
     previousStatus.value = null
     statusDropdownOpen.value = false
@@ -493,10 +567,12 @@ watch(() => props.show, (newShow) => {
   }
 })
 
-// Загружаем проекты при открытии модалки (если еще не загружены)
+// Загружаем проекты, сферы и цели при открытии модалки (если еще не загружены)
 watch(() => props.show, (newShow) => {
-  if (newShow && !projectsStore.loaded) {
-    projectsStore.fetchAllProjects()
+  if (newShow) {
+    if (!projectsStore.loaded) projectsStore.fetchAllProjects()
+    if (!spheresStore.loaded) spheresStore.fetchAll()
+    if (!goalsStore.loaded) goalsStore.fetchAllGoals()
   }
 })
 

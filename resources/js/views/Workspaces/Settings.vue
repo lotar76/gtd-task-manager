@@ -19,6 +19,16 @@
             Общие
           </button>
           <button
+            v-if="canManage"
+            @click="activeTab = 'spheres'"
+            class="pb-3 text-sm font-medium border-b-2 transition-colors"
+            :class="activeTab === 'spheres'
+              ? 'border-primary-600 text-primary-600 dark:text-primary-400 dark:border-primary-400'
+              : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'"
+          >
+            Сферы жизни
+          </button>
+          <button
             @click="activeTab = 'members'"
             class="pb-3 text-sm font-medium border-b-2 transition-colors"
             :class="activeTab === 'members'
@@ -41,6 +51,7 @@
 
       <!-- Tab Content -->
       <GeneralTab v-if="activeTab === 'general' && canManage" :key="workspaceId" :workspace="workspace" />
+      <SpheresTab v-if="activeTab === 'spheres' && canManage" :key="workspaceId" :workspace="workspace" />
       <MembersTab v-if="activeTab === 'members'" :key="workspaceId" :workspace="workspace" :can-manage="canManage" />
       <TelegramTab v-if="activeTab === 'telegram'" :key="workspaceId" :workspace="workspace" />
     </div>
@@ -54,6 +65,7 @@ import { useWorkspaceStore } from '@/stores/workspace'
 import { useAuthStore } from '@/stores/auth'
 import GeneralTab from './tabs/GeneralTab.vue'
 import MembersTab from './tabs/MembersTab.vue'
+import SpheresTab from './tabs/SpheresTab.vue'
 import TelegramTab from './tabs/TelegramTab.vue'
 
 const route = useRoute()

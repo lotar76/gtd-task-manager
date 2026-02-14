@@ -38,7 +38,7 @@
       >
         <div class="flex flex-col h-full">
           <!-- Logo (только десктоп) -->
-          <div class="hidden lg:flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+          <div class="hidden lg:flex items-center justify-between px-5 py-3 border-b border-gray-200 dark:border-gray-700">
             <div class="flex items-center space-x-3">
               <img
                 :src="sidebarLogo"
@@ -50,8 +50,8 @@
           </div>
 
           <!-- Workspace Section -->
-          <div class="p-4 border-b border-gray-200 dark:border-gray-700">
-            <div class="flex items-center justify-between mb-3">
+          <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+            <div class="flex items-center justify-between mb-2">
               <h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 Ваши пространства
               </h3>
@@ -79,7 +79,7 @@
                 ]"
               >
                 <button
-                  class="flex-1 flex items-center px-3 py-2 text-sm cursor-pointer text-left"
+                  class="flex-1 flex items-center px-3 py-1.5 text-sm cursor-pointer text-left"
                   @click="toggleWorkspace(ws)"
                 >
                   <span
@@ -90,7 +90,7 @@
                         : 'text-gray-500 dark:text-gray-400'
                     ]"
                   >
-                    {{ ws.name }}
+                    <span v-if="ws.emoji" class="mr-1 grayscale">{{ ws.emoji }}</span>{{ ws.name }}
                   </span>
                 </button>
                 
@@ -111,33 +111,8 @@
           </div>
 
           <!-- Navigation -->
-          <nav class="flex-1 overflow-y-auto p-4">
-            <!-- Дашборд -->
-            <div class="space-y-1 mb-6 pb-6 border-b border-gray-200 dark:border-gray-700">
-              <NavLink
-                to="/"
-                icon="chart-bar"
-                @close-sidebar="sidebarOpen = false"
-              >
-                Дашборд
-              </NavLink>
-            </div>
-
+          <nav class="flex-1 overflow-y-auto px-4 py-3">
             <div class="space-y-1">
-              <!-- Входящие - отдельно -->
-              <DroppableNavLink
-                to="/workspaces/:id/inbox"
-                icon="inbox"
-                :count="taskCounts.inbox"
-                drop-status="inbox"
-                @task-dropped="handleTaskDropped"
-                @close-sidebar="sidebarOpen = false"
-              >
-                Входящие
-              </DroppableNavLink>
-            </div>
-
-            <div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700 space-y-1">
               <!-- Сегодня -->
               <DroppableNavLink
                 to="/workspaces/:id/today"
@@ -220,27 +195,37 @@
             </div>
 
             <!-- Projects -->
-            <div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-              <div class="flex items-center justify-between px-3 mb-3">
-                <h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Проекты
+            <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+              <div
+                @click="toggleProjectsCollapsed"
+                class="flex items-center justify-between px-3 mb-2 cursor-pointer select-none hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-lg transition-colors -mx-1 px-4 py-1"
+              >
+                <h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 6v12M9 4v16M14 8v8M19 5v14" />
+                  </svg>
+                  Потоки
                 </h3>
                 <button
-                  @click="handleQuickAddProject"
+                  @click.stop="handleQuickAddProject"
                   class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                  title="Создать проект"
+                  title="Создать поток"
                 >
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                   </svg>
                 </button>
               </div>
-              <div class="space-y-1 max-h-64 overflow-y-auto">
+              <div
+                class="overflow-hidden transition-all duration-300 ease-in-out"
+                :style="{ maxHeight: projectsCollapsed ? '0px' : projectsMaxHeight }"
+              >
+              <div class="space-y-1">
                 <div
                   v-for="project in activeProjects"
                   :key="project.id"
                   :class="[
-                    'flex items-center justify-between group px-3 py-2 rounded-lg transition-colors',
+                    'flex items-center justify-between group px-3 py-1.5 rounded-lg transition-colors',
                     isProjectActive(project.id)
                       ? 'bg-primary-50 dark:bg-primary-900/30'
                       : 'hover:bg-gray-50 dark:hover:bg-gray-700'
@@ -249,57 +234,113 @@
                   <router-link
                     :to="`/workspaces/${project.workspace_id}/projects/${project.id}`"
                     @click="handleProjectLinkClick"
-                    class="flex items-center space-x-2 flex-1 min-w-0"
+                    class="flex items-center flex-1 min-w-0"
                   >
-                    <div
-                      class="w-3 h-3 rounded-full flex-shrink-0"
-                      :style="{ backgroundColor: project.color || '#3B82F6' }"
-                    ></div>
                     <div class="flex-1 min-w-0">
-                      <div class="flex items-center space-x-1">
-                        <span
-                          :class="[
-                            'text-sm truncate',
-                            isProjectActive(project.id)
-                              ? 'text-primary-700 dark:text-primary-400 font-medium'
-                              : 'text-gray-700 dark:text-gray-300'
-                          ]"
-                        >{{ project.name }}</span>
-                        <span
-                          v-if="project.tasks_count > 0"
-                          class="text-xs text-gray-500 flex-shrink-0"
-                        >
-                          ({{ project.tasks_count }})
-                        </span>
+                      <span
+                        :class="[
+                          'text-sm line-clamp-2',
+                          isProjectActive(project.id)
+                            ? 'text-primary-700 dark:text-primary-400 font-medium'
+                            : 'text-gray-700 dark:text-gray-300'
+                        ]"
+                      >{{ project.name }}</span>
+                      <div v-if="project.goal?.name" class="text-[10px] text-gray-400 dark:text-gray-500 truncate mt-0.5">
+                        {{ project.goal.name }}
                       </div>
-                      <div class="text-xs text-gray-400 dark:text-gray-500 truncate">
-                        {{ getWorkspaceName(project.workspace_id) }}
+                      <div v-if="project.total_tasks_count > 0" class="flex items-center gap-0.5 mt-1" :title="`${project.completed_tasks_count} / ${project.total_tasks_count} выполнено`">
+                        <template v-if="project.total_tasks_count <= 12">
+                          <div
+                            v-for="i in project.total_tasks_count"
+                            :key="i"
+                            class="w-2 h-2 rounded-sm"
+                            :class="i <= project.completed_tasks_count ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'"
+                          ></div>
+                        </template>
+                        <template v-else>
+                          <div
+                            v-for="i in 12"
+                            :key="i"
+                            class="w-2 h-2 rounded-sm"
+                            :class="i <= Math.round(project.completed_tasks_count / project.total_tasks_count * 12) ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'"
+                          ></div>
+                          <span class="text-[10px] text-gray-400 ml-0.5">{{ project.completed_tasks_count }}/{{ project.total_tasks_count }}</span>
+                        </template>
                       </div>
                     </div>
                   </router-link>
                 </div>
-                <div v-if="activeProjects.length === 0" class="px-3 py-2 text-sm text-gray-500 text-center">
-                  Нет проектов
+                <div v-if="activeProjects.length === 0" class="px-3 py-1.5 text-sm text-gray-500 text-center">
+                  Нет потоков
+                </div>
+              </div>
+              </div>
+            </div>
+
+            <!-- Goals -->
+            <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+              <div
+                @click="toggleGoalsCollapsed"
+                class="flex items-center justify-between px-3 mb-2 cursor-pointer select-none hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-lg transition-colors -mx-1 px-4 py-1"
+              >
+                <h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                  </svg>
+                  Цели
+                </h3>
+                <button
+                  @click.stop="handleQuickAddGoal"
+                  class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                  title="Создать цель"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                  </svg>
+                </button>
+              </div>
+              <div
+                class="overflow-hidden transition-all duration-300 ease-in-out"
+                :style="{ maxHeight: goalsCollapsed ? '0px' : goalsMaxHeight }"
+              >
+                <div class="space-y-1">
+                  <router-link
+                    v-for="goal in activeGoals"
+                    :key="goal.id"
+                    :to="`/workspaces/${goal.workspace_id}/goals/${goal.id}`"
+                    @click="handleGoalLinkClick"
+                    :class="[
+                      'flex items-center px-3 py-1.5 rounded-lg transition-colors',
+                      isActiveGoal(goal.id)
+                        ? 'bg-primary-50 dark:bg-primary-900/30'
+                        : 'hover:bg-gray-50 dark:hover:bg-gray-700'
+                    ]"
+                  >
+                    <div class="flex-1 min-w-0">
+                      <span
+                        :class="[
+                          'text-sm truncate block',
+                          isActiveGoal(goal.id)
+                            ? 'text-primary-700 dark:text-primary-400 font-medium'
+                            : 'text-gray-700 dark:text-gray-300'
+                        ]"
+                      >{{ goal.name }}</span>
+                      <div v-if="goal.deadline" class="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">
+                        {{ formatGoalDeadline(goal.deadline) }}
+                      </div>
+                    </div>
+                    <span v-if="goal.progress > 0" class="text-[10px] text-primary-600 dark:text-primary-400 font-medium ml-2">
+                      {{ goal.progress }}%
+                    </span>
+                  </router-link>
+                  <div v-if="activeGoals.length === 0" class="px-3 py-1.5 text-sm text-gray-500 text-center">
+                    Нет целей
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-              <h3 class="px-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
-                Организация
-              </h3>
-              <div class="space-y-1">
-                <NavLink
-                  to="/workspaces/:id/goals"
-                  icon="target"
-                  @close-sidebar="sidebarOpen = false"
-                >
-                  Цели
-                </NavLink>
-              </div>
-            </div>
-
-            <div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+            <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
               <div class="space-y-1">
                 <NavLink
                   to="/workspaces/:id/archive"
@@ -392,6 +433,7 @@
         <!-- Toolbar -->
         <Toolbar
           :user="user"
+          :inbox-count="taskCounts.inbox"
           @quick-add-task="handleQuickAddTask"
           @quick-add-project="handleQuickAddProject"
           @quick-add-goal="handleQuickAddGoal"
@@ -457,6 +499,15 @@
       @submit="handleSaveProject"
     />
 
+    <!-- Goal Modal -->
+    <GoalModal
+      :show="showGoalModal"
+      :goal="selectedGoal"
+      :server-error="goalError"
+      @close="handleCloseGoalModal"
+      @submit="handleSaveGoal"
+    />
+
     <!-- Delete Workspace Confirm -->
     <Transition name="modal">
       <div
@@ -512,6 +563,9 @@ import RenameWorkspaceModal from '@/components/workspace/RenameWorkspaceModal.vu
 import MembersModal from '@/components/workspace/MembersModal.vue'
 import ProjectModal from '@/components/projects/ProjectModal.vue'
 import TaskModal from '@/components/tasks/TaskModal.vue'
+import GoalModal from '@/components/goals/GoalModal.vue'
+import { useGoalsStore } from '@/stores/goals'
+import { useLifeSpheresStore } from '@/stores/lifeSpheres'
 
 const router = useRouter()
 const route = useRoute()
@@ -519,6 +573,8 @@ const authStore = useAuthStore()
 const workspaceStore = useWorkspaceStore()
 const tasksStore = useTasksStore()
 const projectsStore = useProjectsStore()
+const goalsStore = useGoalsStore()
+const lifeSpheresStore = useLifeSpheresStore()
 const themeStore = useThemeStore()
 // Логотип для заставки (старые файлы)
 const loadingLogo = computed(() => themeStore.isDark ? loadingLogoDark : loadingLogoLight)
@@ -538,6 +594,19 @@ const showMembersModal = ref(false)
 const showProjectModal = ref(false)
 const selectedProject = ref(null)
 const projectError = ref('')
+const showGoalModal = ref(false)
+const selectedGoal = ref(null)
+const goalError = ref('')
+const projectsCollapsed = ref(localStorage.getItem('projectsCollapsed') === 'true')
+const toggleProjectsCollapsed = () => {
+  projectsCollapsed.value = !projectsCollapsed.value
+  localStorage.setItem('projectsCollapsed', projectsCollapsed.value)
+}
+const goalsCollapsed = ref(localStorage.getItem('goalsCollapsed') === 'true')
+const toggleGoalsCollapsed = () => {
+  goalsCollapsed.value = !goalsCollapsed.value
+  localStorage.setItem('goalsCollapsed', goalsCollapsed.value)
+}
 const selectedWorkspaceForAction = ref(null)
 const showDeleteConfirm = ref(false)
 const workspaceToDelete = ref(null)
@@ -546,10 +615,59 @@ const user = computed(() => authStore.user)
 const workspaces = computed(() => workspaceStore.workspaces)
 const taskCounts = computed(() => tasksStore.counts)
 const currentWorkspace = computed(() => workspaceStore.currentWorkspace)
-const activeProjects = computed(() => projectsStore.activeProjects)
-const selectedWorkspaceIds = computed(() => 
+const activeProjects = computed(() => {
+  return projectsStore.activeProjects.map(p => {
+    const projectTasks = tasksStore.allTasks.filter(t => t.project_id === p.id)
+    const total = projectTasks.length
+    const completed = projectTasks.filter(t => t.completed_at).length
+    // Берём актуальные данные workspace из workspaceStore (а не из кеша проектов)
+    const ws = workspaceStore.workspaces.find(w => w.id === p.workspace_id)
+    return {
+      ...p,
+      workspace: ws ? { id: ws.id, name: ws.name, emoji: ws.emoji } : p.workspace,
+      total_tasks_count: total,
+      completed_tasks_count: completed,
+      tasks_count: total - completed,
+    }
+  })
+})
+const selectedWorkspaceIds = computed(() =>
   workspaceStore.selectedWorkspaces.map(ws => ws.id)
 )
+const projectsMaxHeight = computed(() => {
+  const count = Math.max(activeProjects.value.length, 1)
+  return (count * 60 + 20) + 'px'
+})
+
+const activeGoals = computed(() => goalsStore.activeGoals)
+const goalsMaxHeight = computed(() => {
+  const count = Math.max(activeGoals.value.length, 1)
+  return (count * 50 + 20) + 'px'
+})
+const isActiveGoal = (goalId) => {
+  return route.path.includes('/goals/' + goalId)
+}
+
+const formatGoalDeadline = (deadlineStr) => {
+  if (!deadlineStr) return ''
+  const deadline = new Date(deadlineStr)
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  deadline.setHours(0, 0, 0, 0)
+  const days = Math.ceil((deadline - today) / (1000 * 60 * 60 * 24))
+  if (days < 0) return `просрочено на ${Math.abs(days)} дн.`
+  if (days === 0) return 'сегодня'
+  if (days === 1) return 'завтра'
+  if (days <= 30) return `осталось ${days} дн.`
+  const date = new Date(deadlineStr)
+  return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })
+}
+
+const handleGoalLinkClick = () => {
+  if (window.innerWidth < 1024) {
+    sidebarOpen.value = false
+  }
+}
 
 // Счетчик задач в текущем месяце для календаря
 // Используем scheduled задачи (задачи с датой, не today/tomorrow)
@@ -651,7 +769,7 @@ const handleSaveProject = async (projectData) => {
     await projectsStore.fetchAllProjects({ force: true })
   } catch (error) {
     console.error('Error saving project:', error)
-    projectError.value = error.response?.data?.message || error.message || 'Ошибка при сохранении проекта'
+    projectError.value = error.response?.data?.message || error.message || 'Ошибка при сохранении потока'
   }
 }
 
@@ -662,7 +780,7 @@ const handleCloseProjectModal = () => {
 }
 
 const handleArchiveProject = async (project) => {
-  if (!confirm(`Архивировать проект "${project.name}"?`)) {
+  if (!confirm(`Архивировать поток "${project.name}"?`)) {
     return
   }
   
@@ -671,13 +789,36 @@ const handleArchiveProject = async (project) => {
     await projectsStore.fetchAllProjects({ force: true })
   } catch (error) {
     console.error('Error archiving project:', error)
-    alert('Ошибка при архивировании проекта: ' + (error.response?.data?.message || error.message))
+    alert('Ошибка при архивировании потока: ' + (error.response?.data?.message || error.message))
   }
 }
 
 const handleQuickAddGoal = () => {
-  console.log('Quick add goal')
-  // TODO: Реализовать создание цели
+  selectedGoal.value = null
+  showGoalModal.value = true
+}
+
+const handleSaveGoal = async (goalData) => {
+  goalError.value = ''
+  try {
+    if (selectedGoal.value) {
+      await goalsStore.updateGoal(selectedGoal.value.id, goalData)
+    } else {
+      await goalsStore.createGoal(goalData)
+    }
+    showGoalModal.value = false
+    selectedGoal.value = null
+    await goalsStore.fetchAllGoals({ force: true })
+  } catch (error) {
+    console.error('Error saving goal:', error)
+    goalError.value = error.response?.data?.message || error.message || 'Ошибка при сохранении цели'
+  }
+}
+
+const handleCloseGoalModal = () => {
+  showGoalModal.value = false
+  selectedGoal.value = null
+  goalError.value = ''
 }
 
 const handleCreateTask = async (taskData) => {
@@ -881,6 +1022,8 @@ onMounted(async () => {
     await Promise.all([
       tasksStore.fetchAllTasks(),
       projectsStore.fetchAllProjects(),
+      goalsStore.fetchAllGoals(),
+      lifeSpheresStore.fetchAll(),
     ])
   } finally {
     appLoading.value = false

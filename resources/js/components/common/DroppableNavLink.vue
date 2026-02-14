@@ -11,10 +11,10 @@
     <router-link
       :to="computedTo"
       @click="handleLinkClick"
-      class="flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+      class="flex items-center justify-between px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
       :class="isActive ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'"
     >
-      <div class="flex items-center space-x-3">
+      <div class="flex items-center space-x-2.5">
         <component :is="iconComponent" class="w-5 h-5" />
         <span><slot /></span>
       </div>

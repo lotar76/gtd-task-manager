@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\V1\ContextController;
 use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\FileController;
 use App\Http\Controllers\Api\V1\GoalController;
+use App\Http\Controllers\Api\V1\LifeSphereController;
 use App\Http\Controllers\Api\V1\ProjectController;
 use App\Http\Controllers\Api\V1\TagController;
 use App\Http\Controllers\Api\V1\TaskController;
@@ -63,8 +64,16 @@ Route::prefix('v1')->group(function () {
         // Все проекты пользователя (по всем workspace)
         Route::get('/projects', [ProjectController::class, 'all']);
 
-        // Dashboard статистика
+        // Все цели пользователя (по всем workspace)
+        Route::get('/goals', [GoalController::class, 'all']);
+
+        // Все сферы жизни пользователя (по всем workspace)
+        Route::get('/life-spheres', [LifeSphereController::class, 'all']);
+
+        // Dashboard
         Route::get('/dashboard/stats', [DashboardController::class, 'getStats']);
+        Route::get('/dashboard/life-mirror', [DashboardController::class, 'getLifeMirror']);
+        Route::get('/dashboard/ai-message', [DashboardController::class, 'getAiMessage']);
 
         // === WORKSPACES (Команды) ===
         Route::apiResource('workspaces', WorkspaceController::class);
@@ -100,6 +109,11 @@ Route::prefix('v1')->group(function () {
 
             // Цели
             Route::apiResource('goals', GoalController::class);
+            Route::delete('goals/{goal}/image', [GoalController::class, 'deleteImage']);
+
+            // Сферы жизни
+            Route::apiResource('life-spheres', LifeSphereController::class);
+            Route::post('life-spheres/seed', [LifeSphereController::class, 'seed']);
 
             // Контексты
             Route::apiResource('contexts', ContextController::class);

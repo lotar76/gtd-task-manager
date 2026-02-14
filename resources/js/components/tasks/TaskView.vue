@@ -157,8 +157,7 @@
                 <!-- Project -->
                 <span
                   v-if="task.project"
-                  class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium"
-                  :style="{ backgroundColor: task.project.color + '20', color: task.project.color }"
+                  class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
                 >
                   <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />

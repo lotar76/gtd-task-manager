@@ -1,7 +1,7 @@
 <template>
   <div class="p-4 lg:p-8">
     <div class="flex items-center justify-between mb-6">
-      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Проекты</h1>
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Потоки</h1>
       <button
         @click="showProjectModal = true"
         class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg flex items-center space-x-2 transition-colors"
@@ -9,7 +9,7 @@
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
         </svg>
-        <span>Создать проект</span>
+        <span>Создать поток</span>
       </button>
     </div>
 
@@ -22,19 +22,13 @@
         @click="$router.push(`/workspaces/${currentWorkspace?.id}/projects/${project.id}`)"
       >
         <div class="flex items-start justify-between mb-4">
-          <div class="flex items-center space-x-3 flex-1 min-w-0">
-            <div
-              class="w-4 h-4 rounded-full flex-shrink-0"
-              :style="{ backgroundColor: project.color || '#3B82F6' }"
-            ></div>
-            <div class="flex-1 min-w-0">
-              <h3 class="text-lg font-semibold text-gray-900 dark:text-white truncate">
-                {{ project.name }}
-              </h3>
-              <p v-if="selectedWorkspaceIds.length > 1" class="text-sm text-gray-500 dark:text-gray-400 truncate">
-                {{ getWorkspaceName(project.workspace_id) }}
-              </p>
-            </div>
+          <div class="flex-1 min-w-0">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white truncate">
+              {{ project.name }}
+            </h3>
+            <p v-if="selectedWorkspaceIds.length > 1" class="text-sm text-gray-500 dark:text-gray-400 truncate">
+              {{ getWorkspaceName(project.workspace_id) }}
+            </p>
           </div>
           <button
             @click.stop="handleArchiveProject(project)"
@@ -67,13 +61,13 @@
       <svg class="mx-auto h-16 w-16 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
       </svg>
-      <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">Нет проектов</h3>
-      <p class="text-gray-500 dark:text-gray-400 mb-4">Создайте первый проект для организации ваших задач</p>
+      <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">Нет потоков</h3>
+      <p class="text-gray-500 dark:text-gray-400 mb-4">Создайте первый поток для организации ваших задач</p>
       <button
         @click="showProjectModal = true"
         class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
       >
-        Создать проект
+        Создать поток
       </button>
     </div>
 
@@ -128,7 +122,7 @@ const handleSaveProject = async (projectData) => {
     await projectsStore.fetchAllProjects({ force: true })
   } catch (error) {
     console.error('Error saving project:', error)
-    projectError.value = error.response?.data?.message || error.message || 'Ошибка при сохранении проекта'
+    projectError.value = error.response?.data?.message || error.message || 'Ошибка при сохранении потока'
   }
 }
 
@@ -139,7 +133,7 @@ const handleCloseProjectModal = () => {
 }
 
 const handleArchiveProject = async (project) => {
-  if (!confirm(`Архивировать проект "${project.name}"?`)) {
+  if (!confirm(`Архивировать поток "${project.name}"?`)) {
     return
   }
 
@@ -148,7 +142,7 @@ const handleArchiveProject = async (project) => {
     await projectsStore.fetchAllProjects({ force: true })
   } catch (error) {
     console.error('Error archiving project:', error)
-    alert('Ошибка при архивировании проекта: ' + (error.response?.data?.message || error.message))
+    alert('Ошибка при архивировании потока: ' + (error.response?.data?.message || error.message))
   }
 }
 
