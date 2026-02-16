@@ -34,7 +34,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=web"
-      - "traefik.http.routers.todo-nginx.rule=Host(`todo.e-api.ru`)"
+      - "traefik.http.routers.todo-nginx.rule=Host(`todo.e-api.ru`) || Host(`skylit.ru`)"
       - "traefik.http.routers.todo-nginx.entrypoints=websecure"
       - "traefik.http.routers.todo-nginx.tls.certresolver=myresolver"
       - "traefik.http.services.todo-nginx.loadbalancer.server.port=80"

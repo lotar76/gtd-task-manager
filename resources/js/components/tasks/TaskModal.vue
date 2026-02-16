@@ -22,21 +22,6 @@
 
             <!-- Body -->
             <form @submit.prevent="handleSubmit" class="p-6 space-y-4">
-              <!-- Completed Toggle -->
-              <div class="flex items-center space-x-3 pb-4 border-b border-gray-200 dark:border-gray-700">
-                <label class="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    v-model="isCompleted"
-                    @change="handleToggleCompleted"
-                    class="w-5 h-5 text-primary-600 border-gray-300 dark:border-gray-600 rounded focus:ring-primary-500 dark:bg-gray-700"
-                  />
-                  <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    {{ isCompleted ? 'Задача выполнена' : 'Отметить как выполненную' }}
-                  </span>
-                </label>
-              </div>
-
               <!-- Title -->
               <div>
                 <label for="title" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -47,8 +32,7 @@
                   v-model="form.title"
                   type="text"
                   required
-                  class="input"
-                  :class="{ 'opacity-60': isCompleted }"
+                  class="w-full px-3 py-2 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-600 focus:outline-none focus:border-primary-500 dark:focus:border-primary-400"
                   placeholder="Введите название задачи"
                 />
               </div>
@@ -62,15 +46,15 @@
                   id="description"
                   v-model="form.description"
                   rows="3"
-                  class="input"
+                  class="w-full px-3 py-2 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-600 focus:outline-none focus:border-primary-500 dark:focus:border-primary-400 resize-none"
                   placeholder="Добавьте описание"
                 ></textarea>
               </div>
 
               <!-- Row: Status & Priority -->
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <!-- Status -->
-                <div>
+                <div class="md:col-span-2">
                   <label for="status" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Статус
                   </label>
@@ -78,7 +62,7 @@
                     <button
                       type="button"
                       @click="statusDropdownOpen = !statusDropdownOpen"
-                      class="input w-full flex items-center justify-between"
+                      class="w-full px-3 py-2 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-600 focus:outline-none focus:border-primary-500 dark:focus:border-primary-400 flex items-center justify-between"
                     >
                       <span class="flex items-center space-x-2">
                         <component :is="statusOptions[form.status].icon" class="w-5 h-5 text-gray-500 dark:text-gray-400" />
@@ -109,31 +93,43 @@
 
                 <!-- Priority -->
                 <div>
-                  <label for="priority" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Приоритет
                   </label>
-                  <select id="priority" v-model="form.priority" class="input">
-                    <option value="low">Низкий</option>
-                    <option value="medium">Средний</option>
-                    <option value="high">Высокий</option>
-                    <option value="urgent">Срочный</option>
-                  </select>
+                  <div class="flex gap-2 justify-end">
+                    <button
+                      v-for="(option, key) in priorityOptions"
+                      :key="key"
+                      type="button"
+                      @click="form.priority = key"
+                      :title="option.label"
+                      :class="[
+                        'p-2 rounded-lg transition-all border-2',
+                        form.priority === key
+                          ? 'bg-white dark:bg-gray-700 border-current shadow-sm'
+                          : 'border-transparent hover:bg-gray-100 dark:hover:bg-gray-700',
+                        option.color
+                      ]"
+                    >
+                      <component :is="option.icon" class="w-5 h-5" />
+                    </button>
+                  </div>
                 </div>
               </div>
 
-              <!-- Row: Due Date & Estimated Time -->
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <!-- Due Date -->
-              <div>
-                <label for="due_date" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Срок выполнения
-                </label>
-                <input
-                  id="due_date"
-                  v-model="form.due_date"
-                  type="date"
-                  class="input"
-                />
+              <!-- Row: Due Date, Start Time & End Time -->
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- Due Date -->
+                <div>
+                  <label for="due_date" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Срок выполнения
+                  </label>
+                  <input
+                    id="due_date"
+                    v-model="form.due_date"
+                    type="date"
+                    class="w-full px-3 py-2 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-600 focus:outline-none focus:border-primary-500 dark:focus:border-primary-400"
+                  />
                 </div>
 
                 <!-- Estimated Time -->
@@ -145,105 +141,345 @@
                     id="estimated_time"
                     v-model="form.estimated_time"
                     type="time"
-                    class="input"
+                    class="w-full px-3 py-2 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-600 focus:outline-none focus:border-primary-500 dark:focus:border-primary-400"
                     placeholder="12:30"
+                  />
+                </div>
+
+                <!-- End Time -->
+                <div>
+                  <label for="end_time" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Время окончания
+                  </label>
+                  <input
+                    id="end_time"
+                    v-model="form.end_time"
+                    type="time"
+                    class="w-full px-3 py-2 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-600 focus:outline-none focus:border-primary-500 dark:focus:border-primary-400"
+                    placeholder="13:30"
                   />
                 </div>
               </div>
 
-              <!-- End Time -->
-              <div>
-                <label for="end_time" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Время окончания
-                </label>
-                <input
-                  id="end_time"
-                  v-model="form.end_time"
-                  type="time"
-                  class="input"
-                  placeholder="13:30"
-                />
-              </div>
-
               <!-- Workspace -->
               <div v-if="workspaces.length > 1">
-                <label for="workspace_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Рабочее пространство
                 </label>
-                <select
-                  id="workspace_id"
-                  v-model="form.workspace_id"
-                  class="input"
-                >
-                  <option v-for="ws in workspaces" :key="ws.id" :value="ws.id">
-                    {{ ws.name }}
-                  </option>
-                </select>
-              </div>
-
-              <!-- Project -->
-              <div>
-                <label for="project_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Поток
-                </label>
-                <select
-                  id="project_id"
-                  v-model="form.project_id"
-                  class="input"
-                >
-                  <option :value="null">Без потока</option>
-                  <option
-                    v-for="project in activeProjects"
-                    :key="project.id"
-                    :value="project.id"
+                <div class="flex flex-wrap gap-2">
+                  <button
+                    v-for="ws in workspaces"
+                    :key="ws.id"
+                    type="button"
+                    @click="form.workspace_id = ws.id"
+                    :class="[
+                      'px-3 py-1.5 text-sm font-medium rounded-lg transition-colors',
+                      form.workspace_id === ws.id
+                        ? 'bg-primary-600 text-white'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                    ]"
                   >
-                    {{ project.name }}
-                  </option>
-                </select>
+                    <span v-if="ws.emoji" class="mr-1">{{ ws.emoji }}</span>{{ ws.name }}
+                  </button>
+                </div>
               </div>
 
-              <!-- Row: Sphere & Goal -->
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <!-- Row: Project, Sphere & Goal -->
+              <div class="grid grid-cols-3 gap-4 relative">
+                <!-- Project -->
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Поток
+                  </label>
+                  <button
+                    type="button"
+                    @click="projectDropdownOpen = !projectDropdownOpen"
+                    :class="[
+                      'px-3 py-1.5 text-sm font-medium rounded-lg transition-colors w-full',
+                      selectedProject
+                        ? 'bg-primary-600 text-white hover:bg-primary-700'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                    ]"
+                  >
+                    {{ selectedProject ? selectedProject.name : 'Без потока' }}
+                  </button>
+                </div>
+
                 <!-- Life Sphere -->
                 <div>
-                  <label for="life_sphere_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Сфера жизни
                   </label>
-                  <select
-                    id="life_sphere_id"
-                    v-model="form.life_sphere_id"
-                    class="input"
+                  <button
+                    type="button"
+                    @click="sphereDropdownOpen = !sphereDropdownOpen"
+                    :class="[
+                      'px-3 py-1.5 text-sm font-medium rounded-lg transition-colors w-full',
+                      selectedSphere
+                        ? 'bg-primary-600 text-white hover:bg-primary-700'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                    ]"
                   >
-                    <option :value="null">Без сферы</option>
-                    <option
-                      v-for="sphere in workspaceSpheres"
-                      :key="sphere.id"
-                      :value="sphere.id"
-                    >
-                      {{ sphere.emoji || '' }} {{ sphere.name }}
-                    </option>
-                  </select>
+                    <span v-if="selectedSphere && selectedSphere.emoji" class="mr-1">{{ selectedSphere.emoji }}</span>
+                    {{ selectedSphere ? selectedSphere.name : 'Без сферы' }}
+                  </button>
                 </div>
 
                 <!-- Goal -->
                 <div>
-                  <label for="goal_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Цель
                   </label>
-                  <select
-                    id="goal_id"
-                    v-model="form.goal_id"
-                    class="input"
+                  <button
+                    type="button"
+                    @click="goalDropdownOpen = !goalDropdownOpen"
+                    :class="[
+                      'px-3 py-1.5 text-sm font-medium rounded-lg transition-colors w-full',
+                      selectedGoal
+                        ? 'bg-primary-600 text-white hover:bg-primary-700'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                    ]"
                   >
-                    <option :value="null">Без цели</option>
-                    <option
-                      v-for="goal in workspaceGoals"
-                      :key="goal.id"
-                      :value="goal.id"
+                    {{ selectedGoal ? selectedGoal.name : 'Без цели' }}
+                  </button>
+                </div>
+
+                <!-- Project Popup (centered) -->
+                <div
+                  v-if="projectDropdownOpen"
+                  class="fixed inset-0 z-50 flex items-center justify-center p-12"
+                  @click.self="projectDropdownOpen = false"
+                >
+                  <!-- Backdrop -->
+                  <div class="absolute inset-0 bg-black bg-opacity-30"></div>
+
+                  <!-- Popup content -->
+                  <div class="relative bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg shadow-xl p-3 max-h-[70vh] overflow-y-auto w-full max-w-lg">
+                    <!-- Close button -->
+                    <button
+                      type="button"
+                      @click="projectDropdownOpen = false"
+                      class="absolute top-2 right-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                     >
-                      {{ goal.name }}
-                    </option>
-                  </select>
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+
+                    <!-- Quick create input -->
+                    <div class="mb-3 pb-3 border-b border-gray-200 dark:border-gray-600 mt-6">
+                      <div class="flex gap-2">
+                        <input
+                          v-model="newProjectName"
+                          type="text"
+                          placeholder="Создать новый поток..."
+                          @keypress.enter="handleCreateProject"
+                          class="flex-1 text-sm px-3 py-2 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-600 focus:outline-none focus:border-primary-500 dark:focus:border-primary-400"
+                        />
+                        <button
+                          type="button"
+                          @click="handleCreateProject"
+                          :disabled="!newProjectName.trim()"
+                          class="p-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div class="flex flex-wrap gap-2">
+                      <!-- "Без потока" chip -->
+                      <button
+                        type="button"
+                        @click="form.project_id = null; projectDropdownOpen = false"
+                        :class="[
+                          'px-3 py-1.5 text-sm font-medium rounded-lg transition-colors',
+                          !form.project_id
+                            ? 'bg-primary-600 text-white'
+                            : 'bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-500'
+                        ]"
+                      >
+                        Без потока
+                      </button>
+
+                      <!-- Project chips -->
+                      <button
+                        v-for="project in activeProjects"
+                        :key="project.id"
+                        type="button"
+                        @click="form.project_id = project.id; projectDropdownOpen = false"
+                        :class="[
+                          'px-3 py-1.5 text-sm font-medium rounded-lg transition-colors',
+                          form.project_id === project.id
+                            ? 'bg-primary-600 text-white'
+                            : 'bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-500'
+                        ]"
+                      >
+                        {{ project.name }}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Sphere Popup (centered) -->
+                <div
+                  v-if="sphereDropdownOpen"
+                  class="fixed inset-0 z-50 flex items-center justify-center p-12"
+                  @click.self="sphereDropdownOpen = false"
+                >
+                  <!-- Backdrop -->
+                  <div class="absolute inset-0 bg-black bg-opacity-30"></div>
+
+                  <!-- Popup content -->
+                  <div class="relative bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg shadow-xl p-3 max-h-[70vh] overflow-y-auto w-full max-w-lg">
+                    <!-- Close button -->
+                    <button
+                      type="button"
+                      @click="sphereDropdownOpen = false"
+                      class="absolute top-2 right-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                    >
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+
+                    <!-- Quick create input -->
+                    <div class="mb-3 pb-3 border-b border-gray-200 dark:border-gray-600 mt-6">
+                      <div class="flex gap-2">
+                        <input
+                          v-model="newSphereName"
+                          type="text"
+                          placeholder="Создать новую сферу..."
+                          @keypress.enter="handleCreateSphere"
+                          class="flex-1 text-sm px-3 py-2 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-600 focus:outline-none focus:border-primary-500 dark:focus:border-primary-400"
+                        />
+                        <button
+                          type="button"
+                          @click="handleCreateSphere"
+                          :disabled="!newSphereName.trim()"
+                          class="p-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div class="flex flex-wrap gap-2">
+                      <!-- "Без сферы" chip -->
+                      <button
+                        type="button"
+                        @click="form.life_sphere_id = null; sphereDropdownOpen = false"
+                        :class="[
+                          'px-3 py-1.5 text-sm font-medium rounded-lg transition-colors',
+                          !form.life_sphere_id
+                            ? 'bg-primary-600 text-white'
+                            : 'bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-500'
+                        ]"
+                      >
+                        Без сферы
+                      </button>
+
+                      <!-- Sphere chips -->
+                      <button
+                        v-for="sphere in workspaceSpheres"
+                        :key="sphere.id"
+                        type="button"
+                        @click="form.life_sphere_id = sphere.id; sphereDropdownOpen = false"
+                        :class="[
+                          'px-3 py-1.5 text-sm font-medium rounded-lg transition-colors',
+                          form.life_sphere_id === sphere.id
+                            ? 'bg-primary-600 text-white'
+                            : 'bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-500'
+                        ]"
+                      >
+                        <span v-if="sphere.emoji" class="mr-1">{{ sphere.emoji }}</span>
+                        {{ sphere.name }}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Goal Popup (centered) -->
+                <div
+                  v-if="goalDropdownOpen"
+                  class="fixed inset-0 z-50 flex items-center justify-center p-12"
+                  @click.self="goalDropdownOpen = false"
+                >
+                  <!-- Backdrop -->
+                  <div class="absolute inset-0 bg-black bg-opacity-30"></div>
+
+                  <!-- Popup content -->
+                  <div class="relative bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg shadow-xl p-3 max-h-[70vh] overflow-y-auto w-full max-w-lg">
+                    <!-- Close button -->
+                    <button
+                      type="button"
+                      @click="goalDropdownOpen = false"
+                      class="absolute top-2 right-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                    >
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+
+                    <!-- Quick create input -->
+                    <div class="mb-3 pb-3 border-b border-gray-200 dark:border-gray-600 mt-6">
+                      <div class="flex gap-2">
+                        <input
+                          v-model="newGoalName"
+                          type="text"
+                          placeholder="Создать новую цель..."
+                          @keypress.enter="handleCreateGoal"
+                          class="flex-1 text-sm px-3 py-2 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-600 focus:outline-none focus:border-primary-500 dark:focus:border-primary-400"
+                        />
+                        <button
+                          type="button"
+                          @click="handleCreateGoal"
+                          :disabled="!newGoalName.trim()"
+                          class="p-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div class="flex flex-wrap gap-2">
+                      <!-- "Без цели" chip -->
+                      <button
+                        type="button"
+                        @click="form.goal_id = null; goalDropdownOpen = false"
+                        :class="[
+                          'px-3 py-1.5 text-sm font-medium rounded-lg transition-colors',
+                          !form.goal_id
+                            ? 'bg-primary-600 text-white'
+                            : 'bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-500'
+                        ]"
+                      >
+                        Без цели
+                      </button>
+
+                      <!-- Goal chips -->
+                      <button
+                        v-for="goal in workspaceGoals"
+                        :key="goal.id"
+                        type="button"
+                        @click="form.goal_id = goal.id; goalDropdownOpen = false"
+                        :class="[
+                          'px-3 py-1.5 text-sm font-medium rounded-lg transition-colors',
+                          form.goal_id === goal.id
+                            ? 'bg-primary-600 text-white'
+                            : 'bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-500'
+                        ]"
+                      >
+                        {{ goal.name }}
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -285,6 +521,10 @@ import {
   ClockIcon,
   ArchiveBoxIcon,
   CalendarIcon,
+  ArrowDownIcon,
+  MinusIcon,
+  ArrowUpIcon,
+  ExclamationTriangleIcon,
 } from '@heroicons/vue/24/outline'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useProjectsStore } from '@/stores/projects'
@@ -330,6 +570,11 @@ const activeProjects = computed(() => {
     .filter(p => p.workspace_id === workspaceId && (p.status === 'active' || !p.status))
 })
 
+const selectedProject = computed(() => {
+  if (!form.value.project_id) return null
+  return activeProjects.value.find(p => p.id === form.value.project_id)
+})
+
 // Сферы жизни текущего workspace
 const workspaceSpheres = computed(() => {
   const workspaceId = form.value.workspace_id
@@ -337,11 +582,21 @@ const workspaceSpheres = computed(() => {
   return spheresStore.allSpheres.filter(s => s.workspace_id === workspaceId)
 })
 
+const selectedSphere = computed(() => {
+  if (!form.value.life_sphere_id) return null
+  return workspaceSpheres.value.find(s => s.id === form.value.life_sphere_id)
+})
+
 // Цели текущего workspace (активные)
 const workspaceGoals = computed(() => {
   const workspaceId = form.value.workspace_id
   if (!workspaceId) return []
   return goalsStore.allGoals.filter(g => g.workspace_id === workspaceId && (g.status === 'active' || !g.status))
+})
+
+const selectedGoal = computed(() => {
+  if (!form.value.goal_id) return null
+  return workspaceGoals.value.find(g => g.id === form.value.goal_id)
 })
 
 // Определяем статус по текущему роуту
@@ -393,7 +648,96 @@ const form = ref({
 const loading = ref(false)
 const error = ref('')
 const statusDropdownOpen = ref(false)
+const projectDropdownOpen = ref(false)
+const sphereDropdownOpen = ref(false)
+const goalDropdownOpen = ref(false)
 const previousStatus = ref(null) // Храним предыдущий статус для восстановления
+
+// Quick creation inputs
+const newProjectName = ref('')
+const newSphereName = ref('')
+const newGoalName = ref('')
+
+// Предустановленные цвета для быстрого создания
+const PRESET_COLORS = [
+  '#ef4444', '#f97316', '#f59e0b', '#eab308', '#84cc16',
+  '#22c55e', '#10b981', '#14b8a6', '#06b6d4', '#0ea5e9',
+  '#3b82f6', '#6366f1', '#8b5cf6', '#a855f7', '#d946ef',
+  '#ec4899', '#f43f5e'
+]
+
+// Генерация случайного цвета
+const getRandomColor = () => {
+  return PRESET_COLORS[Math.floor(Math.random() * PRESET_COLORS.length)]
+}
+
+// Обработчики быстрого создания
+const handleCreateProject = async () => {
+  if (!newProjectName.value.trim()) return
+
+  try {
+    const newProject = await projectsStore.createProject({
+      name: newProjectName.value.trim(),
+      workspace_id: form.value.workspace_id,
+      color: getRandomColor(),
+      status: 'active',
+    })
+
+    // Выбираем созданный проект
+    form.value.project_id = newProject.id
+    // Закрываем попап
+    projectDropdownOpen.value = false
+    // Очищаем поле
+    newProjectName.value = ''
+  } catch (err) {
+    console.error('Error creating project:', err)
+    error.value = 'Ошибка при создании потока'
+  }
+}
+
+const handleCreateSphere = async () => {
+  if (!newSphereName.value.trim()) return
+
+  try {
+    const newSphere = await spheresStore.create(form.value.workspace_id, {
+      name: newSphereName.value.trim(),
+      color: getRandomColor(),
+    })
+
+    // Выбираем созданную сферу
+    form.value.life_sphere_id = newSphere.id
+    // Закрываем попап
+    sphereDropdownOpen.value = false
+    // Очищаем поле
+    newSphereName.value = ''
+  } catch (err) {
+    console.error('Error creating sphere:', err)
+    error.value = 'Ошибка при создании сферы'
+  }
+}
+
+const handleCreateGoal = async () => {
+  if (!newGoalName.value.trim()) return
+
+  try {
+    const newGoal = await goalsStore.createGoal({
+      name: newGoalName.value.trim(),
+      workspace_id: form.value.workspace_id,
+      color: getRandomColor(),
+      status: 'active',
+    })
+
+    // Выбираем созданную цель
+    form.value.goal_id = newGoal.id
+    // Закрываем попап
+    goalDropdownOpen.value = false
+    // Очищаем поле
+    newGoalName.value = ''
+  } catch (err) {
+    console.error('Error creating goal:', err)
+    error.value = 'Ошибка при создании цели'
+  }
+}
 
 // Опции статуса с иконками из сайдбара
 const statusOptions = {
@@ -404,6 +748,14 @@ const statusOptions = {
   waiting: { label: 'Ожидание', icon: ClockIcon },
   someday: { label: 'Когда-нибудь', icon: ArchiveBoxIcon },
   scheduled: { label: 'Запланировано', icon: CalendarIcon },
+}
+
+// Опции приоритета с иконками
+const priorityOptions = {
+  low: { label: 'Низкий', icon: ArrowDownIcon, color: 'text-gray-500' },
+  medium: { label: 'Средний', icon: MinusIcon, color: 'text-blue-500' },
+  high: { label: 'Высокий', icon: ArrowUpIcon, color: 'text-orange-500' },
+  urgent: { label: 'Срочный', icon: ExclamationTriangleIcon, color: 'text-red-500' },
 }
 
 const selectStatus = (status) => {
@@ -483,10 +835,6 @@ watch(() => props.task, (newTask, oldTask) => {
 
   if (newTask) {
     // Редактируем существующую задачу
-    console.log('Task received:', newTask)
-    console.log('Original due_date:', newTask.due_date)
-    console.log('Formatted due_date:', formatDateForInput(newTask.due_date))
-
     form.value = {
       title: newTask.title || '',
       description: newTask.description || '',
@@ -562,6 +910,9 @@ watch(() => props.show, (newShow) => {
     }
     previousStatus.value = null
     statusDropdownOpen.value = false
+    projectDropdownOpen.value = false
+    sphereDropdownOpen.value = false
+    goalDropdownOpen.value = false
     loading.value = false
     error.value = ''
   }
@@ -595,6 +946,19 @@ watch(() => currentWorkspace.value?.id, (newWorkspaceId) => {
   if (!props.task && newWorkspaceId) {
     form.value.workspace_id = newWorkspaceId
   }
+})
+
+// Очищаем поля ввода при закрытии попапов
+watch(projectDropdownOpen, (isOpen) => {
+  if (!isOpen) newProjectName.value = ''
+})
+
+watch(sphereDropdownOpen, (isOpen) => {
+  if (!isOpen) newSphereName.value = ''
+})
+
+watch(goalDropdownOpen, (isOpen) => {
+  if (!isOpen) newGoalName.value = ''
 })
 
 // Следим за изменениями workspace_id - обнуляем project_id если проект из другого workspace
@@ -645,8 +1009,14 @@ const handleSubmit = () => {
 
 // Обработчик клика снаружи dropdown
 const handleClickOutside = (event) => {
-  if (statusDropdownOpen.value && !event.target.closest('.relative')) {
+  // Проверяем клик вне любого dropdown
+  const clickedInsideDropdown = event.target.closest('.relative')
+
+  if (!clickedInsideDropdown) {
     statusDropdownOpen.value = false
+    projectDropdownOpen.value = false
+    sphereDropdownOpen.value = false
+    goalDropdownOpen.value = false
   }
 }
 

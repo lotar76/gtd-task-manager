@@ -117,9 +117,10 @@
         :key="'hover-' + i"
         :d="annularPath(i, innerR, outerR)"
         fill="transparent"
-        class="cursor-pointer"
+        :class="sphere.total === 0 ? 'cursor-pointer' : 'cursor-default'"
         @mouseenter="handleSphereEnter(i)"
         @mouseleave="handleSphereLeave"
+        @click="handleSphereClick(i, sphere)"
       />
 
       <!-- Inner circle (center) -->
@@ -167,7 +168,7 @@ const props = defineProps({
   hoveredSphereName: { type: String, default: null },
 })
 
-const emit = defineEmits(['sphere-hover', 'sphere-leave'])
+const emit = defineEmits(['sphere-hover', 'sphere-leave', 'sphere-click'])
 
 const hoveredIndex = ref(null)
 const hoveredStates = ref([])
@@ -180,6 +181,13 @@ const handleSphereEnter = (index) => {
 const handleSphereLeave = () => {
   hoveredIndex.value = null
   emit('sphere-leave')
+}
+
+const handleSphereClick = (index, sphere) => {
+  // Клик только на пустые сферы
+  if (sphere.total === 0) {
+    emit('sphere-click', index)
+  }
 }
 
 // Update hover states when hoveredIndex or hoveredSphereName changes

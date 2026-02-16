@@ -161,20 +161,35 @@ const taskError = ref('')
 
 // Flatten all tasks from all spheres into a single list
 const allTasks = computed(() => {
-  if (!props.data?.spheres) return []
+  if (!props.data) return []
 
   const tasks = []
-  props.data.spheres.forEach(sphere => {
-    if (sphere.tasks?.length) {
-      sphere.tasks.forEach(task => {
-        tasks.push({
-          ...task,
-          sphere_name: sphere.name,
-          sphere_color: sphere.color,
+
+  // Задачи из сфер
+  if (props.data.spheres) {
+    props.data.spheres.forEach(sphere => {
+      if (sphere.tasks?.length) {
+        sphere.tasks.forEach(task => {
+          tasks.push({
+            ...task,
+            sphere_name: sphere.name,
+            sphere_color: sphere.color,
+          })
         })
+      }
+    })
+  }
+
+  // Задачи без сфер
+  if (props.data.tasks_without_sphere?.length) {
+    props.data.tasks_without_sphere.forEach(task => {
+      tasks.push({
+        ...task,
+        sphere_name: 'Без сферы',
+        sphere_color: '#6b7280', // серый цвет
       })
-    }
-  })
+    })
+  }
 
   // Sort: incomplete first, then by sphere
   return tasks.sort((a, b) => {

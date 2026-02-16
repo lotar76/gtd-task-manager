@@ -96,6 +96,24 @@ class DashboardService
             }
         }
 
+        // Задачи без сферы
+        $tasksWithoutSphere = $allTasks->whereNull('resolved_sphere_id');
+        $tasksWithoutSphereData = $tasksWithoutSphere->map(fn($t) => [
+            'id' => $t->task_id,
+            'title' => $t->title,
+            'description' => $t->description,
+            'status' => $t->status,
+            'priority' => $t->priority,
+            'due_date' => $t->due_date,
+            'completed_at' => $t->completed_at,
+            'estimated_time' => $t->estimated_time,
+            'end_time' => $t->end_time,
+            'workspace_id' => $t->workspace_id,
+            'project_id' => $t->project_id,
+            'goal_id' => $t->goal_id,
+            'life_sphere_id' => $t->life_sphere_id,
+        ])->values()->toArray();
+
         // Пропущенные сферы
         $missingSpheres = $spheres
             ->whereNotIn('id', $activeSphereIds)
@@ -115,6 +133,7 @@ class DashboardService
             'period' => 'day',
             'date' => $today,
             'spheres' => $sphereData,
+            'tasks_without_sphere' => $tasksWithoutSphereData,
             'missing_spheres' => $missingSpheres,
             'goals' => $this->getGoalsWithProgress($workspaceId),
             'summary' => [
@@ -698,7 +717,6 @@ class DashboardService
     private function getGoalsWithProgress(int $workspaceId): array
     {
         $goals = Goal::where('workspace_id', $workspaceId)
-            ->whereNotNull('life_sphere_id')
             ->with('lifeSphere:id,name,color')
             ->get();
 

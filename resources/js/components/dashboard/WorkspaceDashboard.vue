@@ -62,6 +62,7 @@
               :hovered-sphere-name="hoveredSphereName"
               @sphere-hover="handleSphereHover"
               @sphere-leave="handleSphereLeave"
+              @sphere-click="handleSphereClick"
             />
 
             <!-- Goals tab -->
@@ -73,6 +74,7 @@
               :hovered-sphere-name="hoveredSphereName"
               @sphere-hover="handleSphereHover"
               @sphere-leave="handleSphereLeave"
+              @sphere-click="handleSphereClick"
             />
             <div v-else class="flex items-center justify-center py-16 text-gray-400 dark:text-gray-500 text-sm">
               Нет целей
@@ -91,7 +93,11 @@
       </div>
 
       <!-- Day Timeline (below 3 columns) -->
-      <DayTimeline :tasks="allDayTasks" />
+      <DayTimeline
+        :tasks="allDayTasks"
+        @task-click="handleTaskClick"
+        @changes-saved="handleTimelineChangesSaved"
+      />
     </template>
 
     <!-- For other periods: AI banner at the top -->
@@ -117,6 +123,7 @@
             :hovered-sphere-name="hoveredSphereName"
             @sphere-hover="handleSphereHover"
             @sphere-leave="handleSphereLeave"
+            @sphere-click="handleSphereClick"
           />
         </div>
 
@@ -146,6 +153,26 @@
       />
     </template>
   </template>
+
+  <!-- Task View -->
+  <TaskView
+    :show="showTaskView"
+    :task="selectedTask"
+    @close="showTaskView = false; selectedTask = null"
+    @enter-edit="handleEnterEdit"
+    @complete-task="handleCompleteTask"
+    @uncomplete-task="handleUncompleteTask"
+  />
+
+  <!-- Task Modal -->
+  <TaskModal
+    v-if="showTaskModal"
+    :show="showTaskModal"
+    :task="editingTask"
+    :server-error="taskError"
+    @close="closeTaskModal"
+    @submit="handleSaveTask"
+  />
 </template>
 
 <script setup>
@@ -159,6 +186,10 @@ import DayTimeline from '@/components/dashboard/DayTimeline.vue'
 import PeriodWeekView from '@/components/dashboard/PeriodWeekView.vue'
 import PeriodMonthView from '@/components/dashboard/PeriodMonthView.vue'
 import PeriodYearView from '@/components/dashboard/PeriodYearView.vue'
+import TaskModal from '@/components/tasks/TaskModal.vue'
+import TaskView from '@/components/tasks/TaskView.vue'
+import { useTasksStore } from '@/stores/tasks'
+import { useDashboardStore } from '@/stores/dashboard'
 
 const props = defineProps({
   workspaceId: { type: Number, required: true },
@@ -166,9 +197,19 @@ const props = defineProps({
   data: { type: Object, default: null },
 })
 
+const tasksStore = useTasksStore()
+const dashboardStore = useDashboardStore()
+
 const hoveredSphereName = ref(null)
 const activeTab = ref('spheres')
 const windowWidth = ref(window.innerWidth)
+
+// TaskModal state
+const showTaskModal = ref(false)
+const showTaskView = ref(false)
+const editingTask = ref(null)
+const selectedTask = ref(null)
+const taskError = ref('')
 
 const updateWindowWidth = () => {
   windowWidth.value = window.innerWidth
@@ -207,6 +248,90 @@ const handleRefreshAi = () => {
   emit('analyze-ai', true) // принудительное обновление, с force
 }
 
+const handleSphereClick = (sphereIndex) => {
+  const sphere = wheelSpheres.value[sphereIndex]
+
+  if (!sphere || sphere.total !== 0) {
+    return
+  }
+
+  // Открываем форму создания задачи с предустановленными полями
+  const today = new Date().toISOString().split('T')[0]
+  editingTask.value = {
+    workspace_id: props.workspaceId,
+    life_sphere_id: sphere.id,
+    due_date: props.period === 'day' ? today : null,
+    status: props.period === 'day' ? 'today' : 'new',
+  }
+  showTaskModal.value = true
+}
+
+const closeTaskModal = () => {
+  showTaskModal.value = false
+  editingTask.value = null
+  selectedTask.value = null
+  taskError.value = ''
+}
+
+const handleTaskClick = (task) => {
+  // Make a copy to avoid mutations
+  selectedTask.value = { ...task }
+  showTaskView.value = true
+}
+
+const handleEnterEdit = () => {
+  // Make sure to copy all task data including id
+  editingTask.value = { ...selectedTask.value }
+  showTaskView.value = false
+  showTaskModal.value = true
+}
+
+const handleCompleteTask = async (task) => {
+  try {
+    await tasksStore.completeTask(task.id)
+    // Refresh dashboard data
+    await dashboardStore.fetchForWorkspace(props.workspaceId, true)
+  } catch (error) {
+    console.error('Error completing task:', error)
+  }
+}
+
+const handleUncompleteTask = async (task) => {
+  try {
+    await tasksStore.uncompleteTask(task.id)
+    // Refresh dashboard data
+    await dashboardStore.fetchForWorkspace(props.workspaceId, true)
+  } catch (error) {
+    console.error('Error uncompleting task:', error)
+  }
+}
+
+const handleTimelineChangesSaved = async (callback) => {
+  // Refresh dashboard data after timeline changes
+  await dashboardStore.fetchForWorkspace(props.workspaceId, true)
+  // Call the callback after refresh is complete
+  if (callback) callback()
+}
+
+const handleSaveTask = async (taskData) => {
+  taskError.value = ''
+  try {
+    if (taskData.id) {
+      // Update existing task
+      await tasksStore.updateTask(taskData.id, taskData)
+    } else {
+      // Create new task
+      await tasksStore.createTask(taskData)
+    }
+    closeTaskModal()
+    // Refresh dashboard data
+    await dashboardStore.fetchForWorkspace(props.workspaceId, true)
+  } catch (error) {
+    console.error('Error saving task:', error)
+    taskError.value = error.response?.data?.message || error.message || 'Ошибка при сохранении задачи'
+  }
+}
+
 const periodComponent = computed(() => {
   const map = {
     day: PeriodDayView,
@@ -223,6 +348,7 @@ const wheelSpheres = computed(() => {
   if (!mirror) return []
 
   const active = (mirror.spheres || []).map(s => ({
+    id: s.id,
     name: s.name,
     total: s.tasks_total || 0,
     done: s.tasks_done || 0,
@@ -230,6 +356,7 @@ const wheelSpheres = computed(() => {
   }))
 
   const missing = (mirror.missing_spheres || []).map(s => ({
+    id: s.id,
     name: s.name,
     total: 0,
     done: 0,
@@ -262,20 +389,35 @@ const goalsBalanceIndex = computed(() => {
 // Все задачи дня для таймлайна
 const allDayTasks = computed(() => {
   const mirror = props.data?.lifeMirror
-  if (!mirror?.spheres) return []
+  if (!mirror) return []
 
   const tasks = []
-  mirror.spheres.forEach(sphere => {
-    if (sphere.tasks?.length) {
-      sphere.tasks.forEach(task => {
-        tasks.push({
-          ...task,
-          sphere_name: sphere.name,
-          sphere_color: sphere.color,
+
+  // Задачи из сфер
+  if (mirror.spheres) {
+    mirror.spheres.forEach(sphere => {
+      if (sphere.tasks?.length) {
+        sphere.tasks.forEach(task => {
+          tasks.push({
+            ...task,
+            sphere_name: sphere.name,
+            sphere_color: sphere.color,
+          })
         })
+      }
+    })
+  }
+
+  // Задачи без сфер (с дефолтным серым цветом)
+  if (mirror.tasks_without_sphere?.length) {
+    mirror.tasks_without_sphere.forEach(task => {
+      tasks.push({
+        ...task,
+        sphere_name: 'Без сферы',
+        sphere_color: '#6b7280', // серый цвет
       })
-    }
-  })
+    })
+  }
 
   return tasks
 })
