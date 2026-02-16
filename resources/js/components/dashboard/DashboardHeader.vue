@@ -1,11 +1,20 @@
 <template>
   <div class="mb-6">
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-      <div>
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+      <!-- Title + Date -->
+      <div class="flex flex-col gap-1">
         <h1 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
           Зеркало жизни
         </h1>
-        <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{{ formattedDate }}</p>
+        <p class="text-sm text-gray-500 dark:text-gray-400">{{ formattedDate }}</p>
+      </div>
+
+      <!-- Bible verse -->
+      <div v-if="bibleVerse" class="flex-1 max-w-2xl mx-4">
+        <p class="text-gray-600 dark:text-gray-400 text-sm italic leading-relaxed">
+          &laquo;{{ bibleVerse.text }}&raquo;
+          <span class="text-gray-400 dark:text-gray-500 not-italic ml-1">— {{ bibleVerse.ref }}</span>
+        </p>
       </div>
 
       <!-- Period Selector -->
@@ -15,7 +24,7 @@
           :key="p.value"
           @click="$emit('change-period', p.value)"
           type="button"
-          class="px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200"
+          class="px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-all duration-200"
           :class="[
             period === p.value
               ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
@@ -38,6 +47,7 @@ dayjs.locale('ru')
 
 const props = defineProps({
   period: { type: String, required: true },
+  bibleVerse: { type: Object, default: null },
 })
 
 defineEmits(['change-period'])

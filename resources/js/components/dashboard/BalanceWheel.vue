@@ -48,8 +48,10 @@
         :key="'total-' + i"
         :d="totalAnnularPath(i, sphere)"
         fill="currentColor"
-        class="text-gray-400 dark:text-gray-500"
-        fill-opacity="0.25"
+        class="text-gray-400 dark:text-gray-500 transition-all duration-300 ease-out"
+        :fill-opacity="hoveredStates[i] ? '0.5' : '0.25'"
+        :stroke="hoveredStates[i] ? sphere.color : 'none'"
+        :stroke-width="hoveredStates[i] ? '2' : '0'"
       />
 
       <!-- Colored fills: done tasks -->
@@ -58,8 +60,10 @@
         :key="'done-' + i"
         :d="doneAnnularPath(i, sphere)"
         :fill="sphere.color || '#888'"
-        fill-opacity="0.45"
-        class="transition-all duration-700 ease-out"
+        :fill-opacity="hoveredStates[i] ? '1' : '0.45'"
+        :stroke="hoveredStates[i] ? sphere.color : 'none'"
+        :stroke-width="hoveredStates[i] ? '3' : '0'"
+        class="transition-all duration-300 ease-out"
       />
 
       <!-- Done edge arc (bright colored arc at done level) -->
@@ -93,13 +97,30 @@
         :x="labelPoints[i].x"
         :y="labelPoints[i].y"
         :fill="sphere.color || '#888'"
-        font-size="11"
+        font-size="13"
         font-weight="600"
         :text-anchor="getTextAnchor(i)"
-        dominant-baseline="central"
       >
-        {{ sphere.name || '' }}
+        <tspan
+          v-for="(line, lineIndex) in splitLabel(sphere.name)"
+          :key="lineIndex"
+          :x="labelPoints[i].x"
+          :dy="lineIndex === 0 ? (splitLabel(sphere.name).length > 1 ? '-0.3em' : '0.3em') : '1.1em'"
+        >
+          {{ line }}
+        </tspan>
       </text>
+
+      <!-- Interactive hover zones (invisible paths) -->
+      <path
+        v-for="(sphere, i) in spheres"
+        :key="'hover-' + i"
+        :d="annularPath(i, innerR, outerR)"
+        fill="transparent"
+        class="cursor-pointer"
+        @mouseenter="handleSphereEnter(i)"
+        @mouseleave="handleSphereLeave"
+      />
 
       <!-- Inner circle (center) -->
       <circle
@@ -137,17 +158,42 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 const props = defineProps({
   spheres: { type: Array, default: () => [] },
   balanceIndex: { type: Number, default: 0 },
   size: { type: Number, default: 280 },
+  hoveredSphereName: { type: String, default: null },
 })
 
-const pad = 40 // extra padding for labels
+const emit = defineEmits(['sphere-hover', 'sphere-leave'])
+
+const hoveredIndex = ref(null)
+const hoveredStates = ref([])
+
+const handleSphereEnter = (index) => {
+  hoveredIndex.value = index
+  emit('sphere-hover', props.spheres[index]?.name)
+}
+
+const handleSphereLeave = () => {
+  hoveredIndex.value = null
+  emit('sphere-leave')
+}
+
+// Update hover states when hoveredIndex or hoveredSphereName changes
+watch([() => props.spheres, () => props.hoveredSphereName, hoveredIndex], () => {
+  hoveredStates.value = props.spheres.map((sphere, index) => {
+    const byIndex = hoveredIndex.value === index
+    const byName = props.hoveredSphereName && props.hoveredSphereName === sphere.name
+    return byIndex || byName
+  })
+}, { immediate: true, deep: true })
+
+const pad = 50 // extra padding for labels
 const center = computed(() => props.size / 2)
-const outerR = computed(() => props.size / 2 - 40)
+const outerR = computed(() => props.size / 2 - 50)
 const innerR = computed(() => outerR.value * 0.35)
 const numSpheres = computed(() => props.spheres.length)
 const angleStep = computed(() => numSpheres.value > 0 ? (2 * Math.PI) / numSpheres.value : 0)
@@ -255,5 +301,59 @@ const getTextAnchor = (index) => {
   if (deg > -60 && deg < 60) return 'start'
   if (deg > 120 || deg < -120) return 'end'
   return 'middle'
+}
+
+// Разбивает длинные названия на строки
+const splitLabel = (name) => {
+  if (!name) return ['']
+
+  const maxLength = 11 // Максимальная длина строки
+
+  // Если название короткое, возвращаем как есть
+  if (name.length <= maxLength) {
+    return [name]
+  }
+
+  // Пытаемся разбить по пробелу
+  const words = name.split(' ')
+
+  if (words.length === 1) {
+    // Одно длинное слово - обрезаем с многоточием
+    return [name.substring(0, maxLength - 1) + '…']
+  }
+
+  // Пытаемся разбить на две строки
+  const lines = []
+  let currentLine = ''
+
+  for (let i = 0; i < words.length; i++) {
+    const word = words[i]
+    const testLine = currentLine ? currentLine + ' ' + word : word
+
+    if (testLine.length <= maxLength) {
+      currentLine = testLine
+    } else {
+      if (currentLine) {
+        lines.push(currentLine)
+        currentLine = word
+      } else {
+        // Слово слишком длинное даже для одной строки
+        lines.push(word.substring(0, maxLength - 1) + '…')
+        currentLine = ''
+      }
+    }
+  }
+
+  if (currentLine) {
+    lines.push(currentLine)
+  }
+
+  // Ограничиваем до 2 строк максимум
+  if (lines.length > 2) {
+    lines[1] = lines[1].substring(0, maxLength - 1) + '…'
+    return lines.slice(0, 2)
+  }
+
+  return lines
 }
 </script>

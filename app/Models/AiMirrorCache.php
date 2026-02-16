@@ -17,11 +17,13 @@ class AiMirrorCache extends Model
         'period_key',
         'response_json',
         'generated_at',
+        'is_stale',
     ];
 
     protected $casts = [
         'response_json' => 'array',
         'generated_at' => 'datetime',
+        'is_stale' => 'boolean',
     ];
 
     public function workspace(): BelongsTo

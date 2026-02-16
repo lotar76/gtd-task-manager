@@ -17,6 +17,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
         aiMessage: null,
         loading: false,
         aiLoading: false,
+        aiSilentLoading: false,
       }
     }
   }
@@ -38,28 +39,40 @@ export const useDashboardStore = defineStore('dashboard', () => {
     }
   }
 
-  const fetchAiMessage = async (wsId) => {
+  const fetchAiMessage = async (wsId, force = false, silent = false) => {
     if (!wsId) return
     ensureEntry(wsId)
-    dataByWorkspace[wsId].aiLoading = true
+    if (silent) {
+      dataByWorkspace[wsId].aiSilentLoading = true
+    } else {
+      dataByWorkspace[wsId].aiLoading = true
+    }
     try {
       const response = await api.get('/v1/dashboard/ai-message', {
-        params: { workspace_id: wsId, period: selectedPeriod.value },
+        params: {
+          workspace_id: wsId,
+          period: selectedPeriod.value,
+          force: force ? 1 : 0,
+        },
       })
       dataByWorkspace[wsId].aiMessage = response.data
     } catch (error) {
       console.error(`Failed to fetch AI message for ws ${wsId}:`, error)
       dataByWorkspace[wsId].aiMessage = null
     } finally {
-      dataByWorkspace[wsId].aiLoading = false
+      if (silent) {
+        dataByWorkspace[wsId].aiSilentLoading = false
+      } else {
+        dataByWorkspace[wsId].aiLoading = false
+      }
     }
   }
 
-  const fetchForWorkspace = async (wsId) => {
-    await Promise.all([
-      fetchLifeMirror(wsId),
-      fetchAiMessage(wsId),
-    ])
+  const fetchForWorkspace = async (wsId, silent = false) => {
+    await fetchLifeMirror(wsId)
+    // Загружаем существующий AI анализ из кеша (для отображения статуса stale)
+    // Без генерации нового (force=false)
+    await fetchAiMessage(wsId, false, silent)
   }
 
   const fetchAllWorkspaces = async () => {

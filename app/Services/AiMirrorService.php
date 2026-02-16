@@ -136,13 +136,16 @@ PROMPT,
     /**
      * Получить AI-сообщение (с кешем)
      */
-    public function getMessage(int $workspaceId, string $period, array $mirrorData): array
+    public function getMessage(int $workspaceId, string $period, array $mirrorData, bool $forceRefresh = false): array
     {
-        // Проверяем кеш
         $periodKey = $this->getPeriodKey($period);
-        $cached = $this->getCached($workspaceId, $period, $periodKey);
-        if ($cached) {
-            return $cached;
+
+        // Проверяем кеш (если не force)
+        if (!$forceRefresh) {
+            $cached = $this->getCached($workspaceId, $period, $periodKey);
+            if ($cached) {
+                return $cached;
+            }
         }
 
         // Проверяем наличие API-ключа
@@ -161,7 +164,9 @@ PROMPT,
             $response = $this->callOpenRouter($aiInput, $period);
             if ($response) {
                 $response['is_fallback'] = false;
-                $this->saveToCache($workspaceId, $period, $periodKey, $response);
+                $generatedAt = Carbon::now();
+                $this->saveToCache($workspaceId, $period, $periodKey, $response, $generatedAt);
+                $response['generated_at'] = $generatedAt->toIso8601String();
                 return $response;
             }
         } catch (\Throwable $e) {
@@ -473,6 +478,8 @@ PROMPT,
             $data = $cache->response_json;
             $data['is_fallback'] = false;
             $data['is_cached'] = true;
+            $data['is_stale'] = $cache->is_stale;
+            $data['generated_at'] = $cache->generated_at->toIso8601String();
             return $data;
         }
 
@@ -482,7 +489,7 @@ PROMPT,
     /**
      * Сохранить в кеш
      */
-    private function saveToCache(int $workspaceId, string $period, string $periodKey, array $response): void
+    private function saveToCache(int $workspaceId, string $period, string $periodKey, array $response, Carbon $generatedAt): void
     {
         AiMirrorCache::updateOrCreate(
             [
@@ -492,7 +499,8 @@ PROMPT,
             ],
             [
                 'response_json' => $response,
-                'generated_at' => Carbon::now(),
+                'generated_at' => $generatedAt,
+                'is_stale' => false,
             ]
         );
     }

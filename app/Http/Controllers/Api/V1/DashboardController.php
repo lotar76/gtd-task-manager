@@ -48,16 +48,18 @@ class DashboardController extends Controller
         $request->validate([
             'workspace_id' => 'required|integer|exists:workspaces,id',
             'period' => 'required|string|in:day,week,month,year',
+            'force' => 'sometimes|boolean',
         ]);
 
         $workspaceId = (int) $request->input('workspace_id');
         $period = $request->input('period');
+        $force = $request->boolean('force', false);
 
         // Получаем данные для AI
         $mirrorData = $this->dashboardService->getLifeMirrorData($workspaceId, $period);
 
         // Вызываем AI-сервис (с кешем и fallback)
-        $message = $this->aiMirrorService->getMessage($workspaceId, $period, $mirrorData);
+        $message = $this->aiMirrorService->getMessage($workspaceId, $period, $mirrorData, $force);
 
         return ApiResponse::success($message, 'AI-сообщение');
     }

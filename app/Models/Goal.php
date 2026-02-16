@@ -73,7 +73,7 @@ class Goal extends Model
             return 0;
         }
 
-        $completedTasks = $this->tasks()->where('status', 'completed')->count();
+        $completedTasks = $this->tasks()->whereNotNull('completed_at')->count();
         return (int) (($completedTasks / $totalTasks) * 100);
     }
 }

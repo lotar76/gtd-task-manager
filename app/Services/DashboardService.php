@@ -80,8 +80,17 @@ class DashboardService
                     'tasks' => $sphereTasks->map(fn($t) => [
                         'id' => $t->task_id,
                         'title' => $t->title,
+                        'description' => $t->description,
                         'status' => $t->status,
+                        'priority' => $t->priority,
+                        'due_date' => $t->due_date,
                         'completed_at' => $t->completed_at,
+                        'estimated_time' => $t->estimated_time,
+                        'end_time' => $t->end_time,
+                        'workspace_id' => $t->workspace_id,
+                        'project_id' => $t->project_id,
+                        'goal_id' => $t->goal_id,
+                        'life_sphere_id' => $t->life_sphere_id,
                     ])->values()->toArray(),
                 ];
             }
@@ -107,6 +116,7 @@ class DashboardService
             'date' => $today,
             'spheres' => $sphereData,
             'missing_spheres' => $missingSpheres,
+            'goals' => $this->getGoalsWithProgress($workspaceId),
             'summary' => [
                 'total_tasks' => $totalTasks,
                 'completed' => $totalDone,
@@ -206,6 +216,7 @@ class DashboardService
             'attention_distribution' => $attentionDistribution,
             'projects' => $projects,
             'missing_spheres' => $missingSpheres,
+            'goals' => $this->getGoalsWithProgress($workspaceId),
             'summary' => [
                 'total_tasks' => $totalTasks,
                 'completed' => $doneTasks,
@@ -301,6 +312,7 @@ class DashboardService
             'sphere_trends' => $sphereTrends,
             'stalled_projects' => $stalledProjects,
             'goals_at_risk' => $goalsAtRisk,
+            'goals' => $this->getGoalsWithProgress($workspaceId),
             'missing_spheres' => [],
             'summary' => [
                 'total_tasks' => $planned,
@@ -390,6 +402,7 @@ class DashboardService
             'goals_summary' => $goalsSummary,
             'achieved_goals' => $achievedGoals,
             'active_goals' => $activeGoals,
+            'goals' => $this->getGoalsWithProgress($workspaceId),
             'monthly_balance_trend' => $monthlyBalanceTrend,
             'sphere_yearly_trends' => $sphereYearlyTrends,
             'missing_spheres' => [],
@@ -416,11 +429,18 @@ class DashboardService
             ->select([
                 'tasks.id as task_id',
                 'tasks.title',
+                'tasks.description',
                 'tasks.status',
+                'tasks.priority',
                 'tasks.due_date',
                 'tasks.completed_at',
                 'tasks.created_at',
+                'tasks.workspace_id',
                 'tasks.project_id',
+                'tasks.goal_id',
+                'tasks.life_sphere_id',
+                'tasks.estimated_time',
+                'tasks.end_time',
                 DB::raw('COALESCE(tasks.life_sphere_id, direct_goal.life_sphere_id, project_goal.life_sphere_id) as resolved_sphere_id'),
             ]);
     }
@@ -673,6 +693,35 @@ class DashboardService
     }
 
     /**
+     * Получить цели с прогрессом
+     */
+    private function getGoalsWithProgress(int $workspaceId): array
+    {
+        $goals = Goal::where('workspace_id', $workspaceId)
+            ->whereNotNull('life_sphere_id')
+            ->with('lifeSphere:id,name,color')
+            ->get();
+
+        if ($goals->isEmpty()) {
+            return [];
+        }
+
+        return $goals->map(function ($goal) {
+            $progress = $goal->progress;
+
+            return [
+                'id' => $goal->id,
+                'name' => $goal->name,
+                'color' => $goal->color ?? $goal->lifeSphere?->color ?? '#9ca3af',
+                'sphere_name' => $goal->lifeSphere?->name,
+                'sphere_color' => $goal->lifeSphere?->color,
+                'progress' => $progress,
+                'status' => $goal->status,
+            ];
+        })->toArray();
+    }
+
+    /**
      * Пустой ответ когда нет сфер
      */
     private function emptyResponse(string $period): array
@@ -681,6 +730,7 @@ class DashboardService
             'period' => $period,
             'spheres' => [],
             'missing_spheres' => [],
+            'goals' => [],
             'summary' => [
                 'total_tasks' => 0,
                 'completed' => 0,

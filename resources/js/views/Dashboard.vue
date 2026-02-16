@@ -1,10 +1,11 @@
 <template>
   <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 py-6">
+    <div class="w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
 
       <!-- Header -->
       <DashboardHeader
         :period="store.selectedPeriod"
+        :bible-verse="wsData?.aiMessage?.bible_verse"
         @change-period="store.setPeriod"
       />
 
@@ -45,6 +46,7 @@
           :workspace-id="activeWorkspaceId"
           :period="store.selectedPeriod"
           :data="wsData"
+          @analyze-ai="handleAnalyzeAi"
         />
       </template>
     </div>
@@ -52,7 +54,7 @@
 </template>
 
 <script setup>
-import { computed, ref, watch, onMounted } from 'vue'
+import { computed, ref, watch, onMounted, onUnmounted } from 'vue'
 import { useDashboardStore } from '@/stores/dashboard'
 import { useWorkspaceStore } from '@/stores/workspace'
 import DashboardHeader from '@/components/dashboard/DashboardHeader.vue'
@@ -86,7 +88,52 @@ watch(
   { immediate: true }
 )
 
+const handleAnalyzeAi = (force = false) => {
+  if (activeWorkspaceId.value) {
+    store.fetchAiMessage(activeWorkspaceId.value, force)
+  }
+}
+
+// Обновление при возврате на вкладку браузера
+const handleVisibilityChange = () => {
+  if (!document.hidden && activeWorkspaceId.value) {
+    store.fetchForWorkspace(activeWorkspaceId.value, true) // silent refresh
+  }
+}
+
+// Автоматическое обновление каждые 30 секунд
+let refreshInterval = null
+
+const startAutoRefresh = () => {
+  refreshInterval = setInterval(() => {
+    if (!document.hidden && activeWorkspaceId.value) {
+      store.fetchForWorkspace(activeWorkspaceId.value, true) // silent refresh
+    }
+  }, 30000) // 30 секунд
+}
+
+const stopAutoRefresh = () => {
+  if (refreshInterval) {
+    clearInterval(refreshInterval)
+    refreshInterval = null
+  }
+}
+
 onMounted(() => {
   store.fetchAllWorkspaces()
+  document.addEventListener('visibilitychange', handleVisibilityChange)
+  startAutoRefresh()
+})
+
+onUnmounted(() => {
+  document.removeEventListener('visibilitychange', handleVisibilityChange)
+  stopAutoRefresh()
+})
+
+// Обновляем данные при смене активного workspace
+watch(activeWorkspaceId, (newId, oldId) => {
+  if (newId && newId !== oldId) {
+    store.fetchForWorkspace(newId)
+  }
 })
 </script>

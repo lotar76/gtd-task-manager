@@ -1,28 +1,16 @@
 <template>
   <div>
-    <!-- Pulse line (outside card) -->
-    <div v-if="message" class="h-1 mb-2 relative overflow-hidden rounded-full">
-      <svg
-        class="absolute inset-0 w-full h-full"
-        preserveAspectRatio="none"
-        :viewBox="`0 0 ${pulseWidth} 10`"
-      >
-        <path
-          :d="pulsePath"
-          fill="none"
-          :stroke="moodColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          class="pulse-line"
-          :style="{ '--pulse-color': moodColor }"
-        />
+    <!-- Card -->
+    <div class="relative overflow-hidden rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 h-full flex flex-col">
+    <!-- Silent loading indicator -->
+    <div v-if="silentLoading" class="absolute top-2 right-2 z-10">
+      <svg class="animate-spin h-4 w-4 text-primary-600 dark:text-primary-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
       </svg>
     </div>
-
-    <!-- Card -->
-    <div class="relative overflow-hidden rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-    <div class="p-4 sm:p-6">
-      <div class="max-h-[40vh] overflow-y-auto sm:max-h-none sm:overflow-visible scrollbar-thin">
+    <div class="p-4 sm:p-6 flex-1 flex flex-col">
+      <div class="max-h-[40vh] overflow-y-auto sm:max-h-none sm:overflow-visible scrollbar-thin flex-1 flex flex-col justify-center">
         <!-- Loading skeleton -->
         <div v-if="loading" class="animate-pulse space-y-3">
           <div class="h-5 bg-gray-200 dark:bg-gray-700 rounded w-2/3"></div>
@@ -60,22 +48,30 @@
             </div>
           </div>
 
-          <!-- Bible verse -->
-          <div
-            v-if="message.bible_verse"
-            class="mt-3 sm:mt-4 pt-3 border-t border-gray-200 dark:border-gray-700"
-          >
-            <p class="text-gray-500 dark:text-gray-400 text-xs sm:text-sm italic">
-              &laquo;{{ message.bible_verse.text }}&raquo;
-              <span class="text-gray-400 dark:text-gray-500 not-italic ml-1">— {{ message.bible_verse.ref }}</span>
+          <!-- Generated at timestamp with stale indicator -->
+          <div v-if="message.generated_at" class="mt-3 flex items-center gap-2">
+            <p class="text-xs text-gray-400 dark:text-gray-500">
+              Анализ от {{ formatTimestamp(message.generated_at) }}
             </p>
+            <button
+              v-if="message.is_stale"
+              @click="$emit('refresh')"
+              class="text-xs font-medium text-green-600 dark:text-green-500 hover:text-green-700 dark:hover:text-green-400 transition-colors cursor-pointer"
+            >
+              • нужно проанализировать состояние
+            </button>
           </div>
         </div>
 
-        <!-- Fallback when no message -->
-        <div v-else>
-          <p class="text-base font-medium text-gray-900 dark:text-white">Зеркало жизни</p>
-          <p class="text-gray-500 dark:text-gray-400 text-sm mt-1">Обзор баланса твоих жизненных сфер</p>
+        <!-- Fallback when no message - показываем кнопку "Проанализировать" -->
+        <div v-else class="flex flex-col items-center justify-center flex-1 text-center">
+          <p class="text-gray-500 dark:text-gray-400 text-xs sm:text-sm mb-4">Получи AI анализ баланса жизненных сфер</p>
+          <button
+            @click="$emit('analyze')"
+            class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm font-medium transition-colors mx-auto"
+          >
+            Проанализировать
+          </button>
         </div>
       </div>
     </div>
@@ -89,77 +85,34 @@ import { computed } from 'vue'
 const props = defineProps({
   message: { type: Object, default: null },
   loading: { type: Boolean, default: false },
+  silentLoading: { type: Boolean, default: false },
 })
 
-const moodColors = {
-  positive: '#10b981',
-  concerned: '#6366f1',
-  warning: '#f59e0b',
-  serious: '#ef4444',
-  reflective: '#8b5cf6',
-}
+defineEmits(['refresh', 'analyze'])
 
-const moodColor = computed(() => {
-  const mood = props.message?.mood || 'concerned'
-  return moodColors[mood] || moodColors.concerned
-})
+const formatTimestamp = (isoString) => {
+  const date = new Date(isoString)
+  const now = new Date()
+  const diffMs = now - date
+  const diffMins = Math.floor(diffMs / 60000)
 
-// Amplitude by mood: calm moods = small waves, intense = big spikes
-const moodAmplitude = {
-  positive: 2,
-  reflective: 2.5,
-  concerned: 3,
-  warning: 3.5,
-  serious: 4.5,
-}
-
-const pulseWidth = 200
-
-const pulsePath = computed(() => {
-  const mood = props.message?.mood || 'concerned'
-  const amp = moodAmplitude[mood] || 3
-  const w = pulseWidth
-  const mid = 5 // vertical center
-
-  // Generate a heartbeat-like pattern repeated across width
-  // Each "beat" is ~40 units wide
-  const beats = Math.floor(w / 40)
-  let d = `M 0 ${mid}`
-
-  for (let i = 0; i < beats; i++) {
-    const x = i * 40
-    // Flat -> small dip -> big spike up -> big spike down -> flat
-    d += ` L ${x + 12} ${mid}`                    // flat lead
-    d += ` L ${x + 16} ${mid + amp * 0.4}`        // small dip
-    d += ` L ${x + 20} ${mid - amp}`              // spike up
-    d += ` L ${x + 24} ${mid + amp * 0.7}`        // spike down
-    d += ` L ${x + 28} ${mid}`                    // return
-    d += ` L ${x + 40} ${mid}`                    // flat trail
+  // Если меньше часа - показываем минуты
+  if (diffMins < 60) {
+    return `${diffMins} мин. назад`
   }
 
-  return d
-})
+  // Если меньше суток - показываем часы
+  const diffHours = Math.floor(diffMins / 60)
+  if (diffHours < 24) {
+    return `${diffHours} ч. назад`
+  }
+
+  // Иначе - дата и время
+  const day = date.getDate().toString().padStart(2, '0')
+  const month = (date.getMonth() + 1).toString().padStart(2, '0')
+  const hours = date.getHours().toString().padStart(2, '0')
+  const minutes = date.getMinutes().toString().padStart(2, '0')
+  return `${day}.${month} в ${hours}:${minutes}`
+}
 </script>
 
-<style scoped>
-.pulse-line {
-  animation: pulse-draw 3s ease-in-out infinite;
-  stroke-dasharray: 600;
-  stroke-dashoffset: 600;
-}
-
-@keyframes pulse-draw {
-  0% {
-    stroke-dashoffset: 600;
-    opacity: 0.4;
-  }
-  50% {
-    stroke-dashoffset: 0;
-    opacity: 1;
-  }
-  100% {
-    stroke-dashoffset: -600;
-    opacity: 0.4;
-  }
-}
-</style>
