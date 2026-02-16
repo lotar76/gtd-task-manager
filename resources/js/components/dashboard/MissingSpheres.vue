@@ -20,7 +20,7 @@
         <div class="min-w-0 flex-1">
           <p class="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">{{ sphere.name }}</p>
           <p class="text-[10px] text-gray-400 dark:text-gray-500">
-            {{ sphere.days_without_attention !== null ? `${sphere.days_without_attention} дн.` : 'Нет задач' }}
+            {{ sphere.days_without_attention !== null ? `${sphere.days_without_attention} ${pluralDays(sphere.days_without_attention)} без внимания` : 'Нет задач' }}
           </p>
         </div>
       </div>
@@ -32,4 +32,13 @@
 defineProps({
   spheres: { type: Array, default: () => [] },
 })
+
+const pluralDays = (n) => {
+  const abs = Math.abs(n) % 100
+  const last = abs % 10
+  if (abs > 10 && abs < 20) return 'дней'
+  if (last === 1) return 'день'
+  if (last >= 2 && last <= 4) return 'дня'
+  return 'дней'
+}
 </script>
