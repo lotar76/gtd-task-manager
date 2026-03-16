@@ -44,7 +44,7 @@ class TelegramTaskReminders extends Command
                 $tasks = $workspace->tasks()
                     ->with(['project', 'context'])
                     ->where('due_date', $today)
-                    ->whereNotIn('status', ['completed'])
+                    ->whereNull('completed_at')
                     ->whereNotNull('estimated_time')
                     ->where(function ($q) use ($user) {
                         $q->where('assigned_to', $user->id)

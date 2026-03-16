@@ -43,7 +43,7 @@ class TelegramOverdueAlerts extends Command
                     ->with(['project'])
                     ->whereNotNull('due_date')
                     ->where('due_date', '<', $today)
-                    ->whereNotIn('status', ['completed'])
+                    ->whereNull('completed_at')
                     ->where(function ($q) use ($user) {
                         $q->where('assigned_to', $user->id)
                           ->orWhere('created_by', $user->id);

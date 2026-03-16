@@ -57,7 +57,7 @@ class TelegramMorningDigest extends Command
                     ->with(['project'])
                     ->whereNotNull('due_date')
                     ->where('due_date', '<', $now->format('Y-m-d'))
-                    ->whereNotIn('status', ['completed'])
+                    ->whereNull('completed_at')
                     ->where(function ($q) use ($user) {
                         $q->where('assigned_to', $user->id)
                           ->orWhere('created_by', $user->id);
