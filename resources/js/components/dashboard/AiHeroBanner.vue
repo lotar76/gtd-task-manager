@@ -10,7 +10,7 @@
       </svg>
     </div>
     <div class="p-4 sm:p-6 flex-1 flex flex-col">
-      <div class="max-h-[40vh] overflow-y-auto sm:max-h-none sm:overflow-visible scrollbar-thin flex-1 flex flex-col justify-center">
+      <div class="max-h-[40vh] overflow-y-auto sm:max-h-none sm:overflow-visible scrollbar-thin flex-1 flex flex-col">
         <!-- Loading skeleton -->
         <div v-if="loading" class="animate-pulse space-y-3">
           <div class="h-5 bg-gray-200 dark:bg-gray-700 rounded w-2/3"></div>
