@@ -18,6 +18,7 @@
         v-for="sphere in spheres"
         :key="sphere.id"
         class="flex items-center gap-3 group"
+        :class="{ 'opacity-40': sphere.is_hidden }"
       >
         <!-- Цвет -->
         <input
@@ -44,9 +45,36 @@
         >
           {{ sphere.name }}
         </span>
+
+        <!-- Кол-во задач -->
+        <span
+          v-if="sphere.tasks_count > 0"
+          class="text-[10px] font-medium text-gray-400 dark:text-gray-500 tabular-nums"
+        >
+          {{ sphere.tasks_count }}
+        </span>
+
+        <!-- Скрыть/Показать -->
+        <button
+          @click="handleToggleHidden(sphere)"
+          class="p-1 text-gray-300 dark:text-gray-600 hover:text-gray-500 dark:hover:text-gray-400 opacity-0 group-hover:opacity-100 transition-all"
+          :class="{ '!opacity-100': sphere.is_hidden }"
+          :title="sphere.is_hidden ? 'Показать сферу' : 'Скрыть сферу'"
+        >
+          <!-- Eye open -->
+          <svg v-if="!sphere.is_hidden" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+          </svg>
+          <!-- Eye closed -->
+          <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+          </svg>
+        </button>
+
         <!-- Удалить -->
         <button
-          @click="handleDeleteSphere(sphere)"
+          @click="confirmDeleteSphere(sphere)"
           class="p-1 text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
           title="Удалить сферу"
         >
@@ -88,18 +116,33 @@
     <div v-if="error" class="text-red-600 dark:text-red-400 text-sm mt-3">
       {{ error }}
     </div>
+
+    <!-- Confirm Dialog -->
+    <ConfirmDialog
+      :show="showDeleteConfirm"
+      title="Удалить сферу"
+      :message="deleteConfirmMessage"
+      confirm-text="Удалить"
+      cancel-text="Отмена"
+      variant="danger"
+      @confirm="handleDeleteSphere"
+      @cancel="showDeleteConfirm = false"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, computed, nextTick } from 'vue'
 import { useLifeSpheresStore } from '@/stores/lifeSpheres'
+import { useDashboardStore } from '@/stores/dashboard'
+import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 
 const props = defineProps({
   workspace: { type: Object, required: true },
 })
 
 const lifeSpheresStore = useLifeSpheresStore()
+const dashboardStore = useDashboardStore()
 
 const loading = ref(false)
 const error = ref('')
@@ -107,6 +150,14 @@ const editingSphereId = ref(null)
 const editingSphereValue = ref('')
 const sphereNameInput = ref(null)
 const newSphere = ref({ name: '', color: '#3B82F6' })
+
+// Delete confirmation
+const showDeleteConfirm = ref(false)
+const sphereToDelete = ref(null)
+const deleteConfirmMessage = computed(() => {
+  if (!sphereToDelete.value) return ''
+  return `Удалить сферу «${sphereToDelete.value.name}»? Это действие нельзя отменить.`
+})
 
 const spheres = computed(() => {
   return lifeSpheresStore.allSpheres
@@ -147,13 +198,35 @@ const handleUpdateSphere = async (sphereId, data) => {
   }
 }
 
-const handleDeleteSphere = async (sphere) => {
-  if (!confirm(`Удалить сферу «${sphere.name}»? Цели останутся без сферы.`)) return
+const handleToggleHidden = async (sphere) => {
   try {
-    await lifeSpheresStore.remove(props.workspace.id, sphere.id)
+    await lifeSpheresStore.update(props.workspace.id, sphere.id, { is_hidden: !sphere.is_hidden })
+    dashboardStore.invalidateWorkspace(props.workspace.id)
   } catch (e) {
-    error.value = 'Ошибка при удалении'
+    error.value = 'Ошибка при обновлении'
   }
+}
+
+const confirmDeleteSphere = (sphere) => {
+  if (sphere.tasks_count > 0) {
+    error.value = `Нельзя удалить сферу «${sphere.name}» — к ней привязано ${sphere.tasks_count} задач. Открепите задачи или скройте сферу.`
+    return
+  }
+  error.value = ''
+  sphereToDelete.value = sphere
+  showDeleteConfirm.value = true
+}
+
+const handleDeleteSphere = async () => {
+  showDeleteConfirm.value = false
+  if (!sphereToDelete.value) return
+  try {
+    await lifeSpheresStore.remove(props.workspace.id, sphereToDelete.value.id)
+  } catch (e) {
+    const msg = e.response?.data?.message || 'Ошибка при удалении'
+    error.value = msg
+  }
+  sphereToDelete.value = null
 }
 
 const handleAddSphere = async () => {

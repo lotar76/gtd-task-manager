@@ -95,6 +95,12 @@ export const useDashboardStore = defineStore('dashboard', () => {
     }
   )
 
+  const invalidateWorkspace = (wsId) => {
+    if (dataByWorkspace[wsId]) {
+      dataByWorkspace[wsId].lifeMirror = null
+    }
+  }
+
   return {
     dataByWorkspace,
     selectedPeriod,
@@ -103,5 +109,6 @@ export const useDashboardStore = defineStore('dashboard', () => {
     fetchForWorkspace,
     fetchAllWorkspaces,
     setPeriod,
+    invalidateWorkspace,
   }
 })

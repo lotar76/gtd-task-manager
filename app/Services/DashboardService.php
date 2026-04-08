@@ -21,6 +21,7 @@ class DashboardService
     {
         $workspace = Workspace::findOrFail($workspaceId);
         $spheres = LifeSphere::where('workspace_id', $workspaceId)
+            ->where('is_hidden', false)
             ->orderBy('position')
             ->get();
 
@@ -717,6 +718,7 @@ class DashboardService
     private function getGoalsWithProgress(int $workspaceId): array
     {
         $goals = Goal::where('workspace_id', $workspaceId)
+            ->where('status', '!=', 'archived')
             ->with('lifeSphere:id,name,color')
             ->get();
 

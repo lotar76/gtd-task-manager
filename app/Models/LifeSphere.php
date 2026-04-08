@@ -18,7 +18,12 @@ class LifeSphere extends Model
         'name',
         'color',
         'position',
+        'is_hidden',
         'created_by',
+    ];
+
+    protected $casts = [
+        'is_hidden' => 'boolean',
     ];
 
     public function workspace(): BelongsTo
@@ -29,6 +34,11 @@ class LifeSphere extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function tasks(): HasMany
+    {
+        return $this->hasMany(Task::class);
     }
 
     public function goals(): HasMany

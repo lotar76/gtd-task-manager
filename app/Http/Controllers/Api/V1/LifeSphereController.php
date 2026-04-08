@@ -22,6 +22,7 @@ class LifeSphereController extends Controller
             ->pluck('id');
 
         $spheres = LifeSphere::whereIn('workspace_id', $workspaceIds)
+            ->withCount('tasks')
             ->orderBy('position')
             ->get();
 
@@ -34,6 +35,7 @@ class LifeSphereController extends Controller
         $this->authorize('view', $workspace);
 
         $spheres = $workspace->lifeSpheres()
+            ->withCount('tasks')
             ->orderBy('position')
             ->get();
 
@@ -68,17 +70,26 @@ class LifeSphereController extends Controller
             'name' => 'sometimes|string|max:255',
             'color' => 'sometimes|string|size:7',
             'position' => 'nullable|integer|min:0',
+            'is_hidden' => 'sometimes|boolean',
         ]);
 
         $lifeSphere->update($validated);
 
-        return ApiResponse::success($lifeSphere->fresh(), 'Сфера обновлена');
+        return ApiResponse::success($lifeSphere->fresh()->loadCount('tasks'), 'Сфера обновлена');
     }
 
     // Удаление сферы
     public function destroy(Workspace $workspace, LifeSphere $lifeSphere): JsonResponse
     {
         $this->authorize('delete', $lifeSphere);
+
+        $tasksCount = $lifeSphere->tasks()->count();
+        if ($tasksCount > 0) {
+            return ApiResponse::error(
+                "Нельзя удалить сферу с привязанными задачами ({$tasksCount}). Сначала открепите задачи или скройте сферу.",
+                422
+            );
+        }
 
         $lifeSphere->delete();
 
