@@ -19,7 +19,7 @@
         v-for="project in activeProjects"
         :key="project.id"
         class="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow cursor-pointer"
-        @click="$router.push(`/workspaces/${currentWorkspace?.id}/projects/${project.id}`)"
+        @click="$router.push(`/projects/${project.id}`)"
       >
         <div class="flex items-start justify-between mb-4">
           <div class="flex-1 min-w-0">
@@ -86,28 +86,16 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useProjectsStore } from '@/stores/projects'
-import { useWorkspaceStore } from '@/stores/workspace'
 import ProjectModal from '@/components/projects/ProjectModal.vue'
 
 const router = useRouter()
 const projectsStore = useProjectsStore()
-const workspaceStore = useWorkspaceStore()
 
 const showProjectModal = ref(false)
 const selectedProject = ref(null)
 const projectError = ref('')
 
 const activeProjects = computed(() => projectsStore.activeProjects)
-const currentWorkspace = computed(() => workspaceStore.currentWorkspace)
-const workspaces = computed(() => workspaceStore.workspaces)
-const selectedWorkspaceIds = computed(() =>
-  workspaceStore.selectedWorkspaces.map(ws => ws.id)
-)
-
-const getWorkspaceName = (workspaceId) => {
-  const workspace = workspaces.value.find(ws => ws.id === workspaceId)
-  return workspace?.name || ''
-}
 
 const handleSaveProject = async (projectData) => {
   projectError.value = ''

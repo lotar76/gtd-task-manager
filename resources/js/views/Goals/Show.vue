@@ -254,7 +254,6 @@ import { useRoute, useRouter } from 'vue-router'
 import { useGoalsStore } from '@/stores/goals'
 import { useTasksStore } from '@/stores/tasks'
 import { useProjectsStore } from '@/stores/projects'
-import { useWorkspaceStore } from '@/stores/workspace'
 import { PencilIcon, ArchiveBoxArrowDownIcon, ArrowUturnLeftIcon } from '@heroicons/vue/24/outline'
 import TaskList from '@/components/tasks/TaskList.vue'
 import TaskModal from '@/components/tasks/TaskModal.vue'
@@ -266,7 +265,6 @@ const router = useRouter()
 const goalsStore = useGoalsStore()
 const tasksStore = useTasksStore()
 const projectsStore = useProjectsStore()
-const workspaceStore = useWorkspaceStore()
 
 const expandedProjects = ref(new Set())
 const showTaskModal = ref(false)
@@ -295,10 +293,7 @@ const goalProjects = computed(() => {
     }))
 })
 
-const goalWorkspace = computed(() => {
-  if (!goal.value) return null
-  return workspaceStore.workspaces.find(w => w.id === goal.value.workspace_id)
-})
+const goalWorkspace = computed(() => null)
 
 const goalSphere = computed(() => {
   return goal.value?.life_sphere || null
@@ -364,7 +359,7 @@ const toggleProject = (projectId) => {
 
 const openProject = (project) => {
   const workspaceId = route.params.id
-  router.push(`/workspaces/${workspaceId}/projects/${project.id}`)
+  router.push(`/projects/${project.id}`)
 }
 
 const handleEditGoal = () => {
@@ -376,7 +371,7 @@ const handleArchiveGoal = async () => {
 
   try {
     await goalsStore.updateGoal(goal.value.id, { status: 'archived' })
-    router.push(`/workspaces/${goal.value.workspace_id}/goals`)
+    router.push('/goals')
   } catch (error) {
     console.error('Error archiving goal:', error)
     alert('Ошибка при архивировании цели')

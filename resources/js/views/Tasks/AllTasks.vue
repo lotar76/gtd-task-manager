@@ -148,7 +148,6 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useTasksStore } from '@/stores/tasks'
-import { useWorkspaceStore } from '@/stores/workspace'
 import TaskList from '@/components/tasks/TaskList.vue'
 import TaskModal from '@/components/tasks/TaskModal.vue'
 import TaskView from '@/components/tasks/TaskView.vue'
@@ -165,7 +164,6 @@ import {
 } from '@heroicons/vue/24/outline'
 
 const tasksStore = useTasksStore()
-const workspaceStore = useWorkspaceStore()
 
 const allTasks = computed(() => tasksStore.filteredTasks)
 const loading = computed(() => tasksStore.loading)
@@ -218,18 +216,7 @@ const overdueCount = computed(() => {
   }).length
 })
 
-// Все пространства пользователя с количеством задач
-const workspacesList = computed(() => {
-  const counts = {}
-  for (const task of allTasks.value) {
-    counts[task.workspace_id] = (counts[task.workspace_id] || 0) + 1
-  }
-  return workspaceStore.workspaces.map(ws => ({
-    id: ws.id,
-    name: ws.name,
-    count: counts[ws.id] || 0,
-  }))
-})
+const workspacesList = computed(() => [])
 
 // Отфильтрованные задачи
 const filteredTasks = computed(() => {

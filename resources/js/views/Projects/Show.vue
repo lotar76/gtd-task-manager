@@ -167,7 +167,6 @@ import { ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useProjectsStore } from '@/stores/projects'
 import { useTasksStore } from '@/stores/tasks'
-import { useWorkspaceStore } from '@/stores/workspace'
 import { RectangleStackIcon, PencilIcon, ArchiveBoxArrowDownIcon, ArrowUturnLeftIcon } from '@heroicons/vue/24/outline'
 import { PlusIcon } from '@heroicons/vue/24/solid'
 import TaskList from '@/components/tasks/TaskList.vue'
@@ -179,7 +178,6 @@ const route = useRoute()
 const router = useRouter()
 const projectsStore = useProjectsStore()
 const tasksStore = useTasksStore()
-const workspaceStore = useWorkspaceStore()
 
 const project = ref(null)
 const loading = ref(false)
@@ -198,38 +196,24 @@ const allTasks = computed(() => {
 
 const activeTasks = computed(() => allTasks.value.filter(t => !t.completed_at))
 const completedTasks = computed(() => allTasks.value.filter(t => t.completed_at))
-const projectWorkspace = computed(() => {
-  if (!project.value) return null
-  return workspaceStore.workspaces.find(w => w.id === project.value.workspace_id)
-})
+const projectWorkspace = computed(() => null)
 
 const loadProject = async () => {
   const projectId = parseInt(route.params.projectId)
-  const workspaceId = parseInt(route.params.id)
-
-  if (!workspaceId || !projectId) {
-    console.error('Missing workspaceId or projectId', { workspaceId, projectId })
-    return
-  }
+  if (!projectId) return
 
   loading.value = true
   try {
     const projectData = await projectsStore.fetchProject(projectId)
     if (!projectData) {
-      router.push(`/workspaces/${workspaceId}/projects`)
+      router.push('/projects')
       return
     }
     project.value = projectData
-
-    if (project.value.workspace_id !== workspaceId) {
-      console.error('Project does not belong to workspace from URL')
-      router.push(`/workspaces/${workspaceId}/projects`)
-      return
-    }
   } catch (error) {
     console.error('Error loading project:', error)
     if (error.response?.status === 404) {
-      router.push(`/workspaces/${workspaceId}/projects`)
+      router.push('/projects')
     }
   } finally {
     loading.value = false
@@ -247,7 +231,7 @@ const handleArchiveProject = async () => {
 
   try {
     await projectsStore.archiveProject(project.value.id)
-    router.push(`/workspaces/${project.value.workspace_id}/projects`)
+    router.push('/projects')
   } catch (error) {
     console.error('Error archiving project:', error)
     alert('Ошибка при архивировании потока')

@@ -214,13 +214,11 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useThemeStore } from '@/stores/theme'
-import { useWorkspaceStore } from '@/stores/workspace'
 import logoLight from '@/assets/images/logo.svg'
 import logoDark from '@/assets/images/logo-dark.svg'
 
 const route = useRoute()
 const themeStore = useThemeStore()
-const workspaceStore = useWorkspaceStore()
 const logo = computed(() => themeStore.isDark ? logoDark : logoLight)
 
 const props = defineProps({
@@ -234,13 +232,10 @@ const props = defineProps({
   },
 })
 
-const inboxRoute = computed(() => {
-  const wsId = workspaceStore.currentWorkspace?.id || 1
-  return `/workspaces/${wsId}/inbox`
-})
+const inboxRoute = '/inbox'
 
 const isDashboardActive = computed(() => route.path === '/')
-const isInboxActive = computed(() => route.path === inboxRoute.value)
+const isInboxActive = computed(() => route.path === '/inbox')
 
 const emit = defineEmits(['quick-add', 'quick-add-task', 'quick-add-project', 'quick-add-goal', 'search', 'logout', 'profile', 'settings'])
 

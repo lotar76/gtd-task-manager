@@ -18,23 +18,6 @@
             </div>
 
             <form @submit.prevent="handleSubmit" class="p-6 space-y-4">
-              <!-- Workspace -->
-              <div v-if="workspaces.length > 1">
-                <label for="goal_workspace_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Рабочее пространство *
-                </label>
-                <select
-                  id="goal_workspace_id"
-                  v-model="form.workspace_id"
-                  required
-                  class="input"
-                >
-                  <option v-for="ws in workspaces" :key="ws.id" :value="ws.id">
-                    {{ ws.name }}
-                  </option>
-                </select>
-              </div>
-
               <!-- Сфера жизни -->
               <div>
                 <label for="goal_life_sphere_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -171,7 +154,6 @@
 
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
-import { useWorkspaceStore } from '@/stores/workspace'
 import { useLifeSpheresStore } from '@/stores/lifeSpheres'
 
 const props = defineProps({
@@ -191,16 +173,9 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'submit'])
 
-const workspaceStore = useWorkspaceStore()
 const lifeSpheresStore = useLifeSpheresStore()
-const workspaces = computed(() => workspaceStore.workspaces)
-const currentWorkspace = computed(() => workspaceStore.currentWorkspace)
 
-const availableSpheres = computed(() => {
-  const wsId = form.value.workspace_id
-  if (!wsId) return lifeSpheresStore.allSpheres
-  return lifeSpheresStore.allSpheres.filter(s => s.workspace_id === wsId)
-})
+const availableSpheres = computed(() => lifeSpheresStore.allSpheres)
 
 const handleKeydown = (e) => {
   if (e.key === 'Escape' && props.show) emit('close')
@@ -209,7 +184,6 @@ onMounted(() => document.addEventListener('keydown', handleKeydown))
 onUnmounted(() => document.removeEventListener('keydown', handleKeydown))
 
 const form = ref({
-  workspace_id: null,
   life_sphere_id: null,
   name: '',
   deadline: '',
@@ -227,7 +201,6 @@ const imagePreview = ref(null)
 watch(() => props.goal, (newGoal) => {
   if (newGoal) {
     form.value = {
-      workspace_id: newGoal.workspace_id || currentWorkspace.value?.id,
       life_sphere_id: newGoal.life_sphere_id || null,
       name: newGoal.name || '',
       deadline: newGoal.deadline ? newGoal.deadline.substring(0, 10) : '',
@@ -238,7 +211,6 @@ watch(() => props.goal, (newGoal) => {
     }
   } else {
     form.value = {
-      workspace_id: currentWorkspace.value?.id,
       life_sphere_id: null,
       name: '',
       deadline: '',
@@ -251,12 +223,6 @@ watch(() => props.goal, (newGoal) => {
   imagePreview.value = null
   error.value = ''
 }, { immediate: true })
-
-watch(() => currentWorkspace.value?.id, (newWorkspaceId) => {
-  if (!form.value.name && newWorkspaceId) {
-    form.value.workspace_id = newWorkspaceId
-  }
-})
 
 watch(() => props.show, (newShow) => {
   if (!newShow) {

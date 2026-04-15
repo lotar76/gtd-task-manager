@@ -18,23 +18,6 @@
             </div>
 
             <form @submit.prevent="handleSubmit" class="p-6 space-y-4">
-              <!-- Workspace -->
-              <div v-if="workspaces.length > 1">
-                <label for="workspace_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Рабочее пространство *
-                </label>
-                <select
-                  id="workspace_id"
-                  v-model="form.workspace_id"
-                  required
-                  class="input"
-                >
-                  <option v-for="ws in workspaces" :key="ws.id" :value="ws.id">
-                    {{ ws.name }}
-                  </option>
-                </select>
-              </div>
-
               <!-- Name -->
               <div>
                 <label for="name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -111,7 +94,6 @@
 
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
-import { useWorkspaceStore } from '@/stores/workspace'
 import { useGoalsStore } from '@/stores/goals'
 
 const props = defineProps({
@@ -131,16 +113,9 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'submit'])
 
-const workspaceStore = useWorkspaceStore()
 const goalsStore = useGoalsStore()
-const workspaces = computed(() => workspaceStore.workspaces)
-const currentWorkspace = computed(() => workspaceStore.currentWorkspace)
 
-const availableGoals = computed(() => {
-  const wsId = form.value.workspace_id
-  if (!wsId) return goalsStore.activeGoals
-  return goalsStore.activeGoals.filter(g => g.workspace_id === wsId)
-})
+const availableGoals = computed(() => goalsStore.activeGoals)
 
 const handleKeydown = (e) => {
   if (e.key === 'Escape' && props.show) emit('close')
@@ -149,7 +124,6 @@ onMounted(() => document.addEventListener('keydown', handleKeydown))
 onUnmounted(() => document.removeEventListener('keydown', handleKeydown))
 
 const form = ref({
-  workspace_id: null,
   goal_id: null,
   name: '',
   description: '',
@@ -161,14 +135,12 @@ const error = ref('')
 watch(() => props.project, (newProject) => {
   if (newProject) {
     form.value = {
-      workspace_id: newProject.workspace_id || currentWorkspace.value?.id,
       goal_id: newProject.goal_id || null,
       name: newProject.name || '',
       description: newProject.description || '',
     }
   } else {
     form.value = {
-      workspace_id: currentWorkspace.value?.id,
       goal_id: null,
       name: '',
       description: '',
@@ -176,13 +148,6 @@ watch(() => props.project, (newProject) => {
   }
   error.value = ''
 }, { immediate: true })
-
-// Обновляем workspace_id при изменении currentWorkspace (если форма пустая)
-watch(() => currentWorkspace.value?.id, (newWorkspaceId) => {
-  if (!form.value.name && newWorkspaceId) {
-    form.value.workspace_id = newWorkspaceId
-  }
-})
 
 watch(() => props.show, (newShow) => {
   if (!newShow) {

@@ -112,14 +112,12 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useTasksStore } from '@/stores/tasks'
-import { useWorkspaceStore } from '@/stores/workspace'
 import TaskList from '@/components/tasks/TaskList.vue'
 import TaskModal from '@/components/tasks/TaskModal.vue'
 import TaskView from '@/components/tasks/TaskView.vue'
 import { ArchiveBoxIcon } from '@heroicons/vue/24/outline'
 
 const tasksStore = useTasksStore()
-const workspaceStore = useWorkspaceStore()
 
 const allArchivedTasks = computed(() => tasksStore.archivedTasks)
 const loading = computed(() => tasksStore.loading)
@@ -129,20 +127,7 @@ const selectedTask = ref(null)
 const taskError = ref('')
 const filterWorkspaceId = ref(null)
 
-// Все пространства пользователя с количеством архивных задач
-const workspacesList = computed(() => {
-  const counts = {}
-  for (const task of allArchivedTasks.value) {
-    counts[task.workspace_id] = (counts[task.workspace_id] || 0) + 1
-  }
-  return workspaceStore.workspaces
-    .map(ws => ({
-      id: ws.id,
-      name: ws.name,
-      count: counts[ws.id] || 0,
-    }))
-    .filter(ws => ws.count > 0) // Показываем только те пространства, где есть архивные задачи
-})
+const workspacesList = computed(() => [])
 
 // Отфильтрованные задачи
 const filteredTasks = computed(() => {
