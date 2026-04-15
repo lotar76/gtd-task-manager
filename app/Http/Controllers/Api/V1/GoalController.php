@@ -7,7 +7,6 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Responses\ApiResponse;
 use App\Models\Goal;
-use App\Models\Workspace;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -16,7 +15,7 @@ use Illuminate\Support\Str;
 
 class GoalController extends Controller
 {
-    // Все цели пользователя (по всем workspace)
+    // Все цели пользователя
     public function all(Request $request): JsonResponse
     {
         $workspaceIds = $request->user()
@@ -24,22 +23,6 @@ class GoalController extends Controller
             ->pluck('id');
 
         $goals = Goal::whereIn('workspace_id', $workspaceIds)
-            ->with(['creator', 'workspace:id,name,emoji', 'lifeSphere:id,name,color'])
-            ->withCount(['projects', 'directTasks'])
-            ->get()
-            ->each(function ($goal) {
-                $goal->append('progress');
-            });
-
-        return ApiResponse::success($goals, 'Список целей получен');
-    }
-
-    // Список целей workspace
-    public function index(Workspace $workspace): JsonResponse
-    {
-        $this->authorize('view', $workspace);
-
-        $goals = $workspace->goals()
             ->with(['creator', 'lifeSphere:id,name,color'])
             ->withCount(['projects', 'directTasks'])
             ->get()
@@ -51,10 +34,8 @@ class GoalController extends Controller
     }
 
     // Создание цели
-    public function store(Request $request, Workspace $workspace): JsonResponse
+    public function store(Request $request): JsonResponse
     {
-        $this->authorize('createContent', $workspace);
-
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
@@ -66,13 +47,12 @@ class GoalController extends Controller
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
         ]);
 
-        // Убираем image из validated (это файл, не поле модели)
         unset($validated['image']);
 
+        $workspace = $request->user()->allWorkspaces()->first();
         $validated['workspace_id'] = $workspace->id;
         $validated['created_by'] = Auth::id();
 
-        // Обработка изображения
         if ($request->hasFile('image')) {
             $imageData = $this->processImage($request->file('image'), $workspace->id);
             $validated['image_path'] = $imageData['path'];
@@ -88,7 +68,7 @@ class GoalController extends Controller
     }
 
     // Получение цели
-    public function show(Workspace $workspace, Goal $goal): JsonResponse
+    public function show(Goal $goal): JsonResponse
     {
         $this->authorize('view', $goal);
 
@@ -99,7 +79,7 @@ class GoalController extends Controller
     }
 
     // Обновление цели
-    public function update(Request $request, Workspace $workspace, Goal $goal): JsonResponse
+    public function update(Request $request, Goal $goal): JsonResponse
     {
         $this->authorize('update', $goal);
 
@@ -116,14 +96,11 @@ class GoalController extends Controller
 
         unset($validated['image']);
 
-        // Обработка изображения
         if ($request->hasFile('image')) {
-            // Удалить старую картинку из S3
             if ($goal->image_path) {
                 Storage::disk('s3')->delete($goal->image_path);
             }
-
-            $imageData = $this->processImage($request->file('image'), $workspace->id);
+            $imageData = $this->processImage($request->file('image'), $goal->workspace_id);
             $validated['image_path'] = $imageData['path'];
             $validated['image_url'] = $imageData['url'];
         }
@@ -139,11 +116,10 @@ class GoalController extends Controller
     }
 
     // Удаление цели
-    public function destroy(Workspace $workspace, Goal $goal): JsonResponse
+    public function destroy(Goal $goal): JsonResponse
     {
         $this->authorize('delete', $goal);
 
-        // Удалить картинку из S3
         if ($goal->image_path) {
             Storage::disk('s3')->delete($goal->image_path);
         }
@@ -154,7 +130,7 @@ class GoalController extends Controller
     }
 
     // Удаление только картинки
-    public function deleteImage(Workspace $workspace, Goal $goal): JsonResponse
+    public function deleteImage(Goal $goal): JsonResponse
     {
         $this->authorize('update', $goal);
 
@@ -171,7 +147,6 @@ class GoalController extends Controller
         return ApiResponse::success($fresh, 'Изображение удалено');
     }
 
-    // Загрузка изображения в S3
     private function processImage($file, int $workspaceId): array
     {
         $extension = $file->getClientOriginalExtension() ?: 'jpg';

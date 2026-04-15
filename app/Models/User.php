@@ -73,6 +73,12 @@ class User extends Authenticatable
         return $this->ownedWorkspaces->merge($this->workspaces);
     }
 
+    // Контакты пользователя
+    public function contacts(): HasMany
+    {
+        return $this->hasMany(Contact::class, 'owner_id');
+    }
+
     // Задачи созданные пользователем
     public function createdTasks(): HasMany
     {

@@ -9,7 +9,7 @@
     ]"
   >
     <router-link
-      :to="computedTo"
+      :to="to"
       @click="handleLinkClick"
       class="flex items-center justify-between px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
       :class="isActive ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'"
@@ -32,7 +32,6 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { useWorkspaceStore } from '@/stores/workspace'
 import {
   InboxIcon,
   BoltIcon,
@@ -65,11 +64,9 @@ const props = defineProps({
 const emit = defineEmits(['task-dropped', 'close-sidebar'])
 
 const route = useRoute()
-const workspaceStore = useWorkspaceStore()
 const isDragOver = ref(false)
 
 const handleLinkClick = () => {
-  // Закрываем сайдбар только на мобилке (lg breakpoint = 1024px)
   if (window.innerWidth < 1024) {
     emit('close-sidebar')
   }
@@ -88,13 +85,8 @@ const iconMap = {
 
 const iconComponent = computed(() => iconMap[props.icon] || FolderIcon)
 
-const computedTo = computed(() => {
-  const workspaceId = workspaceStore.currentWorkspace?.id
-  return props.to.replace(':id', workspaceId || '1')
-})
-
 const isActive = computed(() => {
-  return route.path === computedTo.value
+  return route.path === props.to
 })
 
 const handleDragOver = (event) => {
@@ -110,10 +102,10 @@ const handleDragLeave = () => {
 const handleDrop = (event) => {
   event.preventDefault()
   isDragOver.value = false
-  
+
   try {
     const taskData = JSON.parse(event.dataTransfer.getData('application/json'))
-    
+
     if (props.dropStatus && taskData) {
       emit('task-dropped', { taskId: taskData.id, newStatus: props.dropStatus })
     }
@@ -122,4 +114,3 @@ const handleDrop = (event) => {
   }
 }
 </script>
-

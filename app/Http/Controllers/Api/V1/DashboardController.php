@@ -28,11 +28,10 @@ class DashboardController extends Controller
     public function getLifeMirror(Request $request): JsonResponse
     {
         $request->validate([
-            'workspace_id' => 'required|integer|exists:workspaces,id',
             'period' => 'sometimes|string|in:day,week,month,year',
         ]);
 
-        $workspaceId = (int) $request->input('workspace_id');
+        $workspaceId = $request->user()->allWorkspaces()->first()?->id;
         $period = $request->input('period', 'day');
 
         $data = $this->dashboardService->getLifeMirrorData($workspaceId, $period);
@@ -46,32 +45,26 @@ class DashboardController extends Controller
     public function getAiMessage(Request $request): JsonResponse
     {
         $request->validate([
-            'workspace_id' => 'required|integer|exists:workspaces,id',
             'period' => 'required|string|in:day,week,month,year',
             'force' => 'sometimes|boolean',
         ]);
 
-        $workspaceId = (int) $request->input('workspace_id');
+        $workspaceId = $request->user()->allWorkspaces()->first()?->id;
         $period = $request->input('period');
         $force = $request->boolean('force', false);
 
-        // Получаем данные для AI
         $mirrorData = $this->dashboardService->getLifeMirrorData($workspaceId, $period);
-
-        // Вызываем AI-сервис (с кешем и fallback)
         $message = $this->aiMirrorService->getMessage($workspaceId, $period, $mirrorData, $force);
 
         return ApiResponse::success($message, 'AI-сообщение');
     }
 
-    // ─── Старый метод для обратной совместимости ──────────
-
     /**
-     * Получить статистику для дашборда (legacy)
+     * Получить статистику для дашборда
      */
     public function getStats(Request $request)
     {
-        $workspaceId = $request->input('workspace_id');
+        $workspaceIds = $request->user()->allWorkspaces()->pluck('id');
         $period = $request->input('period', 'week');
 
         $now = Carbon::now();
@@ -82,7 +75,7 @@ class DashboardController extends Controller
             default => $now->copy()->startOfWeek(),
         };
 
-        $query = Task::where('workspace_id', $workspaceId);
+        $query = Task::whereIn('workspace_id', $workspaceIds);
 
         $completedThisPeriod = (clone $query)
             ->whereNotNull('completed_at')
@@ -117,7 +110,7 @@ class DashboardController extends Controller
         $chartData = [];
         for ($i = 6; $i >= 0; $i--) {
             $date = Carbon::now()->subDays($i);
-            $completed = Task::where('workspace_id', $workspaceId)
+            $completed = Task::whereIn('workspace_id', $workspaceIds)
                 ->whereDate('completed_at', $date->toDateString())
                 ->count();
 
@@ -138,7 +131,7 @@ class DashboardController extends Controller
             ? round(($completedThisPeriod / $totalTasksInPeriod) * 100)
             : 0;
 
-        $topProjects = Task::where('workspace_id', $workspaceId)
+        $topProjects = Task::whereIn('workspace_id', $workspaceIds)
             ->whereNotNull('project_id')
             ->whereNotNull('completed_at')
             ->where('completed_at', '>=', $startDate)

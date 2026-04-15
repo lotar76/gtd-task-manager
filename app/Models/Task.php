@@ -99,6 +99,13 @@ class Task extends Model
         return $this->hasMany(Attachment::class);
     }
 
+    public function contacts(): BelongsToMany
+    {
+        return $this->belongsToMany(Contact::class, 'task_contact')
+            ->withPivot('role')
+            ->withTimestamps();
+    }
+
     // Scope для фильтрации по GTD статусам
     public function scopeInbox($query)
     {

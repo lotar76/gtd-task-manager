@@ -1,114 +1,82 @@
 import { defineStore } from 'pinia'
-import { ref, reactive, watch } from 'vue'
+import { ref } from 'vue'
 import api from '@/services/api'
-import { useWorkspaceStore } from './workspace'
 
 export const useDashboardStore = defineStore('dashboard', () => {
-  // Данные по каждому workspace: { [wsId]: { lifeMirror, aiMessage, loading, aiLoading } }
-  const dataByWorkspace = reactive({})
+  const lifeMirror = ref(null)
+  const aiMessage = ref(null)
+  const loading = ref(false)
+  const aiLoading = ref(false)
+  const aiSilentLoading = ref(false)
   const selectedPeriod = ref(localStorage.getItem('dashboardPeriod') || 'day')
 
-  const workspaceStore = useWorkspaceStore()
-
-  const ensureEntry = (wsId) => {
-    if (!dataByWorkspace[wsId]) {
-      dataByWorkspace[wsId] = {
-        lifeMirror: null,
-        aiMessage: null,
-        loading: false,
-        aiLoading: false,
-        aiSilentLoading: false,
-      }
-    }
-  }
-
-  const fetchLifeMirror = async (wsId) => {
-    if (!wsId) return
-    ensureEntry(wsId)
-    dataByWorkspace[wsId].loading = true
+  const fetchLifeMirror = async () => {
+    loading.value = true
     try {
       const response = await api.get('/v1/dashboard/life-mirror', {
-        params: { workspace_id: wsId, period: selectedPeriod.value },
+        params: { period: selectedPeriod.value },
       })
-      dataByWorkspace[wsId].lifeMirror = response.data
+      lifeMirror.value = response.data
     } catch (error) {
-      console.error(`Failed to fetch life mirror for ws ${wsId}:`, error)
-      dataByWorkspace[wsId].lifeMirror = null
+      console.error('Failed to fetch life mirror:', error)
+      lifeMirror.value = null
     } finally {
-      dataByWorkspace[wsId].loading = false
+      loading.value = false
     }
   }
 
-  const fetchAiMessage = async (wsId, force = false, silent = false) => {
-    if (!wsId) return
-    ensureEntry(wsId)
+  const fetchAiMessage = async (force = false, silent = false) => {
     if (silent) {
-      dataByWorkspace[wsId].aiSilentLoading = true
+      aiSilentLoading.value = true
     } else {
-      dataByWorkspace[wsId].aiLoading = true
+      aiLoading.value = true
     }
     try {
       const response = await api.get('/v1/dashboard/ai-message', {
         params: {
-          workspace_id: wsId,
           period: selectedPeriod.value,
           force: force ? 1 : 0,
         },
       })
-      dataByWorkspace[wsId].aiMessage = response.data
+      aiMessage.value = response.data
     } catch (error) {
-      console.error(`Failed to fetch AI message for ws ${wsId}:`, error)
-      dataByWorkspace[wsId].aiMessage = null
+      console.error('Failed to fetch AI message:', error)
+      aiMessage.value = null
     } finally {
       if (silent) {
-        dataByWorkspace[wsId].aiSilentLoading = false
+        aiSilentLoading.value = false
       } else {
-        dataByWorkspace[wsId].aiLoading = false
+        aiLoading.value = false
       }
     }
   }
 
-  const fetchForWorkspace = async (wsId, silent = false) => {
-    await fetchLifeMirror(wsId)
-    // Загружаем существующий AI анализ из кеша (для отображения статуса stale)
-    // Без генерации нового (force=false)
-    await fetchAiMessage(wsId, false, silent)
-  }
-
-  const fetchAllWorkspaces = async () => {
-    const selected = workspaceStore.selectedWorkspaces
-    if (!selected.length) return
-    await Promise.all(selected.map(ws => fetchForWorkspace(ws.id)))
+  const fetchAll = async (silent = false) => {
+    await fetchLifeMirror()
+    await fetchAiMessage(false, silent)
   }
 
   const setPeriod = (period) => {
     selectedPeriod.value = period
     localStorage.setItem('dashboardPeriod', period)
-    fetchAllWorkspaces()
+    fetchAll()
   }
 
-  // Следим за сменой списка выбранных workspace
-  watch(
-    () => workspaceStore.selectedWorkspaces.map(ws => ws.id).join(','),
-    () => {
-      fetchAllWorkspaces()
-    }
-  )
-
-  const invalidateWorkspace = (wsId) => {
-    if (dataByWorkspace[wsId]) {
-      dataByWorkspace[wsId].lifeMirror = null
-    }
+  const invalidate = () => {
+    lifeMirror.value = null
   }
 
   return {
-    dataByWorkspace,
+    lifeMirror,
+    aiMessage,
+    loading,
+    aiLoading,
+    aiSilentLoading,
     selectedPeriod,
     fetchLifeMirror,
     fetchAiMessage,
-    fetchForWorkspace,
-    fetchAllWorkspaces,
+    fetchAll,
     setPeriod,
-    invalidateWorkspace,
+    invalidate,
   }
 })

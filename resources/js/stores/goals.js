@@ -1,40 +1,26 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import api from '@/services/api'
-import { useWorkspaceStore } from './workspace'
 
 export const useGoalsStore = defineStore('goals', () => {
   const allGoals = ref([])
   const loading = ref(false)
   const loaded = ref(false)
 
-  const workspaceStore = useWorkspaceStore()
+  const filteredGoals = computed(() => allGoals.value)
 
-  const selectedWorkspaceIds = computed(() =>
-    workspaceStore.selectedWorkspaces.map(ws => ws.id)
-  )
-
-  // Все цели, отфильтрованные по выбранным workspace
-  const filteredGoals = computed(() => {
-    const ids = selectedWorkspaceIds.value
-    if (!ids.length) return []
-    return allGoals.value.filter(g => ids.includes(g.workspace_id))
-  })
-
-  // Активные цели (отфильтрованные)
   const activeGoals = computed(() => {
-    return filteredGoals.value.filter(g => g.status === 'active' || !g.status)
+    return allGoals.value.filter(g => g.status === 'active' || !g.status)
   })
 
   const archivedGoals = computed(() => {
-    return filteredGoals.value.filter(g => g.status === 'archived')
+    return allGoals.value.filter(g => g.status === 'archived')
   })
 
   const completedGoals = computed(() => {
-    return filteredGoals.value.filter(g => g.status === 'completed')
+    return allGoals.value.filter(g => g.status === 'completed')
   })
 
-  // === Загрузка ===
   const fetchAllGoals = async ({ force = false } = {}) => {
     if (loaded.value && !force) return
     loading.value = true
@@ -47,38 +33,30 @@ export const useGoalsStore = defineStore('goals', () => {
     }
   }
 
-  const fetchGoal = async (workspaceId, goalId) => {
-    const response = await api.get(`/v1/workspaces/${workspaceId}/goals/${goalId}`)
+  const fetchGoal = async (goalId) => {
+    const response = await api.get(`/v1/goals/${goalId}`)
     return response.data.data || response.data
   }
 
-  // === CRUD ===
-
   const createGoal = async (goalData) => {
-    const workspaceId = goalData?.workspace_id || workspaceStore.currentWorkspace?.id
-    if (!workspaceId) {
-      console.error('Cannot create goal: workspace_id not found')
-      return
-    }
-
-    goalData.workspace_id = workspaceId
+    const { workspace_id, ...data } = goalData
 
     let response
-    if (goalData.imageFile) {
+    if (data.imageFile) {
       const formData = new FormData()
-      formData.append('image', goalData.imageFile)
-      Object.keys(goalData).forEach(key => {
+      formData.append('image', data.imageFile)
+      Object.keys(data).forEach(key => {
         if (key === 'imageFile') return
-        if (goalData[key] !== null && goalData[key] !== undefined) {
-          formData.append(key, goalData[key])
+        if (data[key] !== null && data[key] !== undefined) {
+          formData.append(key, data[key])
         }
       })
-      response = await api.post(`/v1/workspaces/${workspaceId}/goals`, formData, {
+      response = await api.post('/v1/goals', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       })
     } else {
-      const { imageFile, ...data } = goalData
-      response = await api.post(`/v1/workspaces/${workspaceId}/goals`, data)
+      const { imageFile, ...cleanData } = data
+      response = await api.post('/v1/goals', cleanData)
     }
 
     const newGoal = response.data.data || response.data
@@ -87,31 +65,25 @@ export const useGoalsStore = defineStore('goals', () => {
   }
 
   const updateGoal = async (goalId, goalData) => {
-    const existingGoal = allGoals.value.find(g => g.id === goalId)
-    const wsId = existingGoal?.workspace_id || goalData?.workspace_id || workspaceStore.currentWorkspace?.id
-
-    if (!wsId) {
-      console.error('Cannot update goal: workspace_id not found')
-      return
-    }
+    const { workspace_id, ...data } = goalData
 
     let response
-    if (goalData.imageFile) {
+    if (data.imageFile) {
       const formData = new FormData()
       formData.append('_method', 'PUT')
-      formData.append('image', goalData.imageFile)
-      Object.keys(goalData).forEach(key => {
-        if (key === 'imageFile' || key === 'workspace_id') return
-        if (goalData[key] !== null && goalData[key] !== undefined) {
-          formData.append(key, goalData[key])
+      formData.append('image', data.imageFile)
+      Object.keys(data).forEach(key => {
+        if (key === 'imageFile') return
+        if (data[key] !== null && data[key] !== undefined) {
+          formData.append(key, data[key])
         }
       })
-      response = await api.post(`/v1/workspaces/${wsId}/goals/${goalId}`, formData, {
+      response = await api.post(`/v1/goals/${goalId}`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       })
     } else {
-      const { imageFile, workspace_id, ...dataToSend } = goalData
-      response = await api.put(`/v1/workspaces/${wsId}/goals/${goalId}`, dataToSend)
+      const { imageFile, ...dataToSend } = data
+      response = await api.put(`/v1/goals/${goalId}`, dataToSend)
     }
 
     const updated = response.data.data || response.data
@@ -123,28 +95,12 @@ export const useGoalsStore = defineStore('goals', () => {
   }
 
   const deleteGoal = async (goalId) => {
-    const goal = allGoals.value.find(g => g.id === goalId)
-    const wsId = goal?.workspace_id || workspaceStore.currentWorkspace?.id
-
-    if (!wsId) {
-      console.error('Cannot delete goal: workspace_id not found')
-      return
-    }
-
-    await api.delete(`/v1/workspaces/${wsId}/goals/${goalId}`)
+    await api.delete(`/v1/goals/${goalId}`)
     allGoals.value = allGoals.value.filter(g => g.id !== goalId)
   }
 
   const deleteGoalImage = async (goalId) => {
-    const goal = allGoals.value.find(g => g.id === goalId)
-    const wsId = goal?.workspace_id || workspaceStore.currentWorkspace?.id
-
-    if (!wsId) {
-      console.error('Cannot delete goal image: workspace_id not found')
-      return
-    }
-
-    const response = await api.delete(`/v1/workspaces/${wsId}/goals/${goalId}/image`)
+    const response = await api.delete(`/v1/goals/${goalId}/image`)
     const updated = response.data.data || response.data
     const index = allGoals.value.findIndex(g => g.id === goalId)
     if (index !== -1) {

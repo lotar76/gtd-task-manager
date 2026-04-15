@@ -6,11 +6,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Responses\ApiResponse;
-use App\Models\Context;
-use App\Models\Project;
-use App\Models\Tag;
 use App\Models\Task;
-use App\Models\Workspace;
 use App\Services\TaskService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -23,7 +19,7 @@ class TaskController extends Controller
     ) {
     }
 
-    // Все задачи пользователя (по всем workspace, включая завершённые)
+    // Все задачи пользователя (включая завершённые)
     public function all(Request $request): JsonResponse
     {
         $workspaceIds = $request->user()
@@ -31,117 +27,70 @@ class TaskController extends Controller
             ->pluck('id');
 
         $tasks = Task::whereIn('workspace_id', $workspaceIds)
-            ->with(['workspace:id,name', 'project:id,name', 'context:id,name', 'assignee:id,name', 'tags:id,name'])
+            ->with(['project:id,name', 'context:id,name', 'assignee:id,name', 'tags:id,name', 'lifeSphere:id,name,color', 'contacts'])
             ->orderBy('created_at', 'desc')
             ->get();
 
         return ApiResponse::success(['tasks' => $tasks]);
     }
 
-    // Список задач
-    public function index(Request $request, Workspace $workspace): JsonResponse
+    // GTD: Inbox
+    public function inbox(Request $request): JsonResponse
     {
-        $this->authorize('view', $workspace);
-
-        $query = $workspace->tasks()->with(['workspace', 'project', 'context', 'assignee', 'tags']);
-
-        // Фильтры
-        if ($request->has('status')) {
-            $query->where('status', $request->status);
-        }
-
-        if ($request->has('project_id')) {
-            $query->where('project_id', $request->project_id);
-        }
-
-        if ($request->has('assigned_to')) {
-            $query->where('assigned_to', $request->assigned_to);
-        }
-
-        if ($request->has('my_tasks') && $request->my_tasks) {
-            $query->where('assigned_to', Auth::id());
-        }
-
-        $tasks = $query->orderBy('position')->get();
-
-        return ApiResponse::success($tasks, 'Список задач получен');
-    }
-
-    // GTD: Inbox (входящие)
-    public function inbox(Request $request, Workspace $workspace): JsonResponse
-    {
-        $this->authorize('view', $workspace);
-
         $userId = $request->my_tasks ? Auth::id() : null;
-        $tasks = $this->taskService->getInbox($workspace, $userId);
-
+        $tasks = $this->taskService->getInbox($request->user(), $userId);
         return ApiResponse::success($tasks, 'Входящие задачи получены');
     }
 
-    // GTD: Next Actions (следующие действия)
-    public function nextActions(Request $request, Workspace $workspace): JsonResponse
+    // GTD: Next Actions
+    public function nextActions(Request $request): JsonResponse
     {
-        $this->authorize('view', $workspace);
-
         $userId = $request->my_tasks ? Auth::id() : null;
-        $tasks = $this->taskService->getNextActions($workspace, $userId);
-
+        $tasks = $this->taskService->getNextActions($request->user(), $userId);
         return ApiResponse::success($tasks, 'Следующие действия получены');
     }
 
-    // GTD: Waiting (ожидание)
-    public function waiting(Request $request, Workspace $workspace): JsonResponse
+    // GTD: Waiting
+    public function waiting(Request $request): JsonResponse
     {
-        $this->authorize('view', $workspace);
-
         $userId = $request->my_tasks ? Auth::id() : null;
-        $tasks = $this->taskService->getWaiting($workspace, $userId);
-
+        $tasks = $this->taskService->getWaiting($request->user(), $userId);
         return ApiResponse::success($tasks, 'Задачи в ожидании получены');
     }
 
-    // GTD: Someday (когда-нибудь)
-    public function someday(Request $request, Workspace $workspace): JsonResponse
+    // GTD: Someday
+    public function someday(Request $request): JsonResponse
     {
-        $this->authorize('view', $workspace);
-
         $userId = $request->my_tasks ? Auth::id() : null;
-        $tasks = $this->taskService->getSomeday($workspace, $userId);
-
+        $tasks = $this->taskService->getSomeday($request->user(), $userId);
         return ApiResponse::success($tasks, 'Задачи "Когда-нибудь" получены');
     }
 
     // Задачи на сегодня
-    public function today(Request $request, Workspace $workspace): JsonResponse
+    public function today(Request $request): JsonResponse
     {
-        $this->authorize('view', $workspace);
-
         $userId = $request->my_tasks ? Auth::id() : null;
-        $tasks = $this->taskService->getToday($workspace, $userId);
-
+        $tasks = $this->taskService->getToday($request->user(), $userId);
         return ApiResponse::success($tasks, 'Задачи на сегодня получены');
     }
 
     // Задачи на завтра
-    public function tomorrow(Request $request, Workspace $workspace): JsonResponse
+    public function tomorrow(Request $request): JsonResponse
     {
-        $this->authorize('view', $workspace);
-
         $userId = $request->my_tasks ? Auth::id() : null;
-        $tasks = $this->taskService->getTomorrow($workspace, $userId);
-
+        $tasks = $this->taskService->getTomorrow($request->user(), $userId);
         return ApiResponse::success($tasks, 'Задачи на завтра получены');
     }
 
     // Мои задачи
-    public function myTasks(Workspace $workspace): JsonResponse
+    public function myTasks(Request $request): JsonResponse
     {
-        $this->authorize('view', $workspace);
+        $workspaceIds = $request->user()->allWorkspaces()->pluck('id');
 
-        $tasks = $workspace->tasks()
+        $tasks = Task::whereIn('workspace_id', $workspaceIds)
             ->where('assigned_to', Auth::id())
             ->whereNull('completed_at')
-            ->with(['workspace', 'project', 'context', 'assignee', 'tags'])
+            ->with(['project', 'context', 'assignee', 'tags', 'contacts'])
             ->orderBy('due_date', 'asc')
             ->get();
 
@@ -149,10 +98,8 @@ class TaskController extends Controller
     }
 
     // Календарь задач
-    public function calendar(Request $request, Workspace $workspace): JsonResponse
+    public function calendar(Request $request): JsonResponse
     {
-        $this->authorize('view', $workspace);
-
         $validated = $request->validate([
             'start_date' => 'required|date',
             'end_date' => 'required|date|after_or_equal:start_date',
@@ -161,7 +108,7 @@ class TaskController extends Controller
 
         $userId = $request->my_tasks ? Auth::id() : null;
         $tasks = $this->taskService->getCalendarTasks(
-            $workspace,
+            $request->user(),
             $validated['start_date'],
             $validated['end_date'],
             $userId
@@ -170,28 +117,22 @@ class TaskController extends Controller
         return ApiResponse::success($tasks, 'Задачи для календаря получены');
     }
 
-    // Получение счетчиков задач для навигации
-    public function counts(Request $request, Workspace $workspace): JsonResponse
+    // Счётчики задач
+    public function counts(Request $request): JsonResponse
     {
-        $this->authorize('view', $workspace);
-
         $userId = $request->my_tasks ? Auth::id() : null;
-        $counts = $this->taskService->getTaskCounts($workspace, $userId);
-
+        $counts = $this->taskService->getTaskCounts($request->user(), $userId);
         return ApiResponse::success($counts, 'Счетчики задач получены');
     }
 
     // Создание задачи
-    public function store(Request $request, Workspace $workspace): JsonResponse
+    public function store(Request $request): JsonResponse
     {
-        $this->authorize('createContent', $workspace);
-
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
             'status' => 'nullable|in:inbox,next_action,today,tomorrow,waiting,someday,scheduled,completed',
             'priority' => 'nullable|in:low,medium,high,urgent',
-            'workspace_id' => 'nullable|exists:workspaces,id',
             'project_id' => 'nullable|exists:projects,id',
             'goal_id' => 'nullable|exists:goals,id',
             'life_sphere_id' => 'nullable|exists:life_spheres,id',
@@ -202,81 +143,26 @@ class TaskController extends Controller
             'end_time' => 'nullable|date_format:H:i',
             'tags' => 'nullable|array',
             'tags.*' => 'exists:tags,id',
+            'contact_ids' => 'nullable|array',
+            'contact_ids.*' => 'exists:contacts,id',
         ]);
 
-        // Определяем целевой workspace (из формы или из URL)
-        $targetWorkspaceId = $validated['workspace_id'] ?? $workspace->id;
-        
-        // Проверка доступа к целевому workspace
-        if (isset($validated['workspace_id']) && $validated['workspace_id'] !== $workspace->id) {
-            $targetWorkspace = Workspace::find($validated['workspace_id']);
-            if (!$targetWorkspace || !$targetWorkspace->hasMember(Auth::id())) {
-                return ApiResponse::error('У вас нет доступа к выбранному workspace', 403);
-            }
-        }
-
-        // Проверка принадлежности project к workspace
-        if (isset($validated['project_id'])) {
-            $project = Project::find($validated['project_id']);
-            if (!$project || $project->workspace_id !== $targetWorkspaceId) {
-                return ApiResponse::error('Поток не принадлежит выбранному workspace', 422);
-            }
-        }
-
-        // Проверка принадлежности context к workspace
-        if (isset($validated['context_id'])) {
-            $context = Context::find($validated['context_id']);
-            if (!$context || $context->workspace_id !== $targetWorkspaceId) {
-                return ApiResponse::error('Контекст не принадлежит выбранному workspace', 422);
-            }
-        }
-
-        // Проверка принадлежности tags к workspace
-        if (isset($validated['tags']) && !empty($validated['tags'])) {
-            $tags = Tag::whereIn('id', $validated['tags'])->get();
-            foreach ($tags as $tag) {
-                if ($tag->workspace_id !== $targetWorkspaceId) {
-                    return ApiResponse::error('Один или несколько тегов не принадлежат выбранному workspace', 422);
-                }
-            }
-        }
-
-        // Проверка что assigned_to является участником workspace
-        if (isset($validated['assigned_to'])) {
-            $checkWorkspace = isset($validated['workspace_id']) 
-                ? Workspace::find($validated['workspace_id']) 
-                : $workspace;
-            
-            if (!$checkWorkspace->hasMember($validated['assigned_to'])) {
-                return ApiResponse::error('Пользователь не является участником выбранного workspace', 422);
-            }
-        }
-
-        $task = $this->taskService->createTask($workspace, $validated, Auth::id());
+        $task = $this->taskService->createTask($request->user(), $validated, Auth::id());
 
         return ApiResponse::success($task, 'Задача создана', 201);
     }
 
     // Получение задачи
-    public function show(Workspace $workspace, Task $task): JsonResponse
+    public function show(Task $task): JsonResponse
     {
         $this->authorize('view', $task);
-
-        $task->load(['workspace', 'project', 'context', 'assignee', 'tags', 'comments.user', 'attachments', 'subtasks']);
-
+        $task->load(['project', 'context', 'assignee', 'tags', 'comments.user', 'attachments', 'subtasks', 'contacts', 'lifeSphere']);
         return ApiResponse::success($task, 'Задача получена');
     }
 
     // Обновление задачи
-    public function update(Request $request, Workspace $workspace, Task $task): JsonResponse
+    public function update(Request $request, Task $task): JsonResponse
     {
-        $task->load('workspace');
-        
-        // Проверяем, что задача принадлежит workspace
-        if ($task->workspace_id !== $workspace->id) {
-            return ApiResponse::error('Задача не принадлежит данному workspace', 403);
-        }
-        
         $this->authorize('update', $task);
 
         $validated = $request->validate([
@@ -294,48 +180,16 @@ class TaskController extends Controller
             'end_time' => 'nullable|date_format:H:i',
             'tags' => 'nullable|array',
             'tags.*' => 'exists:tags,id',
+            'contact_ids' => 'nullable|array',
+            'contact_ids.*' => 'exists:contacts,id',
         ]);
 
-        // Проверка принадлежности project к workspace
-        if (isset($validated['project_id'])) {
-            $project = Project::find($validated['project_id']);
-            if (!$project || $project->workspace_id !== $workspace->id) {
-                return ApiResponse::error('Поток не принадлежит данному workspace', 422);
-            }
-        }
-
-        // Проверка принадлежности context к workspace
-        if (isset($validated['context_id'])) {
-            $context = Context::find($validated['context_id']);
-            if (!$context || $context->workspace_id !== $workspace->id) {
-                return ApiResponse::error('Контекст не принадлежит данному workspace', 422);
-            }
-        }
-
-        // Проверка принадлежности tags к workspace
-        if (isset($validated['tags']) && !empty($validated['tags'])) {
-            $tags = Tag::whereIn('id', $validated['tags'])->get();
-            foreach ($tags as $tag) {
-                if ($tag->workspace_id !== $workspace->id) {
-                    return ApiResponse::error('Один или несколько тегов не принадлежат данному workspace', 422);
-                }
-            }
-        }
-
-        // Проверка что assigned_to является участником workspace
-        if (isset($validated['assigned_to'])) {
-            if (!$workspace->hasMember($validated['assigned_to'])) {
-                return ApiResponse::error('Пользователь не является участником workspace', 422);
-            }
-        }
-
         try {
-        $task = $this->taskService->updateTask($task, $validated);
-        return ApiResponse::success($task, 'Задача обновлена');
+            $task = $this->taskService->updateTask($task, $validated);
+            return ApiResponse::success($task, 'Задача обновлена');
         } catch (\Exception $e) {
             \Log::error('Error updating task: ' . $e->getMessage(), [
                 'task_id' => $task->id,
-                'workspace_id' => $workspace->id,
                 'data' => $validated,
                 'trace' => $e->getTraceAsString()
             ]);
@@ -344,42 +198,32 @@ class TaskController extends Controller
     }
 
     // Удаление задачи
-    public function destroy(Workspace $workspace, Task $task): JsonResponse
+    public function destroy(Task $task): JsonResponse
     {
-        $task->load('workspace');
         $this->authorize('delete', $task);
-
         $task->delete();
-
         return ApiResponse::success(null, 'Задача удалена');
     }
 
     // Завершение задачи
-    public function complete(Workspace $workspace, Task $task): JsonResponse
+    public function complete(Task $task): JsonResponse
     {
-        $task->load('workspace');
         $this->authorize('update', $task);
-
         $task = $this->taskService->completeTask($task, auth()->id());
-
         return ApiResponse::success($task, 'Задача завершена');
     }
 
     // Возврат задачи в работу
-    public function uncomplete(Workspace $workspace, Task $task): JsonResponse
+    public function uncomplete(Task $task): JsonResponse
     {
-        $task->load('workspace');
         $this->authorize('update', $task);
-
         $task = $this->taskService->uncompleteTask($task);
-
         return ApiResponse::success($task, 'Задача возвращена в работу');
     }
 
     // Смена статуса
-    public function move(Request $request, Workspace $workspace, Task $task): JsonResponse
+    public function move(Request $request, Task $task): JsonResponse
     {
-        $task->load('workspace');
         $this->authorize('update', $task);
 
         $validated = $request->validate([
@@ -387,30 +231,19 @@ class TaskController extends Controller
         ]);
 
         $task = $this->taskService->changeStatus($task, $validated['status'], auth()->id());
-
         return ApiResponse::success($task, 'Статус задачи изменен');
     }
 
     // Назначение задачи
-    public function assign(Request $request, Workspace $workspace, Task $task): JsonResponse
+    public function assign(Request $request, Task $task): JsonResponse
     {
-        $task->load('workspace');
-        $this->authorize('assign', $task);
+        $this->authorize('update', $task);
 
         $validated = $request->validate([
             'user_id' => 'nullable|exists:users,id',
         ]);
 
-        // Проверка что user_id является участником workspace
-        if (isset($validated['user_id']) && $validated['user_id'] !== null) {
-            if (!$workspace->hasMember($validated['user_id'])) {
-                return ApiResponse::error('Пользователь не является участником workspace', 422);
-            }
-        }
-
         $task = $this->taskService->assignTask($task, $validated['user_id'] ?? null, auth()->id());
-
         return ApiResponse::success($task, 'Задача назначена');
     }
 }
-
