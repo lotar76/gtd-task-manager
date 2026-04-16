@@ -18,9 +18,7 @@ class GoalController extends Controller
     // Все цели пользователя
     public function all(Request $request): JsonResponse
     {
-        $workspaceIds = $request->user()
-            ->allWorkspaces()
-            ->pluck('id');
+        $workspaceIds = [$request->user()->defaultWorkspace()->id];
 
         $goals = Goal::whereIn('workspace_id', $workspaceIds)
             ->with(['creator', 'lifeSphere:id,name,color'])
@@ -49,7 +47,7 @@ class GoalController extends Controller
 
         unset($validated['image']);
 
-        $workspace = $request->user()->allWorkspaces()->first();
+        $workspace = $request->user()->defaultWorkspace();
         $validated['workspace_id'] = $workspace->id;
         $validated['created_by'] = Auth::id();
 
@@ -72,7 +70,7 @@ class GoalController extends Controller
     {
         $this->authorize('view', $goal);
 
-        $goal->load(['creator', 'lifeSphere:id,name,color', 'projects.tasks', 'directTasks']);
+        $goal->load(['creator', 'lifeSphere:id,name,color', 'projects.tasks', 'directTasks', 'contacts']);
         $goal->append('progress');
 
         return ApiResponse::success($goal, 'Цель получена');
@@ -92,9 +90,12 @@ class GoalController extends Controller
             'bible_verse' => 'nullable|string|max:500',
             'life_sphere_id' => 'nullable|exists:life_spheres,id',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
+            'contact_ids' => 'nullable|array',
+            'contact_ids.*' => 'exists:contacts,id',
         ]);
 
-        unset($validated['image']);
+        $contactIds = $validated['contact_ids'] ?? null;
+        unset($validated['image'], $validated['contact_ids']);
 
         if ($request->hasFile('image')) {
             if ($goal->image_path) {
@@ -107,8 +108,12 @@ class GoalController extends Controller
 
         $goal->update($validated);
 
+        if ($contactIds !== null) {
+            $goal->contacts()->sync($contactIds);
+        }
+
         $fresh = $goal->fresh();
-        $fresh->load(['creator', 'lifeSphere:id,name,color']);
+        $fresh->load(['creator', 'lifeSphere:id,name,color', 'contacts']);
         $fresh->loadCount(['projects', 'directTasks']);
         $fresh->append('progress');
 

@@ -43,19 +43,11 @@
         :show="showTaskView"
         :task="selectedTask"
         @close="showTaskView = false; selectedTask = null"
-        @enter-edit="handleEnterEdit"
         @complete-task="handleCompleteTask"
         @uncomplete-task="handleUncompleteTask"
       />
 
-      <TaskModal
-        :show="showTaskModal"
-        :task="selectedTask"
-        :server-error="taskError"
-        @close="handleCloseModal"
-        @submit="handleSaveTask"
-      />
-    </div>
+      </div>
   </div>
 </template>
 
@@ -63,33 +55,24 @@
 import { ref, computed } from 'vue'
 import { useTasksStore } from '@/stores/tasks'
 import TaskList from '@/components/tasks/TaskList.vue'
-import TaskModal from '@/components/tasks/TaskModal.vue'
 import TaskView from '@/components/tasks/TaskView.vue'
+import { useTaskDraft } from '@/composables/useTaskDraft'
 import { ClockIcon, PlusIcon } from '@heroicons/vue/24/outline'
 
 const tasksStore = useTasksStore()
 
 const tasks = computed(() => tasksStore.waitingTasks)
 const loading = computed(() => tasksStore.loading)
-const showTaskModal = ref(false)
 const showTaskView = ref(false)
 const selectedTask = ref(null)
-const taskError = ref('')
 
 const handleTaskClick = (task) => {
   selectedTask.value = task
   showTaskView.value = true
 }
 
-const handleAddTask = () => {
-  selectedTask.value = null
-  showTaskModal.value = true
-}
-
-const handleEnterEdit = () => {
-  showTaskView.value = false
-  showTaskModal.value = true
-}
+const { draftTask, showDraft, startDraft, closeDraft } = useTaskDraft(() => tasksStore.fetchTasks?.())
+const handleAddTask = () => startDraft({ status: 'waiting' })
 
 const handleCompleteTask = async (task) => {
   try {
@@ -119,25 +102,4 @@ const handleToggleComplete = async (task) => {
   }
 }
 
-const handleSaveTask = async (taskData) => {
-  taskError.value = ''
-  try {
-    if (selectedTask.value) {
-      await tasksStore.updateTask(selectedTask.value.id, taskData)
-    } else {
-      await tasksStore.createTask(taskData)
-    }
-    showTaskModal.value = false
-    selectedTask.value = null
-  } catch (error) {
-    console.error('Error saving task:', error)
-    taskError.value = error.response?.data?.message || error.message || 'Ошибка при сохранении задачи'
-  }
-}
-
-const handleCloseModal = () => {
-  showTaskModal.value = false
-  selectedTask.value = null
-  taskError.value = ''
-}
 </script>

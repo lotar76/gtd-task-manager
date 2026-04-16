@@ -16,11 +16,9 @@ class LifeSphereController extends Controller
     // Все сферы пользователя
     public function all(Request $request): JsonResponse
     {
-        $workspaceIds = $request->user()
-            ->allWorkspaces()
-            ->pluck('id');
+        $workspaceId = $request->user()->defaultWorkspace()->id;
 
-        $spheres = LifeSphere::whereIn('workspace_id', $workspaceIds)
+        $spheres = LifeSphere::where('workspace_id', $workspaceId)
             ->withCount('tasks')
             ->orderBy('position')
             ->get();
@@ -37,7 +35,7 @@ class LifeSphereController extends Controller
             'position' => 'nullable|integer|min:0',
         ]);
 
-        $workspace = $request->user()->allWorkspaces()->first();
+        $workspace = $request->user()->defaultWorkspace();
         $validated['workspace_id'] = $workspace->id;
         $validated['created_by'] = Auth::id();
 
@@ -87,7 +85,7 @@ class LifeSphereController extends Controller
     // Заполнить дефолтными сферами
     public function seed(Request $request): JsonResponse
     {
-        $workspace = $request->user()->allWorkspaces()->first();
+        $workspace = $request->user()->defaultWorkspace();
 
         $defaults = [
             ['name' => 'Духовная', 'color' => '#8B5CF6', 'position' => 0],

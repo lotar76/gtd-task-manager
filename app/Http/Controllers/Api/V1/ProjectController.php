@@ -16,9 +16,7 @@ class ProjectController extends Controller
     // Все проекты пользователя
     public function all(Request $request): JsonResponse
     {
-        $workspaceIds = $request->user()
-            ->allWorkspaces()
-            ->pluck('id');
+        $workspaceIds = [$request->user()->defaultWorkspace()->id];
 
         $query = Project::whereIn('workspace_id', $workspaceIds)
             ->with(['goal:id,name', 'creator'])
@@ -55,11 +53,13 @@ class ProjectController extends Controller
             'status' => 'nullable|in:active,archived,completed',
         ]);
 
-        $workspace = $request->user()->allWorkspaces()->first();
+        $workspace = $request->user()->defaultWorkspace();
         $validated['workspace_id'] = $workspace->id;
         $validated['created_by'] = Auth::id();
 
         $project = Project::create($validated);
+        $project->load(['goal:id,name', 'creator']);
+        $project->loadCount('tasks');
 
         return ApiResponse::success($project, 'Поток создан', 201);
     }
@@ -87,7 +87,9 @@ class ProjectController extends Controller
 
         $project->update($validated);
 
-        return ApiResponse::success($project->fresh(), 'Поток обновлен');
+        $fresh = $project->fresh(['goal:id,name', 'creator'])->loadCount('tasks');
+
+        return ApiResponse::success($fresh, 'Поток обновлен');
     }
 
     // Удаление проекта

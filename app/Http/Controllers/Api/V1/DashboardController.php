@@ -31,7 +31,7 @@ class DashboardController extends Controller
             'period' => 'sometimes|string|in:day,week,month,year',
         ]);
 
-        $workspaceId = $request->user()->allWorkspaces()->first()?->id;
+        $workspaceId = $request->user()->defaultWorkspace()->id;
         $period = $request->input('period', 'day');
 
         $data = $this->dashboardService->getLifeMirrorData($workspaceId, $period);
@@ -49,7 +49,7 @@ class DashboardController extends Controller
             'force' => 'sometimes|boolean',
         ]);
 
-        $workspaceId = $request->user()->allWorkspaces()->first()?->id;
+        $workspaceId = $request->user()->defaultWorkspace()->id;
         $period = $request->input('period');
         $force = $request->boolean('force', false);
 
@@ -64,7 +64,7 @@ class DashboardController extends Controller
      */
     public function getStats(Request $request)
     {
-        $workspaceIds = $request->user()->allWorkspaces()->pluck('id');
+        $workspaceIds = collect([$request->user()->defaultWorkspace()->id]);
         $period = $request->input('period', 'week');
 
         $now = Carbon::now();

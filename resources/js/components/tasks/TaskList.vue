@@ -6,147 +6,91 @@
       draggable="true"
       @dragstart="handleDragStart($event, task)"
       @dragend="handleDragEnd"
-      class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-sm transition-all cursor-move relative overflow-hidden"
+      class="group border rounded-lg px-3 py-2.5 cursor-pointer transition-colors"
       :class="[
         { 'opacity-50': isDragging && draggedTask?.id === task.id },
-        getDurationGradientClass(task)
+        roleRowClass(task),
       ]"
       @click="$emit('task-click', task)"
     >
-      <div class="flex items-start space-x-3">
-        <!-- Checkbox -->
+      <div class="flex items-start gap-2.5">
+        <!-- Checkbox (скрыт для наблюдателя чужой задачи) -->
         <button
+          v-if="viewerRole(task) !== 'watcher'"
           @click.stop="handleToggleComplete(task)"
-          class="mt-1 flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors duration-200"
+          class="mt-0.5 flex-shrink-0 w-4 h-4 rounded border flex items-center justify-center transition-colors"
           :class="task.completed_at
-            ? 'bg-green-500 border-green-500'
-            : 'border-gray-300 hover:border-primary-500'"
+            ? 'bg-emerald-500 border-emerald-500'
+            : 'border-gray-300 dark:border-gray-600 hover:border-emerald-500'"
         >
-          <svg
-            v-if="task.completed_at"
-            class="w-3 h-3 text-white"
-            fill="none" stroke="currentColor" viewBox="0 0 24 24"
-          >
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
-          </svg>
+          <svg v-if="task.completed_at" class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>
         </button>
+        <div v-else class="mt-0.5 flex-shrink-0 w-4 h-4 flex items-center justify-center text-gray-300 dark:text-gray-600" title="Только наблюдение">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.46 12C3.73 7.94 7.52 5 12 5s8.27 2.94 9.54 7c-1.27 4.06-5.06 7-9.54 7S3.73 16.06 2.46 12z" /></svg>
+        </div>
 
-        <!-- Task Content -->
         <div class="flex-1 min-w-0">
-          <h3
-            class="text-sm font-medium transition-all duration-200"
-            :class="task.completed_at
-              ? 'text-gray-400 line-through'
-              : 'text-gray-900 dark:text-white'"
-          >
-            {{ task.title }}
-          </h3>
-
-          <p v-if="task.description" class="text-sm text-gray-500 mt-1 truncate">
-            {{ task.description }}
-          </p>
-
-          <!-- Meta информация -->
-          <div class="flex flex-wrap items-center gap-2 mt-2">
-            <!-- Workspace -->
-            <span
-              v-if="task.workspace"
-              class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400"
-            >
-              <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-              </svg>
-              {{ task.workspace.name }}
+          <div class="flex items-baseline justify-between gap-3">
+            <div class="flex items-center gap-1.5 min-w-0">
+              <span
+                v-if="priorityMeta(task.priority) && task.priority !== 'medium'"
+                class="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                :class="priorityMeta(task.priority).dot"
+                :title="priorityMeta(task.priority).label"
+              ></span>
+              <h3
+                class="text-[13.5px] truncate"
+                :class="task.completed_at ? 'text-gray-400 line-through' : 'text-gray-800 dark:text-gray-100'"
+              >
+                {{ task.title }}
+              </h3>
+            </div>
+            <span v-if="task.creator?.name" class="inline-flex items-center gap-1 text-[11px] text-gray-400 flex-shrink-0 truncate max-w-[160px]">
+              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+              {{ task.creator.name }}
             </span>
+          </div>
 
-            <!-- Проект -->
-            <span
-              v-if="task.project"
-              class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
-            >
-              <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-              </svg>
-              {{ task.project.name }}
-            </span>
-
-            <!-- Дата -->
-            <span
-              v-if="task.due_date"
-              class="inline-flex items-center px-2 py-1 rounded text-xs font-medium"
-              :class="getDueDateClass(task)"
-            >
-              <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
+          <!-- Meta -->
+          <div class="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-[11.5px] text-gray-500 dark:text-gray-400">
+            <span v-if="task.due_date" class="inline-flex items-center gap-1" :class="getDueDateClass(task)">
+              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
               {{ formatDate(task.due_date) }}
             </span>
 
-            <!-- Время начала и окончания -->
-            <span
-              v-if="task.estimated_time || task.end_time"
-              class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
-            >
-              <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span v-if="task.estimated_time && task.end_time">
-                {{ formatTime(task.estimated_time) }} - {{ formatTime(task.end_time) }}
-              </span>
-              <span v-else-if="task.estimated_time">
-                {{ formatTime(task.estimated_time) }}
-              </span>
-              <span v-else-if="task.end_time">
-                до {{ formatTime(task.end_time) }}
-              </span>
+            <span v-if="task.estimated_time || task.end_time" class="inline-flex items-center gap-1">
+              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              <template v-if="task.estimated_time && task.end_time">{{ formatTime(task.estimated_time) }}–{{ formatTime(task.end_time) }}</template>
+              <template v-else-if="task.estimated_time">{{ formatTime(task.estimated_time) }}</template>
+              <template v-else>до {{ formatTime(task.end_time) }}</template>
             </span>
 
-            <!-- Назначен -->
-            <span v-if="task.assignee" class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">
-              <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-              </svg>
-              {{ task.assignee.name }}
+            <span v-if="task.project" class="inline-flex items-center gap-1">
+              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" /></svg>
+              {{ task.project.name }}
             </span>
 
-            <!-- Контекст -->
-            <span
-              v-if="task.context"
-              class="inline-flex items-center px-2 py-1 rounded text-xs font-medium"
-              :style="{ backgroundColor: task.context.color + '20', color: task.context.color }"
-            >
-              <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
+            <span v-if="assigneeNames(task).length" class="inline-flex items-center gap-1 text-indigo-600 dark:text-indigo-300" title="Исполнители">
+              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+              {{ assigneeNames(task).join(', ') }}
+            </span>
+
+            <span v-if="watcherNames(task).length" class="inline-flex items-center gap-1" title="Наблюдатели">
+              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.46 12C3.73 7.94 7.52 5 12 5s8.27 2.94 9.54 7c-1.27 4.06-5.06 7-9.54 7S3.73 16.06 2.46 12z" /></svg>
+              {{ watcherNames(task).join(', ') }}
+            </span>
+
+            <span v-if="task.context" class="inline-flex items-center gap-1" :style="{ color: task.context.color }">
+              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
               {{ task.context.name }}
             </span>
 
-            <!-- Теги -->
-            <span
-              v-for="tag in task.tags"
-              :key="tag.id"
-              class="inline-flex items-center px-2 py-1 rounded text-xs font-medium"
-              :style="{ backgroundColor: tag.color + '20', color: tag.color }"
-            >
-              <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-              </svg>
+            <span v-for="tag in task.tags" :key="tag.id" class="inline-flex items-center gap-1" :style="{ color: tag.color }">
+              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg>
               {{ tag.name }}
             </span>
           </div>
         </div>
-
-        <!-- Priority Badge -->
-        <div
-          v-if="task.priority !== 'medium'"
-          class="flex-shrink-0 w-2 h-2 rounded-full mt-2"
-          :class="{
-            'bg-red-500': task.priority === 'urgent',
-            'bg-orange-500': task.priority === 'high',
-            'bg-blue-500': task.priority === 'low'
-          }"
-        />
       </div>
     </div>
   </TransitionGroup>
@@ -179,9 +123,14 @@ import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
+import { useAuthStore } from '@/stores/auth'
+import { useWorkspaceStore } from '@/stores/workspace'
 
 dayjs.extend(relativeTime)
 dayjs.locale('ru')
+
+const authStore = useAuthStore()
+const workspaceStore = useWorkspaceStore()
 
 defineProps({
   tasks: {
@@ -189,6 +138,39 @@ defineProps({
     default: () => [],
   },
 })
+
+const viewerRole = (task) => {
+  const uid = authStore.user?.id
+  if (!uid) return 'owner'
+  // я в числе контактов задачи?
+  const myLink = (task.contacts || []).find(c => c.contact_user_id === uid)
+  if (myLink) {
+    if (myLink.pivot?.role === 'assignee') return 'assignee'
+    return 'watcher'
+  }
+  return 'owner'
+}
+const roleRowClass = (task) => {
+  const r = viewerRole(task)
+  if (r === 'watcher') return 'bg-gray-100/60 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700 hover:bg-gray-200/50 dark:hover:bg-gray-700/40'
+  if (r === 'assignee') return 'bg-indigo-50/40 dark:bg-indigo-900/10 border-indigo-200 dark:border-indigo-900/40 hover:bg-indigo-100/60 dark:hover:bg-indigo-900/20'
+  return 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50'
+}
+const participants = (task, role) => {
+  const uid = authStore.user?.id
+  return (task.contacts || [])
+    .filter(c => c.pivot?.role === role && c.contact_user_id !== uid)
+    .map(c => c.name)
+}
+const assigneeNames = (task) => participants(task, 'assignee')
+const watcherNames = (task) => participants(task, 'watcher')
+
+const priorityMeta = (p) => ({
+  low:    { label: 'Низкий',  cls: 'text-gray-600 dark:text-gray-300',     dot: 'bg-gray-400' },
+  medium: { label: 'Средний', cls: 'text-blue-700 dark:text-blue-300',     dot: 'bg-blue-400' },
+  high:   { label: 'Высокий', cls: 'text-amber-700 dark:text-amber-300',   dot: 'bg-amber-500' },
+  urgent: { label: 'Срочный', cls: 'text-red-700 dark:text-red-300',       dot: 'bg-red-500' },
+}[p] || null)
 
 const emit = defineEmits(['task-click', 'toggle-complete', 'task-drag-start', 'task-drag-end'])
 
@@ -266,20 +248,12 @@ const formatTime = (time) => {
 }
 
 const getDueDateClass = (task) => {
-  if (task.completed_at) {
-    return 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
-  }
-
+  if (task.completed_at) return 'text-gray-400'
   const dueDate = dayjs(task.due_date)
   const today = dayjs()
-
-  if (dueDate.isBefore(today, 'day')) {
-    return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-  } else if (dueDate.isSame(today, 'day')) {
-    return 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
-  }
-
-  return 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
+  if (dueDate.isBefore(today, 'day')) return 'text-red-500 dark:text-red-400'
+  if (dueDate.isSame(today, 'day')) return 'text-amber-600 dark:text-amber-400'
+  return 'text-gray-500 dark:text-gray-400'
 }
 
 // Вычисление продолжительности задачи в часах

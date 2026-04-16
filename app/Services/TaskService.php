@@ -22,8 +22,12 @@ class TaskService
 
     private function userTasksQuery(User $user)
     {
-        $workspaceIds = $user->allWorkspaces()->pluck('id');
-        return Task::whereIn('workspace_id', $workspaceIds);
+        $workspaceId = $user->defaultWorkspace()->id;
+        $userId = $user->id;
+        return Task::where(function ($q) use ($workspaceId, $userId) {
+            $q->where('workspace_id', $workspaceId)
+              ->orWhereHas('contacts', fn ($c) => $c->where('contacts.contact_user_id', $userId));
+        });
     }
 
     // GTD: Входящие (inbox)
@@ -58,12 +62,19 @@ class TaskService
             ->get();
     }
 
-    // GTD: Ожидание (waiting)
+    // GTD: Ожидание (waiting) + задачи, в которых назначен другой исполнитель
     public function getWaiting(User $user, ?int $userId = null): Collection
     {
+        $me = $user->id;
         $query = $this->userTasksQuery($user)
-            ->waiting()
             ->whereNull('completed_at')
+            ->where(function ($q) use ($me) {
+                $q->where('status', 'waiting')
+                  ->orWhereHas('contacts', function ($c) use ($me) {
+                      $c->where('task_contact.role', 'assignee')
+                        ->where('contacts.contact_user_id', '!=', $me);
+                  });
+            })
             ->with(['project', 'context', 'assignee', 'tags', 'contacts']);
 
         if ($userId) {
@@ -152,9 +163,10 @@ class TaskService
     public function createTask(User $user, array $data, int $userId): Task
     {
         // Берём первый workspace пользователя для workspace_id (legacy)
-        $workspace = $user->allWorkspaces()->first();
+        $workspace = $user->defaultWorkspace();
         $data['workspace_id'] = $workspace->id;
         $data['created_by'] = $userId;
+        $data['title'] = $data['title'] ?? '';
 
         // Если не указан assigned_to, назначаем создателя
         if (!isset($data['assigned_to'])) {
@@ -316,10 +328,22 @@ class TaskService
     // Получить задачи для календаря
     public function getCalendarTasks(User $user, string $startDate, string $endDate, ?int $userId = null)
     {
+        $today = \Carbon\Carbon::today()->toDateString();
+        $tomorrow = \Carbon\Carbon::tomorrow()->toDateString();
+        $todayInRange = $today >= $startDate && $today <= $endDate;
+        $tomorrowInRange = $tomorrow >= $startDate && $tomorrow <= $endDate;
+
         $query = $this->userTasksQuery($user)
-            ->whereNotNull('due_date')
-            ->whereBetween('due_date', [$startDate, $endDate])
             ->whereNull('completed_at')
+            ->where(function ($q) use ($startDate, $endDate, $todayInRange, $tomorrowInRange) {
+                $q->whereBetween('due_date', [$startDate, $endDate]);
+                if ($todayInRange) {
+                    $q->orWhere(fn ($qq) => $qq->where('status', 'today')->whereNull('due_date'));
+                }
+                if ($tomorrowInRange) {
+                    $q->orWhere(fn ($qq) => $qq->where('status', 'tomorrow')->whereNull('due_date'));
+                }
+            })
             ->with(['project', 'context', 'assignee', 'tags', 'contacts']);
 
         if ($userId) {
@@ -343,7 +367,13 @@ class TaskService
             'next_actions' => (clone $query)->where('status', 'next_action')->count(),
             'today' => (clone $query)->where('status', 'today')->count(),
             'tomorrow' => (clone $query)->where('status', 'tomorrow')->count(),
-            'waiting' => (clone $query)->where('status', 'waiting')->count(),
+            'waiting' => (clone $query)->where(function ($q) use ($user) {
+                $q->where('status', 'waiting')
+                  ->orWhereHas('contacts', function ($c) use ($user) {
+                      $c->where('task_contact.role', 'assignee')
+                        ->where('contacts.contact_user_id', '!=', $user->id);
+                  });
+            })->count(),
             'someday' => (clone $query)->where('status', 'someday')->count(),
             'scheduled' => (clone $query)->where('status', 'scheduled')->count(),
         ];

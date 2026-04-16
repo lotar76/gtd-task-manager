@@ -16,9 +16,7 @@ class TagController extends Controller
     // Все теги пользователя
     public function all(Request $request): JsonResponse
     {
-        $workspaceIds = $request->user()
-            ->allWorkspaces()
-            ->pluck('id');
+        $workspaceIds = [$request->user()->defaultWorkspace()->id];
 
         $tags = Tag::whereIn('workspace_id', $workspaceIds)
             ->withCount('tasks')
@@ -35,7 +33,7 @@ class TagController extends Controller
             'color' => 'nullable|string|size:7',
         ]);
 
-        $workspace = $request->user()->allWorkspaces()->first();
+        $workspace = $request->user()->defaultWorkspace();
         $validated['workspace_id'] = $workspace->id;
 
         $tag = Tag::create($validated);

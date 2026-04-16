@@ -16,9 +16,7 @@ class ContextController extends Controller
     // Все контексты пользователя
     public function all(Request $request): JsonResponse
     {
-        $workspaceIds = $request->user()
-            ->allWorkspaces()
-            ->pluck('id');
+        $workspaceIds = [$request->user()->defaultWorkspace()->id];
 
         $contexts = Context::whereIn('workspace_id', $workspaceIds)
             ->withCount('tasks')
@@ -36,7 +34,7 @@ class ContextController extends Controller
             'color' => 'nullable|string|size:7',
         ]);
 
-        $workspace = $request->user()->allWorkspaces()->first();
+        $workspace = $request->user()->defaultWorkspace();
         $validated['workspace_id'] = $workspace->id;
 
         $context = Context::create($validated);

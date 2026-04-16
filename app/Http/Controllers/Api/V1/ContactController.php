@@ -10,13 +10,18 @@ use App\Models\Contact;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 
 class ContactController extends Controller
 {
     public function index(): JsonResponse
     {
         $contacts = Contact::where('owner_id', Auth::id())
-            ->withCount('tasks')
+            ->withCount([
+                'tasks as active_tasks_count' => fn ($q) => $q->whereNull('completed_at'),
+                'tasks as completed_tasks_count' => fn ($q) => $q->whereNotNull('completed_at'),
+            ])
+            ->orderByDesc('is_favorite')
             ->orderBy('name')
             ->get();
 
@@ -25,13 +30,7 @@ class ContactController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'nullable|email|max:255',
-            'phone' => 'nullable|string|max:50',
-            'notes' => 'nullable|string',
-        ]);
-
+        $validated = $request->validate($this->rules(isUpdate: false, isLinked: false));
         $validated['owner_id'] = Auth::id();
 
         $contact = Contact::create($validated);
@@ -58,12 +57,13 @@ class ContactController extends Controller
             return ApiResponse::error('Нет доступа', 403);
         }
 
-        $validated = $request->validate([
-            'name' => 'sometimes|string|max:255',
-            'email' => 'nullable|email|max:255',
-            'phone' => 'nullable|string|max:50',
-            'notes' => 'nullable|string',
-        ]);
+        $validated = $request->validate($this->rules(isUpdate: true, isLinked: $contact->isLinkedUser()));
+
+        // Для связанных с пользователем контактов: базовые данные (имя/email/телефон) —
+        // это данные другого пользователя, их менять нельзя. Только свои персональные поля.
+        if ($contact->isLinkedUser()) {
+            unset($validated['name'], $validated['email'], $validated['phone']);
+        }
 
         $contact->update($validated);
 
@@ -79,5 +79,28 @@ class ContactController extends Controller
         $contact->delete();
 
         return ApiResponse::success(null, 'Контакт удалён');
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function rules(bool $isUpdate, bool $isLinked): array
+    {
+        $nameRule = $isUpdate ? 'sometimes|string|max:255' : 'required|string|max:255';
+
+        return [
+            'name' => $isLinked ? 'sometimes|prohibited' : $nameRule,
+            'email' => $isLinked ? 'sometimes|prohibited' : 'nullable|email|max:255',
+            'phone' => $isLinked ? 'sometimes|prohibited' : 'nullable|string|max:50',
+            'notes' => 'nullable|string',
+            'is_favorite' => 'sometimes|boolean',
+            'contact_type' => ['sometimes', Rule::in(Contact::TYPES)],
+            'specialization' => 'nullable|string|max:255',
+            'personal_phone' => 'nullable|string|max:50',
+            'personal_email' => 'nullable|email|max:255',
+            'messengers' => 'nullable|array',
+            'messengers.*' => 'nullable|string|max:255',
+            'address' => 'nullable|string|max:500',
+        ];
     }
 }

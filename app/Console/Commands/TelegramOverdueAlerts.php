@@ -34,7 +34,7 @@ class TelegramOverdueAlerts extends Command
 
         foreach ($subscriptions as $subscription) {
             $user = $subscription->user;
-            $workspaces = $user->allWorkspaces();
+            $workspaces = collect([$user->defaultWorkspace()]);
 
             $allOverdueTasks = collect();
 

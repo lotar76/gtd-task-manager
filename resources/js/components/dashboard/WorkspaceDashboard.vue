@@ -242,19 +242,12 @@
     @uncomplete-task="handleUncompleteTask"
   />
 
-  <!-- Task Modal -->
-  <TaskModal
-    v-if="showTaskModal"
-    :show="showTaskModal"
-    :task="editingTask"
-    :server-error="taskError"
-    @close="closeTaskModal"
-    @submit="handleSaveTask"
-  />
+  <TaskView :show="showDraft" :task="draftTask" @close="closeDraft" />
 </template>
 
 <script setup>
 import { computed, ref, onMounted, onUnmounted } from 'vue'
+import { useTaskDraft } from '@/composables/useTaskDraft'
 import AiHeroBanner from '@/components/dashboard/AiHeroBanner.vue'
 import BalanceWheel from '@/components/dashboard/BalanceWheel.vue'
 import SphereCard from '@/components/dashboard/SphereCard.vue'
@@ -264,13 +257,12 @@ import DayTimeline from '@/components/dashboard/DayTimeline.vue'
 import PeriodWeekView from '@/components/dashboard/PeriodWeekView.vue'
 import PeriodMonthView from '@/components/dashboard/PeriodMonthView.vue'
 import PeriodYearView from '@/components/dashboard/PeriodYearView.vue'
-import TaskModal from '@/components/tasks/TaskModal.vue'
 import TaskView from '@/components/tasks/TaskView.vue'
 import { useTasksStore } from '@/stores/tasks'
 import { useDashboardStore } from '@/stores/dashboard'
 
 const props = defineProps({
-  workspaceId: { type: Number, required: true },
+  workspaceId: { type: Number, default: null },
   period: { type: String, required: true },
   data: { type: Object, default: null },
 })
@@ -283,8 +275,11 @@ const activeTab = ref('spheres')
 const viewMode = ref('chart')
 const windowWidth = ref(window.innerWidth)
 
-// TaskModal state
-const showTaskModal = ref(false)
+// Draft task creation
+const { draftTask, showDraft, startDraft, closeDraft } = useTaskDraft(() => {
+  tasksStore.fetchTasks?.()
+  dashboardStore.fetchAll?.(true)
+})
 const showTaskView = ref(false)
 const editingTask = ref(null)
 const selectedTask = ref(null)
@@ -334,22 +329,12 @@ const handleSphereClick = (sphereIndex) => {
     return
   }
 
-  // Открываем форму создания задачи с предустановленными полями
   const today = new Date().toISOString().split('T')[0]
-  editingTask.value = {
-    workspace_id: props.workspaceId,
+  startDraft({
     life_sphere_id: sphere.id,
     due_date: props.period === 'day' ? today : null,
-    status: props.period === 'day' ? 'today' : 'new',
-  }
-  showTaskModal.value = true
-}
-
-const closeTaskModal = () => {
-  showTaskModal.value = false
-  editingTask.value = null
-  selectedTask.value = null
-  taskError.value = ''
+    status: props.period === 'day' ? 'today' : 'inbox',
+  })
 }
 
 const handleTaskClick = (task) => {
@@ -359,17 +344,14 @@ const handleTaskClick = (task) => {
 }
 
 const handleEnterEdit = () => {
-  // Make sure to copy all task data including id
-  editingTask.value = { ...selectedTask.value }
-  showTaskView.value = false
-  showTaskModal.value = true
+  // В новом UI редактирование идёт прямо в TaskView (автосохранение)
 }
 
 const handleCompleteTask = async (task) => {
   try {
     await tasksStore.completeTask(task.id)
     // Refresh dashboard data
-    await dashboardStore.fetchForWorkspace(props.workspaceId, true)
+    await dashboardStore.fetchAll(true)
   } catch (error) {
     console.error('Error completing task:', error)
   }
@@ -379,7 +361,7 @@ const handleUncompleteTask = async (task) => {
   try {
     await tasksStore.uncompleteTask(task.id)
     // Refresh dashboard data
-    await dashboardStore.fetchForWorkspace(props.workspaceId, true)
+    await dashboardStore.fetchAll(true)
   } catch (error) {
     console.error('Error uncompleting task:', error)
   }
@@ -387,7 +369,7 @@ const handleUncompleteTask = async (task) => {
 
 const handleTimelineChangesSaved = async (callback) => {
   // Refresh dashboard data after timeline changes
-  await dashboardStore.fetchForWorkspace(props.workspaceId, true)
+  await dashboardStore.fetchAll(true)
   // Call the callback after refresh is complete
   if (callback) callback()
 }
@@ -402,9 +384,9 @@ const handleSaveTask = async (taskData) => {
       // Create new task
       await tasksStore.createTask(taskData)
     }
-    closeTaskModal()
+    
     // Refresh dashboard data
-    await dashboardStore.fetchForWorkspace(props.workspaceId, true)
+    await dashboardStore.fetchAll(true)
   } catch (error) {
     console.error('Error saving task:', error)
     taskError.value = error.response?.data?.message || error.message || 'Ошибка при сохранении задачи'

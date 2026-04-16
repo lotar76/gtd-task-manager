@@ -123,7 +123,7 @@ class TelegramWebhookController extends Controller
     private function handleToday(TelegramSubscription $subscription, string $chatId): JsonResponse
     {
         $user = $subscription->user;
-        $workspaceIds = $user->allWorkspaces()->pluck('id');
+        $workspaceIds = $user->defaultWorkspace()->id;
 
         $allTasks = Task::whereIn('workspace_id', $workspaceIds)
             ->with(['project', 'context'])

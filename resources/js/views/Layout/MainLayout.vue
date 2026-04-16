@@ -51,6 +51,14 @@
 
           <!-- Navigation -->
           <nav class="flex-1 overflow-y-auto px-4 py-3">
+            <div class="flex items-center justify-between px-3 mb-2 select-none -mx-1 px-4 py-1">
+              <h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                </svg>
+                Фокус
+              </h3>
+            </div>
             <div class="space-y-1">
               <!-- Сегодня -->
               <DroppableNavLink
@@ -307,7 +315,7 @@
       <div v-if="!sidebarOpen" class="fixed bottom-5 right-5 z-30 lg:hidden flex flex-col gap-3 items-center">
         <!-- Add task -->
         <button
-          @click="showTaskModal = true"
+          @click="handleQuickAddTask"
           class="w-10 h-10 bg-green-500 hover:bg-green-600 text-white rounded-full shadow-lg inline-flex items-center justify-center active:scale-95 transition-transform"
         >
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
@@ -390,12 +398,12 @@
       </main>
     </div>
 
-    <!-- Task Modal -->
-    <TaskModal
-      :show="showTaskModal"
-      :server-error="taskError"
-      @close="handleCloseTaskModal"
-      @submit="handleCreateTask"
+    <!-- Черновик задачи → открывается в полноценном представлении -->
+    <TaskView
+      :show="showDraftTask"
+      :task="draftTask"
+      @close="handleCloseDraft"
+      @saved="onDraftSaved"
     />
 
     <!-- Project Modal -->
@@ -416,6 +424,7 @@
       @submit="handleSaveGoal"
     />
 
+    <GlobalConfirm />
   </div>
 </template>
 
@@ -426,6 +435,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useTasksStore } from '@/stores/tasks'
 import { useProjectsStore } from '@/stores/projects'
 import { useThemeStore } from '@/stores/theme'
+import GlobalConfirm from '@/components/common/GlobalConfirm.vue'
 import NavLink from '@/components/common/NavLink.vue'
 import DroppableNavLink from '@/components/common/DroppableNavLink.vue'
 import Toolbar from '@/components/common/Toolbar.vue'
@@ -436,7 +446,8 @@ import loadingLogoDark from '@/assets/images/logo-bg.png'
 import sidebarLogoLight from '@/assets/images/logo.svg'
 import sidebarLogoDark from '@/assets/images/logo-dark.svg'
 import ProjectModal from '@/components/projects/ProjectModal.vue'
-import TaskModal from '@/components/tasks/TaskModal.vue'
+import TaskView from '@/components/tasks/TaskView.vue'
+import api from '@/services/api'
 import GoalModal from '@/components/goals/GoalModal.vue'
 import { useGoalsStore } from '@/stores/goals'
 import { useLifeSpheresStore } from '@/stores/lifeSpheres'
@@ -457,8 +468,6 @@ const appLoading = ref(true)
 const loadingText = ref('Загрузка...'.split(''))
 const sidebarOpen = ref(false)
 const showUserMenu = ref(false)
-const showTaskModal = ref(false)
-const taskError = ref('')
 const showProjectModal = ref(false)
 const selectedProject = ref(null)
 const projectError = ref('')
@@ -573,8 +582,43 @@ const handleLogout = async () => {
   router.push('/login')
 }
 
-const handleQuickAddTask = () => {
-  showTaskModal.value = true
+const showDraftTask = ref(false)
+const draftTask = ref(null)
+
+const handleQuickAddTask = async () => {
+  try {
+    const res = await api.post('/v1/tasks', { title: 'Без названия', status: 'inbox' })
+    draftTask.value = res.data
+    showDraftTask.value = true
+  } catch (e) {
+    console.error('Не удалось создать черновик задачи', e)
+  }
+}
+
+const onDraftSaved = (task) => {
+  // После первого сохранения считаем задачу «настоящей», синхронизируем стор
+  if (task) draftTask.value = { ...draftTask.value, ...task }
+}
+
+const handleCloseDraft = async () => {
+  const id = draftTask.value?.id
+  showDraftTask.value = false
+  if (!id) { draftTask.value = null; return }
+  try {
+    const fresh = (await api.get(`/v1/tasks/${id}`)).data
+    const isEmpty = (!fresh.title || !fresh.title.trim() || fresh.title.trim() === 'Без названия')
+      && !fresh.description?.trim()
+      && !(fresh.checklist_items?.length)
+      && !(fresh.attachments?.length)
+      && !(fresh.assignees?.length)
+      && !(fresh.watchers?.length)
+    if (isEmpty) {
+      await api.delete(`/v1/tasks/${id}`)
+    } else {
+      tasksStore.fetchTasks?.()
+    }
+  } catch (e) { console.error(e) }
+  draftTask.value = null
 }
 
 const handleQuickAddProject = () => {
@@ -647,22 +691,6 @@ const handleCloseGoalModal = () => {
   goalError.value = ''
 }
 
-const handleCreateTask = async (taskData) => {
-  taskError.value = ''
-  try {
-    await tasksStore.createTask(taskData)
-    showTaskModal.value = false
-  } catch (error) {
-    console.error('Error creating task:', error)
-    taskError.value = error.response?.data?.message || error.message || 'Ошибка при создании задачи'
-  }
-}
-
-const handleCloseTaskModal = () => {
-  showTaskModal.value = false
-  taskError.value = ''
-}
-
 const handleTaskDropped = async ({ taskId, newStatus }) => {
   try {
     const updateData = { status: newStatus }
@@ -707,6 +735,9 @@ const handleLogoError = (event) => {
 
 onMounted(async () => {
   try {
+    // Чистим брошенные пустые черновики (например после refresh без close)
+    api.post('/v1/tasks/cleanup-empty').catch(() => {})
+
     await Promise.all([
       tasksStore.fetchAllTasks(),
       projectsStore.fetchAllProjects(),
@@ -718,7 +749,6 @@ onMounted(async () => {
   }
   tasksStore.startSync()
   projectsStore.startSync()
-
 })
 
 onUnmounted(() => {

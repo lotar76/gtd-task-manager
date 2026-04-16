@@ -15,23 +15,35 @@ use Illuminate\Support\Facades\Auth;
 class TaskController extends Controller
 {
     public function __construct(
-        private readonly TaskService $taskService
+        private readonly TaskService $taskService,
+        private readonly \App\Services\TelegramService $telegram,
     ) {
     }
 
     // Все задачи пользователя (включая завершённые)
     public function all(Request $request): JsonResponse
     {
-        $workspaceIds = $request->user()
-            ->allWorkspaces()
-            ->pluck('id');
-
-        $tasks = Task::whereIn('workspace_id', $workspaceIds)
-            ->with(['project:id,name', 'context:id,name', 'assignee:id,name', 'tags:id,name', 'lifeSphere:id,name,color', 'contacts'])
+        $tasks = Task::query()
+            ->where(fn ($q) => $this->scopeVisibleToUser($q, $request->user()))
+            ->with(['project:id,name', 'context:id,name', 'assignee:id,name', 'creator:id,name', 'tags:id,name', 'lifeSphere:id,name,color', 'contacts'])
             ->orderBy('created_at', 'desc')
             ->get();
 
         return ApiResponse::success(['tasks' => $tasks]);
+    }
+
+    /**
+     * Scope: задачи видны пользователю если они в его дефолтном пространстве
+     * ИЛИ он указан через task_contact (contact.contact_user_id = user.id).
+     */
+    private function scopeVisibleToUser($query, \App\Models\User $user): void
+    {
+        $workspaceId = $user->defaultWorkspace()->id;
+        $userId = $user->id;
+        $query->where(function ($q) use ($workspaceId, $userId) {
+            $q->where('workspace_id', $workspaceId)
+              ->orWhereHas('contacts', fn ($c) => $c->where('contacts.contact_user_id', $userId));
+        });
     }
 
     // GTD: Inbox
@@ -85,9 +97,8 @@ class TaskController extends Controller
     // Мои задачи
     public function myTasks(Request $request): JsonResponse
     {
-        $workspaceIds = $request->user()->allWorkspaces()->pluck('id');
-
-        $tasks = Task::whereIn('workspace_id', $workspaceIds)
+        $tasks = Task::query()
+            ->where(fn ($q) => $this->scopeVisibleToUser($q, $request->user()))
             ->where('assigned_to', Auth::id())
             ->whereNull('completed_at')
             ->with(['project', 'context', 'assignee', 'tags', 'contacts'])
@@ -129,7 +140,7 @@ class TaskController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'title' => 'required|string|max:255',
+            'title' => 'nullable|string|max:255',
             'description' => 'nullable|string',
             'status' => 'nullable|in:inbox,next_action,today,tomorrow,waiting,someday,scheduled,completed',
             'priority' => 'nullable|in:low,medium,high,urgent',
@@ -139,8 +150,8 @@ class TaskController extends Controller
             'context_id' => 'nullable|exists:contexts,id',
             'assigned_to' => 'nullable|exists:users,id',
             'due_date' => 'nullable|date',
-            'estimated_time' => 'nullable|date_format:H:i',
-            'end_time' => 'nullable|date_format:H:i',
+            'estimated_time' => 'nullable|date_format:H:i,H:i:s',
+            'end_time' => 'nullable|date_format:H:i,H:i:s',
             'tags' => 'nullable|array',
             'tags.*' => 'exists:tags,id',
             'contact_ids' => 'nullable|array',
@@ -156,7 +167,12 @@ class TaskController extends Controller
     public function show(Task $task): JsonResponse
     {
         $this->authorize('view', $task);
-        $task->load(['project', 'context', 'assignee', 'tags', 'comments.user', 'attachments', 'subtasks', 'contacts', 'lifeSphere']);
+        $task->load([
+            'project', 'context', 'assignee', 'tags', 'comments.user',
+            'attachments', 'subtasks', 'contacts', 'lifeSphere',
+            'assignees', 'watchers', 'checklistItems',
+            'creator:id,name',
+        ]);
         return ApiResponse::success($task, 'Задача получена');
     }
 
@@ -176,16 +192,72 @@ class TaskController extends Controller
             'context_id' => 'nullable|exists:contexts,id',
             'assigned_to' => 'nullable|exists:users,id',
             'due_date' => 'nullable|date',
-            'estimated_time' => 'nullable|date_format:H:i',
-            'end_time' => 'nullable|date_format:H:i',
+            'estimated_time' => 'nullable|date_format:H:i,H:i:s',
+            'end_time' => 'nullable|date_format:H:i,H:i:s',
             'tags' => 'nullable|array',
             'tags.*' => 'exists:tags,id',
             'contact_ids' => 'nullable|array',
             'contact_ids.*' => 'exists:contacts,id',
+            'assignee_ids' => 'nullable|array',
+            'assignee_ids.*' => 'exists:contacts,id',
+            'watcher_ids' => 'nullable|array',
+            'watcher_ids.*' => 'exists:contacts,id',
+            'checklist' => 'nullable|array',
+            'checklist.*.id' => 'nullable|integer',
+            'checklist.*.text' => 'required|string|max:500',
+            'checklist.*.is_done' => 'sometimes|boolean',
+            'checklist.*.position' => 'sometimes|integer',
         ]);
+
+        $assigneeIds = $validated['assignee_ids'] ?? null;
+        $watcherIds = $validated['watcher_ids'] ?? null;
+        $checklist = $validated['checklist'] ?? null;
+        unset($validated['assignee_ids'], $validated['watcher_ids'], $validated['checklist']);
 
         try {
             $task = $this->taskService->updateTask($task, $validated);
+
+            if ($assigneeIds !== null || $watcherIds !== null) {
+                $sync = [];
+                foreach ($assigneeIds ?? [] as $id) {
+                    $sync[$id] = ['role' => 'assignee'];
+                }
+                foreach ($watcherIds ?? [] as $id) {
+                    if (!isset($sync[$id])) {
+                        $sync[$id] = ['role' => 'watcher'];
+                    }
+                }
+                $task->contacts()->sync($sync);
+            }
+
+            if ($checklist !== null) {
+                $existingIds = $task->checklistItems()->pluck('id')->all();
+                $keepIds = [];
+                foreach (array_values($checklist) as $index => $item) {
+                    $id = $item['id'] ?? null;
+                    $payload = [
+                        'text' => $item['text'],
+                        'is_done' => (bool) ($item['is_done'] ?? false),
+                        'position' => $item['position'] ?? $index,
+                    ];
+                    if ($id && in_array($id, $existingIds)) {
+                        $task->checklistItems()->where('id', $id)->update($payload);
+                        $keepIds[] = $id;
+                    } else {
+                        $new = $task->checklistItems()->create($payload);
+                        $keepIds[] = $new->id;
+                    }
+                }
+                $task->checklistItems()->whereNotIn('id', $keepIds)->delete();
+            }
+
+            $task->load([
+                'assignees', 'watchers', 'checklistItems', 'attachments', 'contacts',
+                'creator:id,name', 'project:id,name', 'lifeSphere:id,name,color',
+            ]);
+
+            $this->telegram->notifyTaskParticipants($task, auth()->user(), 'updated');
+
             return ApiResponse::success($task, 'Задача обновлена');
         } catch (\Exception $e) {
             \Log::error('Error updating task: ' . $e->getMessage(), [
@@ -198,6 +270,32 @@ class TaskController extends Controller
     }
 
     // Удаление задачи
+    // Очистка пустых черновиков задач текущего пользователя
+    public function cleanupEmpty(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $workspaceId = $user->defaultWorkspace()->id;
+
+        $query = Task::where('workspace_id', $workspaceId)
+            ->whereNull('completed_at')
+            ->where('created_by', $user->id)
+            ->where(function ($q) {
+                $q->whereNull('title')->orWhere('title', '')->orWhere('title', 'Без названия');
+            })
+            ->where(function ($q) {
+                $q->whereNull('description')->orWhere('description', '');
+            })
+            ->whereDoesntHave('checklistItems')
+            ->whereDoesntHave('attachments')
+            ->whereDoesntHave('contacts')
+            ->whereDoesntHave('comments');
+
+        $deleted = $query->count();
+        $query->delete();
+
+        return ApiResponse::success(['deleted' => $deleted], 'Очищено');
+    }
+
     public function destroy(Task $task): JsonResponse
     {
         $this->authorize('delete', $task);
@@ -210,6 +308,7 @@ class TaskController extends Controller
     {
         $this->authorize('update', $task);
         $task = $this->taskService->completeTask($task, auth()->id());
+        $this->telegram->notifyTaskParticipants($task, auth()->user(), 'completed');
         return ApiResponse::success($task, 'Задача завершена');
     }
 

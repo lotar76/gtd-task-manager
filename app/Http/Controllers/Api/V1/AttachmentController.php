@@ -22,26 +22,24 @@ class AttachmentController extends Controller
     }
 
     // Загрузка файла к задаче
-    public function upload(Request $request, Workspace $workspace, Task $task): JsonResponse
+    public function upload(Request $request, Task $task): JsonResponse
     {
         $this->authorize('view', $task);
 
-        $validated = $request->validate([
+        $request->validate([
             'file' => 'required|file|max:10240', // 10MB max
         ]);
 
         $file = $request->file('file');
-        
-        // Загрузка в S3
-        $path = $this->fileStorageService->upload(
+
+        $result = $this->fileStorageService->upload(
             $file,
-            "workspaces/{$workspace->id}/tasks/{$task->id}"
+            "tasks/{$task->id}"
         );
 
-        // Создание записи в БД
         $attachment = $task->attachments()->create([
             'file_name' => $file->getClientOriginalName(),
-            'file_path' => $path,
+            'file_path' => $result['path'],
             'file_size' => $file->getSize(),
             'mime_type' => $file->getMimeType(),
             'uploaded_by' => Auth::id(),
@@ -53,7 +51,7 @@ class AttachmentController extends Controller
     }
 
     // Получение информации о файле
-    public function show(Workspace $workspace, Attachment $attachment): JsonResponse
+    public function show(Attachment $attachment): JsonResponse
     {
         $this->authorize('view', $attachment->task);
 
@@ -66,7 +64,7 @@ class AttachmentController extends Controller
     }
 
     // Скачивание файла
-    public function download(Workspace $workspace, Attachment $attachment)
+    public function download(Attachment $attachment)
     {
         $this->authorize('view', $attachment->task);
 
@@ -74,7 +72,7 @@ class AttachmentController extends Controller
     }
 
     // Удаление файла
-    public function destroy(Workspace $workspace, Attachment $attachment): JsonResponse
+    public function destroy(Attachment $attachment): JsonResponse
     {
         $this->authorize('update', $attachment->task);
 

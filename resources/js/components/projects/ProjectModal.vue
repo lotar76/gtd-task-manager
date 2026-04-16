@@ -1,91 +1,51 @@
 <template>
   <Teleport to="body">
-    <Transition name="modal">
-      <div v-if="show" class="fixed inset-0 z-50 overflow-y-auto" @click.self="$emit('close')">
-        <div class="fixed inset-0 bg-black bg-opacity-50 transition-opacity"></div>
-        
-        <div class="flex min-h-screen items-center justify-center p-4">
-          <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full mx-auto" @click.stop>
-            <div class="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-              <h3 class="text-xl font-semibold text-gray-900 dark:text-white">
-                {{ project ? 'Редактировать поток' : 'Новый поток' }}
-              </h3>
-              <button @click="$emit('close')" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
+    <Transition name="fade">
+      <div v-if="show" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" @click.self="$emit('close')">
+        <div class="bg-white dark:bg-gray-900 rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
+          <!-- Header -->
+          <div class="flex items-center justify-between px-5 py-2.5 border-b border-gray-100 dark:border-gray-800">
+            <span class="text-xs text-gray-400">{{ project ? 'Редактирование потока' : 'Новый поток' }}</span>
+            <button @click="$emit('close')" class="p-1.5 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+          </div>
+
+          <form @submit.prevent="handleSubmit" class="px-5 py-4 space-y-4">
+            <!-- Название -->
+            <input
+              v-model="form.name"
+              type="text"
+              required
+              placeholder="Название потока"
+              class="w-full bg-transparent border-0 outline-none text-xl font-semibold placeholder-gray-300 dark:placeholder-gray-600 text-gray-900 dark:text-white px-0"
+            />
+
+            <!-- Описание -->
+            <textarea
+              v-model="form.description"
+              rows="2"
+              placeholder="Описание"
+              class="w-full bg-transparent border-0 outline-none text-sm text-gray-700 dark:text-gray-300 placeholder-gray-300 dark:placeholder-gray-600 leading-relaxed resize-none"
+            ></textarea>
+
+            <InlineSelect
+              v-model="form.goal_id"
+              icon="target"
+              label="Цель"
+              placeholder="Без цели"
+              :items="availableGoals"
+            />
+
+            <div v-if="error" class="text-red-500 text-xs">{{ error }}</div>
+
+            <div class="flex justify-end gap-2 pt-2 border-t border-gray-100 dark:border-gray-800">
+              <button type="button" @click="$emit('close')" class="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md">Отмена</button>
+              <button type="submit" :disabled="loading" class="px-3 py-1.5 text-sm bg-gray-900 text-white dark:bg-white dark:text-gray-900 rounded-md disabled:opacity-50 hover:opacity-90">
+                {{ loading ? 'Сохранение…' : 'Сохранить' }}
               </button>
             </div>
-
-            <form @submit.prevent="handleSubmit" class="p-6 space-y-4">
-              <!-- Name -->
-              <div>
-                <label for="name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Название потока *
-                </label>
-                <input
-                  id="name"
-                  v-model="form.name"
-                  type="text"
-                  required
-                  class="input"
-                  placeholder="Введите название потока"
-                />
-              </div>
-
-              <!-- Goal -->
-              <div>
-                <label for="goal_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Цель
-                </label>
-                <select
-                  id="goal_id"
-                  v-model="form.goal_id"
-                  class="input"
-                >
-                  <option :value="null">Без цели</option>
-                  <option v-for="goal in availableGoals" :key="goal.id" :value="goal.id">
-                    {{ goal.name }}
-                  </option>
-                </select>
-              </div>
-
-              <!-- Description -->
-              <div>
-                <label for="description" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Описание
-                </label>
-                <textarea
-                  id="description"
-                  v-model="form.description"
-                  rows="3"
-                  class="input"
-                  placeholder="Добавьте описание потока"
-                ></textarea>
-              </div>
-
-              <div v-if="error" class="text-red-600 dark:text-red-400 text-sm bg-red-50 dark:bg-red-900/20 p-3 rounded-lg">
-                {{ error }}
-              </div>
-
-              <div class="flex justify-end space-x-3 pt-4">
-                <button
-                  type="button"
-                  @click="$emit('close')"
-                  class="btn btn-secondary"
-                >
-                  Отмена
-                </button>
-                <button
-                  type="submit"
-                  :disabled="loading"
-                  class="btn btn-primary"
-                >
-                  {{ loading ? 'Сохранение...' : 'Сохранить' }}
-                </button>
-              </div>
-            </form>
-          </div>
+          </form>
         </div>
       </div>
     </Transition>
@@ -95,73 +55,37 @@
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useGoalsStore } from '@/stores/goals'
+import InlineSelect from '@/components/common/InlineSelect.vue'
 
 const props = defineProps({
-  show: {
-    type: Boolean,
-    default: false,
-  },
-  project: {
-    type: Object,
-    default: null,
-  },
-  serverError: {
-    type: String,
-    default: '',
-  },
+  show: { type: Boolean, default: false },
+  project: { type: Object, default: null },
+  serverError: { type: String, default: '' },
 })
-
 const emit = defineEmits(['close', 'submit'])
 
 const goalsStore = useGoalsStore()
-
 const availableGoals = computed(() => goalsStore.activeGoals)
 
-const handleKeydown = (e) => {
-  if (e.key === 'Escape' && props.show) emit('close')
-}
+const handleKeydown = (e) => { if (e.key === 'Escape' && props.show) emit('close') }
 onMounted(() => document.addEventListener('keydown', handleKeydown))
 onUnmounted(() => document.removeEventListener('keydown', handleKeydown))
 
-const form = ref({
-  goal_id: null,
-  name: '',
-  description: '',
-})
-
+const form = ref({ goal_id: null, name: '', description: '' })
 const loading = ref(false)
 const error = ref('')
 
-watch(() => props.project, (newProject) => {
-  if (newProject) {
-    form.value = {
-      goal_id: newProject.goal_id || null,
-      name: newProject.name || '',
-      description: newProject.description || '',
-    }
-  } else {
-    form.value = {
-      goal_id: null,
-      name: '',
-      description: '',
-    }
+watch(() => props.project, (p) => {
+  form.value = {
+    goal_id: p?.goal_id || null,
+    name: p?.name || '',
+    description: p?.description || '',
   }
   error.value = ''
 }, { immediate: true })
 
-watch(() => props.show, (newShow) => {
-  if (!newShow) {
-    loading.value = false
-    error.value = ''
-  }
-})
-
-watch(() => props.serverError, (newError) => {
-  error.value = newError
-  if (newError) {
-    loading.value = false
-  }
-})
+watch(() => props.show, (s) => { if (!s) { loading.value = false; error.value = '' } })
+watch(() => props.serverError, (e) => { error.value = e; if (e) loading.value = false })
 
 const handleSubmit = () => {
   error.value = ''
@@ -171,15 +95,6 @@ const handleSubmit = () => {
 </script>
 
 <style scoped>
-.modal-enter-active,
-.modal-leave-active {
-  transition: opacity 0.3s ease;
-}
-
-.modal-enter-from,
-.modal-leave-to {
-  opacity: 0;
-}
+.fade-enter-active, .fade-leave-active { transition: opacity 0.15s ease; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
 </style>
-
-

@@ -1,7 +1,7 @@
 <template>
   <Teleport to="body">
     <Transition name="modal">
-      <div v-if="show" class="fixed inset-0 z-50 overflow-y-auto" @click.self="$emit('cancel')">
+      <div v-if="show" class="fixed inset-0 z-[100] overflow-y-auto" @click.self="$emit('cancel')">
         <!-- Overlay -->
         <div class="fixed inset-0 bg-black bg-opacity-50 transition-opacity"></div>
 

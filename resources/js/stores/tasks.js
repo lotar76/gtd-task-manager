@@ -1,8 +1,11 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import api from '@/services/api'
+import { useAuthStore } from '@/stores/auth'
 
 export const useTasksStore = defineStore('tasks', () => {
+  const authStore = useAuthStore()
+
   const allTasks = ref([])
   const loading = ref(false)
   const loaded = ref(false)
@@ -13,14 +16,34 @@ export const useTasksStore = defineStore('tasks', () => {
     return allTasks.value.filter(t => !t.completed_at)
   })
 
-  // Computed-фильтры по секциям GTD
-  const inboxTasks = computed(() => filteredTasks.value.filter(t => t.status === 'inbox'))
-  const nextActionTasks = computed(() => filteredTasks.value.filter(t => t.status === 'next_action'))
-  const todayTasks = computed(() => filteredTasks.value.filter(t => t.status === 'today'))
-  const tomorrowTasks = computed(() => filteredTasks.value.filter(t => t.status === 'tomorrow'))
-  const waitingTasks = computed(() => filteredTasks.value.filter(t => t.status === 'waiting'))
-  const somedayTasks = computed(() => filteredTasks.value.filter(t => t.status === 'someday'))
-  const scheduledTasks = computed(() => filteredTasks.value.filter(t => t.status === 'scheduled'))
+  // Делегирована: есть исполнитель-контакт с contact_user_id != я
+  const isDelegated = (t) => {
+    const uid = authStore.user?.id
+    if (!uid) return false
+    return (t.contacts || []).some(c => c.pivot?.role === 'assignee' && c.contact_user_id !== uid)
+  }
+
+  // Обычные списки GTD: делегированные (ждут другого человека) не показываем
+  const active = (predicate) => computed(() =>
+    filteredTasks.value.filter(t => predicate(t) && !isDelegated(t))
+  )
+
+  const inboxTasks = active(t => t.status === 'inbox')
+  // Next Actions: разобрана (не inbox/someday), без дедлайна, делаю я
+  const nextActionTasks = computed(() => filteredTasks.value.filter(t => {
+    if (isDelegated(t)) return false
+    if (t.status === 'inbox' || t.status === 'someday') return false
+    if (t.due_date) return false
+    return true
+  }))
+  const todayTasks = active(t => t.status === 'today')
+  const tomorrowTasks = active(t => t.status === 'tomorrow')
+  // Ожидание: статус waiting ИЛИ задачи с исполнителем не-я (делегированные)
+  const waitingTasks = computed(() => {
+    return filteredTasks.value.filter(t => t.status === 'waiting' || isDelegated(t))
+  })
+  const somedayTasks = active(t => t.status === 'someday')
+  const scheduledTasks = active(t => t.status === 'scheduled')
 
   // Архивные задачи (завершённые) - последние 20
   const archivedTasks = computed(() => {
@@ -45,6 +68,7 @@ export const useTasksStore = defineStore('tasks', () => {
   const calendarTasks = (startDate, endDate) => {
     return filteredTasks.value.filter(t => {
       if (!t.due_date) return false
+      if (isDelegated(t)) return false
       const d = t.due_date.substring(0, 10)
       return d >= startDate && d <= endDate
     })
@@ -94,6 +118,17 @@ export const useTasksStore = defineStore('tasks', () => {
       allTasks.value[index] = updated
     }
     return updated
+  }
+
+  // Синхронизация локального стора без API-запроса (для автосохранения извне)
+  const upsertTask = (task) => {
+    if (!task?.id) return
+    const index = allTasks.value.findIndex(t => t.id === task.id)
+    if (index !== -1) {
+      allTasks.value[index] = { ...allTasks.value[index], ...task }
+    } else {
+      allTasks.value.unshift(task)
+    }
   }
 
   const completeTask = async (taskId) => {
@@ -170,6 +205,7 @@ export const useTasksStore = defineStore('tasks', () => {
     fetchAllTasks,
     createTask,
     updateTask,
+    upsertTask,
     completeTask,
     uncompleteTask,
     deleteTask,

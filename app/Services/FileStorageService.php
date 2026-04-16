@@ -18,15 +18,20 @@ class FileStorageService
         $filename = $this->generateUniqueFilename($file);
         $path = $directory . '/' . $filename;
 
-        $uploaded = Storage::disk('s3')->put($path, file_get_contents($file->getRealPath()));
+        try {
+            $uploaded = Storage::disk(config('filesystems.default'))->put($path, file_get_contents($file->getRealPath()));
+        } catch (\Throwable $e) {
+            \Log::error('S3 upload threw', ['path' => $path, 'error' => $e->getMessage()]);
+            throw new \Exception('Failed to upload file to S3: ' . $e->getMessage(), 0, $e);
+        }
 
         if (!$uploaded) {
-            throw new \Exception('Failed to upload file to S3');
+            throw new \Exception('Failed to upload file to S3 (put returned false)');
         }
 
         return [
             'path' => $path,
-            'url' => Storage::disk('s3')->url($path),
+            'url' => Storage::disk(config('filesystems.default'))->url($path),
             'filename' => $filename,
             'original_name' => $file->getClientOriginalName(),
             'mime_type' => $file->getMimeType(),
@@ -39,7 +44,7 @@ class FileStorageService
      */
     public function getUrl(string $path): string
     {
-        return Storage::disk('s3')->url($path);
+        return Storage::disk(config('filesystems.default'))->url($path);
     }
 
     /**
@@ -47,7 +52,7 @@ class FileStorageService
      */
     public function getTemporaryUrl(string $path, int $minutes = 60): string
     {
-        return Storage::disk('s3')->temporaryUrl($path, now()->addMinutes($minutes));
+        return Storage::disk(config('filesystems.default'))->temporaryUrl($path, now()->addMinutes($minutes));
     }
 
     /**
@@ -55,11 +60,11 @@ class FileStorageService
      */
     public function download(string $path): string
     {
-        if (!Storage::disk('s3')->exists($path)) {
+        if (!Storage::disk(config('filesystems.default'))->exists($path)) {
             throw new \Exception('File not found in S3');
         }
 
-        return Storage::disk('s3')->get($path);
+        return Storage::disk(config('filesystems.default'))->get($path);
     }
 
     /**
@@ -67,11 +72,11 @@ class FileStorageService
      */
     public function delete(string $path): bool
     {
-        if (!Storage::disk('s3')->exists($path)) {
+        if (!Storage::disk(config('filesystems.default'))->exists($path)) {
             throw new \Exception('File not found in S3');
         }
 
-        return Storage::disk('s3')->delete($path);
+        return Storage::disk(config('filesystems.default'))->delete($path);
     }
 
     /**
@@ -79,7 +84,7 @@ class FileStorageService
      */
     public function exists(string $path): bool
     {
-        return Storage::disk('s3')->exists($path);
+        return Storage::disk(config('filesystems.default'))->exists($path);
     }
 
     /**
@@ -87,14 +92,14 @@ class FileStorageService
      */
     public function getMetadata(string $path): array
     {
-        if (!Storage::disk('s3')->exists($path)) {
+        if (!Storage::disk(config('filesystems.default'))->exists($path)) {
             throw new \Exception('File not found in S3');
         }
 
         return [
-            'size' => Storage::disk('s3')->size($path),
-            'last_modified' => Storage::disk('s3')->lastModified($path),
-            'mime_type' => Storage::disk('s3')->mimeType($path),
+            'size' => Storage::disk(config('filesystems.default'))->size($path),
+            'last_modified' => Storage::disk(config('filesystems.default'))->lastModified($path),
+            'mime_type' => Storage::disk(config('filesystems.default'))->mimeType($path),
         ];
     }
 

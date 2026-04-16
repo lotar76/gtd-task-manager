@@ -21,7 +21,26 @@ class Contact extends Model
         'phone',
         'avatar',
         'notes',
+        'is_favorite',
+        'contact_type',
+        'specialization',
+        'personal_phone',
+        'personal_email',
+        'messengers',
+        'address',
     ];
+
+    protected $casts = [
+        'is_favorite' => 'boolean',
+        'messengers' => 'array',
+    ];
+
+    public const TYPES = ['regular', 'connector', 'condenser', 'bridge'];
+
+    public function isLinkedUser(): bool
+    {
+        return $this->contact_user_id !== null;
+    }
 
     public function owner(): BelongsTo
     {
