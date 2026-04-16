@@ -448,6 +448,7 @@ import sidebarLogoDark from '@/assets/images/logo-dark.svg'
 import ProjectModal from '@/components/projects/ProjectModal.vue'
 import TaskView from '@/components/tasks/TaskView.vue'
 import api from '@/services/api'
+import { useTaskDraft } from '@/composables/useTaskDraft'
 import GoalModal from '@/components/goals/GoalModal.vue'
 import { useGoalsStore } from '@/stores/goals'
 import { useLifeSpheresStore } from '@/stores/lifeSpheres'
@@ -582,44 +583,11 @@ const handleLogout = async () => {
   router.push('/login')
 }
 
-const showDraftTask = ref(false)
-const draftTask = ref(null)
+const { draftTask, showDraft: showDraftTask, startDraft, closeDraft } = useTaskDraft(() => tasksStore.fetchAllTasks?.({ force: true }))
 
-const handleQuickAddTask = async () => {
-  try {
-    const res = await api.post('/v1/tasks', { title: 'Без названия', status: 'inbox' })
-    draftTask.value = res.data
-    showDraftTask.value = true
-  } catch (e) {
-    console.error('Не удалось создать черновик задачи', e)
-  }
-}
-
-const onDraftSaved = (task) => {
-  // После первого сохранения считаем задачу «настоящей», синхронизируем стор
-  if (task) draftTask.value = { ...draftTask.value, ...task }
-}
-
-const handleCloseDraft = async () => {
-  const id = draftTask.value?.id
-  showDraftTask.value = false
-  if (!id) { draftTask.value = null; return }
-  try {
-    const fresh = (await api.get(`/v1/tasks/${id}`)).data
-    const isEmpty = (!fresh.title || !fresh.title.trim() || fresh.title.trim() === 'Без названия')
-      && !fresh.description?.trim()
-      && !(fresh.checklist_items?.length)
-      && !(fresh.attachments?.length)
-      && !(fresh.assignees?.length)
-      && !(fresh.watchers?.length)
-    if (isEmpty) {
-      await api.delete(`/v1/tasks/${id}`)
-    } else {
-      tasksStore.fetchTasks?.()
-    }
-  } catch (e) { console.error(e) }
-  draftTask.value = null
-}
+const handleQuickAddTask = () => startDraft()
+const onDraftSaved = () => {}
+const handleCloseDraft = () => closeDraft()
 
 const handleQuickAddProject = () => {
   selectedProject.value = null
