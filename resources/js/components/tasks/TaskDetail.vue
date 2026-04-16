@@ -193,15 +193,6 @@
               <div class="px-5 py-5 space-y-1 bg-gray-50/60 dark:bg-gray-800/30 text-[13px]">
                 <template v-if="!isGuest">
                   <SelectRow
-                    icon="folder"
-                    placeholder="Проект"
-                    :items="projects"
-                    :value="localTask.project_id"
-                    :open="picker === 'project'"
-                    @toggle="togglePicker('project')"
-                    @update:value="(v) => { localTask.project_id = v; scheduleSave() }"
-                  />
-                  <SelectRow
                     icon="target"
                     placeholder="Цель"
                     :items="goals"
@@ -209,6 +200,15 @@
                     :open="picker === 'goal'"
                     @toggle="togglePicker('goal')"
                     @update:value="(v) => { localTask.goal_id = v; scheduleSave() }"
+                  />
+                  <SelectRow
+                    icon="folder"
+                    placeholder="Поток"
+                    :items="projects"
+                    :value="localTask.project_id"
+                    :open="picker === 'project'"
+                    @toggle="togglePicker('project')"
+                    @update:value="(v) => { localTask.project_id = v; scheduleSave() }"
                   />
                   <SelectRow
                     icon="sparkles"
