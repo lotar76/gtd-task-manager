@@ -806,7 +806,13 @@ const addChecklistItem = () => {
 const removeChecklistItem = (index) => { localTask.value.checklist_items.splice(index, 1); scheduleSave() }
 
 const save = async () => {
-  if (!localTask.value.id) return
+  if (!localTask.value) return
+  const title = (localTask.value.title || '').trim()
+  // Черновик без id: не создаём, пока пусто — это предотвращает мусорные задачи
+  if (!localTask.value.id && !title) {
+    saveState.value = 'idle'
+    return
+  }
   try {
     const payload = {
       title: localTask.value.title,
@@ -831,13 +837,18 @@ const save = async () => {
           position: idx,
         })),
     }
-    const res = await api.put(`/v1/tasks/${localTask.value.id}`, payload)
+    let res
+    if (!localTask.value.id) {
+      // Первое сохранение — создаём в БД
+      res = await api.post('/v1/tasks', payload)
+      localTask.value.id = res.data.id
+    } else {
+      res = await api.put(`/v1/tasks/${localTask.value.id}`, payload)
+    }
     if (res.data?.checklist_items) {
       localTask.value.checklist_items = res.data.checklist_items.map(i => ({ ...i }))
     }
-    // Синхронизируем глобальный стор, чтобы изменения сразу появились в списках, проектах, целях
     tasksStore.upsertTask?.(res.data)
-    // Обновляем дашборд (тихо — без спиннера)
     dashboardStore.fetchAll?.(true)
     saveState.value = 'saved'
     emit('saved', res.data)

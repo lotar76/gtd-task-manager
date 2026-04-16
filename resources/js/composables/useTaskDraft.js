@@ -2,39 +2,33 @@ import { ref } from 'vue'
 import api from '@/services/api'
 
 /**
- * Универсальный черновик задачи.
- * Используется в любом месте, где нужно «создать задачу» — открывает
- * новое представление TaskDetail и при закрытии удаляет пустую.
- *
- *   const { draftTask, showDraft, startDraft, closeDraft } = useTaskDraft()
+ * Черновик задачи — живёт в памяти до первого POST в TaskDetail.save().
+ * Пока нет title, задача в БД не создаётся.
  */
 export function useTaskDraft(onTaskPersisted) {
   const draftTask = ref(null)
   const showDraft = ref(false)
 
-  const startDraft = async (defaults = {}) => {
-    const payload = {
+  const startDraft = (defaults = {}) => {
+    draftTask.value = {
+      id: null,
       title: '',
       status: 'inbox',
+      priority: 'medium',
       ...defaults,
     }
-    try {
-      const res = await api.post('/v1/tasks', payload)
-      draftTask.value = res.data
-      showDraft.value = true
-    } catch (e) {
-      console.error('Не удалось создать черновик задачи', e)
-    }
+    showDraft.value = true
   }
 
   const closeDraft = async () => {
     const id = draftTask.value?.id
     showDraft.value = false
-    if (!id) { draftTask.value = null; return }
+    draftTask.value = null
+    if (!id) return // задача не была сохранена — чистить нечего
     try {
       const fresh = (await api.get(`/v1/tasks/${id}`)).data
       const title = (fresh.title || '').trim()
-      const isEmpty = (!title || title === 'Без названия')
+      const isEmpty = !title
         && !fresh.description?.trim()
         && !(fresh.checklist_items?.length)
         && !(fresh.attachments?.length)
@@ -46,7 +40,6 @@ export function useTaskDraft(onTaskPersisted) {
         onTaskPersisted(fresh)
       }
     } catch (e) { console.error(e) }
-    draftTask.value = null
   }
 
   return { draftTask, showDraft, startDraft, closeDraft }
