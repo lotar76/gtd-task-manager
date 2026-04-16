@@ -1,8 +1,31 @@
 <template>
   <div class="p-4 lg:p-8">
     <div class="max-w-4xl mx-auto">
-      <div class="mb-6">
+      <div class="mb-4">
         <h1 class="text-xl lg:text-2xl font-semibold text-gray-900 dark:text-white">Следующие действия</h1>
+      </div>
+
+      <!-- Контекст-фильтр -->
+      <div v-if="contextsStore.allContexts.length" class="flex flex-wrap items-center gap-1.5 mb-4">
+        <span class="text-[11px] uppercase tracking-wider text-gray-400 mr-2">Контекст:</span>
+        <button
+          @click="activeContext = null"
+          class="px-2 py-0.5 text-xs rounded-md transition-colors"
+          :class="activeContext === null ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'"
+        >Все</button>
+        <button
+          v-for="c in contextsStore.allContexts"
+          :key="c.id"
+          @click="activeContext = c.id"
+          class="px-2 py-0.5 text-xs rounded-md transition-colors"
+          :class="activeContext === c.id ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900' : 'bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700'"
+          :style="activeContext === c.id ? {} : { color: c.color }"
+        >{{ c.name }}</button>
+        <button
+          @click="activeContext = 'none'"
+          class="px-2 py-0.5 text-xs rounded-md transition-colors"
+          :class="activeContext === 'none' ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900' : 'bg-gray-100 dark:bg-gray-800 text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'"
+        >— без контекста</button>
       </div>
 
       <div v-if="loading" class="text-center py-12">
@@ -28,13 +51,6 @@
               физические действия, которые можно выполнить прямо сейчас, без привязки к дате.
               Спросите себя: «Какой следующий конкретный шаг?» — и запишите его сюда.
             </p>
-            <button
-              @click="handleAddTask"
-              class="inline-flex items-center px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors"
-            >
-              <PlusIcon class="w-5 h-5 mr-1.5" />
-              Добавить действие
-            </button>
           </div>
         </div>
       </template>
@@ -43,53 +59,46 @@
         :show="showTaskView"
         :task="selectedTask"
         @close="showTaskView = false; selectedTask = null"
-        @enter-edit="handleEnterEdit"
         @complete-task="handleCompleteTask"
         @uncomplete-task="handleUncompleteTask"
       />
 
-      <TaskModal
-        :show="showTaskModal"
-        :task="selectedTask"
-        :server-error="taskError"
-        @close="handleCloseModal"
-        @submit="handleSaveTask"
-      />
-    </div>
+      </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useTasksStore } from '@/stores/tasks'
+import { useContextsStore } from '@/stores/contexts'
 import TaskList from '@/components/tasks/TaskList.vue'
-import TaskModal from '@/components/tasks/TaskModal.vue'
 import TaskView from '@/components/tasks/TaskView.vue'
+import { useTaskDraft } from '@/composables/useTaskDraft'
 import { BoltIcon, PlusIcon } from '@heroicons/vue/24/outline'
 
 const tasksStore = useTasksStore()
+const contextsStore = useContextsStore()
+const activeContext = ref(null)
 
-const tasks = computed(() => tasksStore.nextActionTasks)
+onMounted(() => contextsStore.fetchAll())
+
+const tasks = computed(() => {
+  const base = tasksStore.nextActionTasks
+  if (activeContext.value === null) return base
+  if (activeContext.value === 'none') return base.filter(t => !t.context_id)
+  return base.filter(t => t.context_id === activeContext.value)
+})
 const loading = computed(() => tasksStore.loading)
-const showTaskModal = ref(false)
 const showTaskView = ref(false)
 const selectedTask = ref(null)
-const taskError = ref('')
 
 const handleTaskClick = (task) => {
   selectedTask.value = task
   showTaskView.value = true
 }
 
-const handleAddTask = () => {
-  selectedTask.value = null
-  showTaskModal.value = true
-}
-
-const handleEnterEdit = () => {
-  showTaskView.value = false
-  showTaskModal.value = true
-}
+const { draftTask, showDraft, startDraft, closeDraft } = useTaskDraft(() => tasksStore.fetchTasks?.())
+const handleAddTask = () => startDraft({ status: 'next_action' })
 
 const handleCompleteTask = async (task) => {
   try {
@@ -119,32 +128,4 @@ const handleToggleComplete = async (task) => {
   }
 }
 
-const handleSaveTask = async (taskData) => {
-  taskError.value = ''
-  try {
-    if (selectedTask.value) {
-      await tasksStore.updateTask(selectedTask.value.id, taskData)
-    } else {
-      await tasksStore.createTask(taskData)
-    }
-    showTaskModal.value = false
-    selectedTask.value = null
-  } catch (error) {
-    console.error('Error saving task:', error)
-    let errorMessage = 'Ошибка при сохранении задачи'
-    if (error.response?.data?.errors) {
-      const errors = Object.values(error.response.data.errors).flat()
-      errorMessage = errors.join(', ')
-    } else if (error.response?.data?.message) {
-      errorMessage = error.response.data.message
-    }
-    taskError.value = errorMessage
-  }
-}
-
-const handleCloseModal = () => {
-  showTaskModal.value = false
-  selectedTask.value = null
-  taskError.value = ''
-}
 </script>

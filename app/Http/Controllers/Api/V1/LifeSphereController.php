@@ -7,34 +7,18 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Responses\ApiResponse;
 use App\Models\LifeSphere;
-use App\Models\Workspace;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class LifeSphereController extends Controller
 {
-    // Все сферы пользователя (по всем workspace)
+    // Все сферы пользователя
     public function all(Request $request): JsonResponse
     {
-        $workspaceIds = $request->user()
-            ->allWorkspaces()
-            ->pluck('id');
+        $workspaceId = $request->user()->defaultWorkspace()->id;
 
-        $spheres = LifeSphere::whereIn('workspace_id', $workspaceIds)
-            ->withCount('tasks')
-            ->orderBy('position')
-            ->get();
-
-        return ApiResponse::success($spheres, 'Список сфер получен');
-    }
-
-    // Список сфер workspace
-    public function index(Workspace $workspace): JsonResponse
-    {
-        $this->authorize('view', $workspace);
-
-        $spheres = $workspace->lifeSpheres()
+        $spheres = LifeSphere::where('workspace_id', $workspaceId)
             ->withCount('tasks')
             ->orderBy('position')
             ->get();
@@ -43,16 +27,15 @@ class LifeSphereController extends Controller
     }
 
     // Создание сферы
-    public function store(Request $request, Workspace $workspace): JsonResponse
+    public function store(Request $request): JsonResponse
     {
-        $this->authorize('createContent', $workspace);
-
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'color' => 'required|string|size:7',
             'position' => 'nullable|integer|min:0',
         ]);
 
+        $workspace = $request->user()->defaultWorkspace();
         $validated['workspace_id'] = $workspace->id;
         $validated['created_by'] = Auth::id();
 
@@ -61,11 +44,16 @@ class LifeSphereController extends Controller
         return ApiResponse::success($sphere, 'Сфера создана', 201);
     }
 
-    // Обновление сферы
-    public function update(Request $request, Workspace $workspace, LifeSphere $lifeSphere): JsonResponse
+    // Получение сферы
+    public function show(LifeSphere $lifeSphere): JsonResponse
     {
-        $this->authorize('update', $lifeSphere);
+        $lifeSphere->load(['tasks.project', 'tasks.context', 'tasks.assignee', 'tasks.tags']);
+        return ApiResponse::success($lifeSphere, 'Сфера получена');
+    }
 
+    // Обновление сферы
+    public function update(Request $request, LifeSphere $lifeSphere): JsonResponse
+    {
         $validated = $request->validate([
             'name' => 'sometimes|string|max:255',
             'color' => 'sometimes|string|size:7',
@@ -79,10 +67,8 @@ class LifeSphereController extends Controller
     }
 
     // Удаление сферы
-    public function destroy(Workspace $workspace, LifeSphere $lifeSphere): JsonResponse
+    public function destroy(LifeSphere $lifeSphere): JsonResponse
     {
-        $this->authorize('delete', $lifeSphere);
-
         $tasksCount = $lifeSphere->tasks()->count();
         if ($tasksCount > 0) {
             return ApiResponse::error(
@@ -97,9 +83,9 @@ class LifeSphereController extends Controller
     }
 
     // Заполнить дефолтными сферами
-    public function seed(Request $request, Workspace $workspace): JsonResponse
+    public function seed(Request $request): JsonResponse
     {
-        $this->authorize('createContent', $workspace);
+        $workspace = $request->user()->defaultWorkspace();
 
         $defaults = [
             ['name' => 'Духовная', 'color' => '#8B5CF6', 'position' => 0],

@@ -129,29 +129,20 @@
         :show="showTaskView"
         :task="selectedTask"
         @close="showTaskView = false; selectedTask = null"
-        @enter-edit="handleEnterEdit"
         @complete-task="handleCompleteTask"
         @uncomplete-task="handleUncompleteTask"
       />
 
-      <TaskModal
-        :show="showTaskModal"
-        :task="selectedTask"
-        :server-error="taskError"
-        @close="handleCloseModal"
-        @submit="handleSaveTask"
-      />
-    </div>
+      </div>
   </div>
 </template>
 
 <script setup>
 import { ref, computed } from 'vue'
 import { useTasksStore } from '@/stores/tasks'
-import { useWorkspaceStore } from '@/stores/workspace'
 import TaskList from '@/components/tasks/TaskList.vue'
-import TaskModal from '@/components/tasks/TaskModal.vue'
 import TaskView from '@/components/tasks/TaskView.vue'
+import { useTaskDraft } from '@/composables/useTaskDraft'
 import {
   RectangleStackIcon,
   PlusIcon,
@@ -165,14 +156,11 @@ import {
 } from '@heroicons/vue/24/outline'
 
 const tasksStore = useTasksStore()
-const workspaceStore = useWorkspaceStore()
 
 const allTasks = computed(() => tasksStore.filteredTasks)
 const loading = computed(() => tasksStore.loading)
-const showTaskModal = ref(false)
 const showTaskView = ref(false)
 const selectedTask = ref(null)
-const taskError = ref('')
 
 const filterSection = ref(null)
 const filterWorkspaceId = ref(null)
@@ -218,18 +206,7 @@ const overdueCount = computed(() => {
   }).length
 })
 
-// Все пространства пользователя с количеством задач
-const workspacesList = computed(() => {
-  const counts = {}
-  for (const task of allTasks.value) {
-    counts[task.workspace_id] = (counts[task.workspace_id] || 0) + 1
-  }
-  return workspaceStore.workspaces.map(ws => ({
-    id: ws.id,
-    name: ws.name,
-    count: counts[ws.id] || 0,
-  }))
-})
+const workspacesList = computed(() => [])
 
 // Отфильтрованные задачи
 const filteredTasks = computed(() => {
@@ -266,15 +243,8 @@ const handleTaskClick = (task) => {
   showTaskView.value = true
 }
 
-const handleAddTask = () => {
-  selectedTask.value = null
-  showTaskModal.value = true
-}
-
-const handleEnterEdit = () => {
-  showTaskView.value = false
-  showTaskModal.value = true
-}
+const { draftTask, showDraft, startDraft, closeDraft } = useTaskDraft(() => tasksStore.fetchTasks?.())
+const handleAddTask = () => startDraft({ status: 'inbox' })
 
 const handleCompleteTask = async (task) => {
   try {
@@ -304,32 +274,4 @@ const handleToggleComplete = async (task) => {
   }
 }
 
-const handleSaveTask = async (taskData) => {
-  taskError.value = ''
-  try {
-    if (selectedTask.value) {
-      await tasksStore.updateTask(selectedTask.value.id, taskData)
-    } else {
-      await tasksStore.createTask(taskData)
-    }
-    showTaskModal.value = false
-    selectedTask.value = null
-  } catch (error) {
-    console.error('Error saving task:', error)
-    let errorMessage = 'Ошибка при сохранении задачи'
-    if (error.response?.data?.errors) {
-      const errors = Object.values(error.response.data.errors).flat()
-      errorMessage = errors.join(', ')
-    } else if (error.response?.data?.message) {
-      errorMessage = error.response.data.message
-    }
-    taskError.value = errorMessage
-  }
-}
-
-const handleCloseModal = () => {
-  showTaskModal.value = false
-  selectedTask.value = null
-  taskError.value = ''
-}
 </script>

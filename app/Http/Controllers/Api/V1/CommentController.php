@@ -8,27 +8,25 @@ use App\Http\Controllers\Controller;
 use App\Http\Responses\ApiResponse;
 use App\Models\Comment;
 use App\Models\Task;
-use App\Models\Workspace;
+use App\Services\TelegramService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class CommentController extends Controller
 {
-    // Список комментариев задачи
-    public function index(Workspace $workspace, Task $task): JsonResponse
+    public function index(Task $task): JsonResponse
     {
         $this->authorize('view', $task);
 
-        $comments = $task->comments()->with('user')->latest()->get();
+        $comments = $task->comments()->with('user:id,name')->oldest()->get();
 
         return ApiResponse::success($comments, 'Комментарии получены');
     }
 
-    // Создание комментария
-    public function store(Request $request, Workspace $workspace, Task $task): JsonResponse
+    public function store(Request $request, Task $task, TelegramService $telegram): JsonResponse
     {
-        $this->authorize('comment', $task);
+        $this->authorize('view', $task);
 
         $validated = $request->validate([
             'content' => 'required|string',
@@ -39,13 +37,15 @@ class CommentController extends Controller
             'content' => $validated['content'],
         ]);
 
-        $comment->load('user');
+        $comment->load('user:id,name');
+
+        // Уведомляем участников задачи
+        $telegram->notifyTaskParticipants($task, Auth::user(), 'commented', $validated['content']);
 
         return ApiResponse::success($comment, 'Комментарий добавлен', 201);
     }
 
-    // Удаление комментария
-    public function destroy(Workspace $workspace, Comment $comment): JsonResponse
+    public function destroy(Comment $comment): JsonResponse
     {
         $this->authorize('delete', $comment);
 
@@ -54,5 +54,3 @@ class CommentController extends Controller
         return ApiResponse::success(null, 'Комментарий удален');
     }
 }
-
-

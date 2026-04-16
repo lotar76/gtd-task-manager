@@ -161,29 +161,6 @@
                 </div>
               </div>
 
-              <!-- Workspace -->
-              <div v-if="workspaces.length > 1">
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Рабочее пространство
-                </label>
-                <div class="flex flex-wrap gap-2">
-                  <button
-                    v-for="ws in workspaces"
-                    :key="ws.id"
-                    type="button"
-                    @click="form.workspace_id = ws.id"
-                    :class="[
-                      'px-3 py-1.5 text-sm font-medium rounded-lg transition-colors',
-                      form.workspace_id === ws.id
-                        ? 'bg-primary-600 text-white'
-                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                    ]"
-                  >
-                    <span v-if="ws.emoji" class="mr-1">{{ ws.emoji }}</span>{{ ws.name }}
-                  </button>
-                </div>
-              </div>
-
               <!-- Row: Project, Sphere & Goal -->
               <div class="grid grid-cols-3 gap-4 relative">
                 <!-- Project -->
@@ -526,7 +503,6 @@ import {
   ArrowUpIcon,
   ExclamationTriangleIcon,
 } from '@heroicons/vue/24/outline'
-import { useWorkspaceStore } from '@/stores/workspace'
 import { useProjectsStore } from '@/stores/projects'
 import { useLifeSpheresStore } from '@/stores/lifeSpheres'
 import { useGoalsStore } from '@/stores/goals'
@@ -554,20 +530,13 @@ const props = defineProps({
 const emit = defineEmits(['close', 'submit'])
 
 const route = useRoute()
-const workspaceStore = useWorkspaceStore()
 const projectsStore = useProjectsStore()
 const spheresStore = useLifeSpheresStore()
 const goalsStore = useGoalsStore()
-const workspaces = computed(() => workspaceStore.workspaces)
-const currentWorkspace = computed(() => workspaceStore.currentWorkspace)
 
-// Фильтруем проекты по workspace_id из формы (не по selectedWorkspaces!)
 const activeProjects = computed(() => {
-  const workspaceId = form.value.workspace_id
-  if (!workspaceId) return []
-
   return projectsStore.allProjects
-    .filter(p => p.workspace_id === workspaceId && (p.status === 'active' || !p.status))
+    .filter(p => p.status === 'active' || !p.status)
 })
 
 const selectedProject = computed(() => {
@@ -575,23 +544,15 @@ const selectedProject = computed(() => {
   return activeProjects.value.find(p => p.id === form.value.project_id)
 })
 
-// Сферы жизни текущего workspace
-const workspaceSpheres = computed(() => {
-  const workspaceId = form.value.workspace_id
-  if (!workspaceId) return []
-  return spheresStore.allSpheres.filter(s => s.workspace_id === workspaceId)
-})
+const workspaceSpheres = computed(() => spheresStore.allSpheres)
 
 const selectedSphere = computed(() => {
   if (!form.value.life_sphere_id) return null
   return workspaceSpheres.value.find(s => s.id === form.value.life_sphere_id)
 })
 
-// Цели текущего workspace (активные)
 const workspaceGoals = computed(() => {
-  const workspaceId = form.value.workspace_id
-  if (!workspaceId) return []
-  return goalsStore.allGoals.filter(g => g.workspace_id === workspaceId && (g.status === 'active' || !g.status))
+  return goalsStore.allGoals.filter(g => g.status === 'active' || !g.status)
 })
 
 const selectedGoal = computed(() => {
@@ -638,7 +599,7 @@ const form = ref({
   due_date: '',
   estimated_time: '',
   end_time: '',
-  workspace_id: null,
+
   project_id: null,
   goal_id: null,
   life_sphere_id: null,
@@ -678,7 +639,7 @@ const handleCreateProject = async () => {
   try {
     const newProject = await projectsStore.createProject({
       name: newProjectName.value.trim(),
-      workspace_id: form.value.workspace_id,
+
       color: getRandomColor(),
       status: 'active',
     })
@@ -699,7 +660,7 @@ const handleCreateSphere = async () => {
   if (!newSphereName.value.trim()) return
 
   try {
-    const newSphere = await spheresStore.create(form.value.workspace_id, {
+    const newSphere = await spheresStore.create({
       name: newSphereName.value.trim(),
       color: getRandomColor(),
     })
@@ -722,7 +683,7 @@ const handleCreateGoal = async () => {
   try {
     const newGoal = await goalsStore.createGoal({
       name: newGoalName.value.trim(),
-      workspace_id: form.value.workspace_id,
+
       color: getRandomColor(),
       status: 'active',
     })
@@ -821,7 +782,7 @@ watch(() => props.task, (newTask, oldTask) => {
       due_date: '',
       estimated_time: '',
       end_time: '',
-      workspace_id: currentWorkspace.value?.id,
+
       project_id: null,
       goal_id: null,
       life_sphere_id: null,
@@ -843,7 +804,7 @@ watch(() => props.task, (newTask, oldTask) => {
       due_date: formatDateForInput(newTask.due_date),
       estimated_time: formatTimeForInput(newTask.estimated_time),
       end_time: formatTimeForInput(newTask.end_time),
-      workspace_id: newTask.workspace_id || currentWorkspace.value?.id,
+
       project_id: newTask.project_id || null,
       goal_id: newTask.goal_id || null,
       life_sphere_id: newTask.life_sphere_id || null,
@@ -861,7 +822,7 @@ watch(() => props.task, (newTask, oldTask) => {
       due_date: getDefaultDueDateFromRoute(),
       estimated_time: '',
       end_time: '',
-      workspace_id: currentWorkspace.value?.id,
+
       project_id: null,
       goal_id: null,
       life_sphere_id: null,
@@ -886,11 +847,8 @@ watch(() => props.show, (newShow) => {
     // При открытии модалки - форма уже заполнена через watch на props.task
     // Дополнительно обновляем значения из URL если это новая задача
     if (!props.task) {
-      form.value.workspace_id = currentWorkspace.value?.id
       form.value.status = getDefaultStatusFromRoute()
       form.value.due_date = props.defaultDate || getDefaultDueDateFromRoute()
-    } else if (!form.value.workspace_id) {
-      form.value.workspace_id = currentWorkspace.value?.id
     }
   } else {
     // При закрытии модалки всегда полностью очищаем форму
@@ -902,7 +860,7 @@ watch(() => props.show, (newShow) => {
       due_date: '',
       estimated_time: '',
       end_time: '',
-      workspace_id: currentWorkspace.value?.id,
+
       project_id: null,
       goal_id: null,
       life_sphere_id: null,
@@ -941,13 +899,6 @@ watch(() => route.path, () => {
   }
 })
 
-// Следим за изменениями workspace для обновления workspace_id
-watch(() => currentWorkspace.value?.id, (newWorkspaceId) => {
-  if (!props.task && newWorkspaceId) {
-    form.value.workspace_id = newWorkspaceId
-  }
-})
-
 // Очищаем поля ввода при закрытии попапов
 watch(projectDropdownOpen, (isOpen) => {
   if (!isOpen) newProjectName.value = ''
@@ -959,22 +910,6 @@ watch(sphereDropdownOpen, (isOpen) => {
 
 watch(goalDropdownOpen, (isOpen) => {
   if (!isOpen) newGoalName.value = ''
-})
-
-// Следим за изменениями workspace_id - обнуляем project_id если проект из другого workspace
-watch(() => form.value.workspace_id, (newWorkspaceId, oldWorkspaceId) => {
-  // Пропускаем если это первая инициализация или workspace не изменился
-  if (!oldWorkspaceId || newWorkspaceId === oldWorkspaceId) return
-
-  // Проверяем: принадлежит ли текущий проект новому workspace
-  if (form.value.project_id) {
-    const currentProject = projectsStore.allProjects.find(p => p.id === form.value.project_id)
-
-    // Если проект из другого workspace - обнуляем
-    if (currentProject && currentProject.workspace_id !== newWorkspaceId) {
-      form.value.project_id = null
-    }
-  }
 })
 
 // Следим за изменениями due_date и автоматически меняем статус

@@ -73,6 +73,29 @@ class User extends Authenticatable
         return $this->ownedWorkspaces->merge($this->workspaces);
     }
 
+    // Дефолтное (единственное) пространство пользователя.
+    // У пользователя ровно одно пространство; если его нет — создаётся.
+    // Остальные owned workspaces считаются артефактами и игнорируются.
+    public function defaultWorkspace(): Workspace
+    {
+        $workspace = $this->ownedWorkspaces()->orderBy('id')->first();
+
+        if ($workspace === null) {
+            $workspace = Workspace::create([
+                'name' => 'Моё пространство',
+                'owner_id' => $this->id,
+            ]);
+        }
+
+        return $workspace;
+    }
+
+    // Контакты пользователя
+    public function contacts(): HasMany
+    {
+        return $this->hasMany(Contact::class, 'owner_id');
+    }
+
     // Задачи созданные пользователем
     public function createdTasks(): HasMany
     {

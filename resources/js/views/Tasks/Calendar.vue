@@ -813,15 +813,6 @@
       />
 
       <!-- Task Modal -->
-      <TaskModal
-        :show="showTaskModal"
-        :task="selectedTask"
-        :server-error="taskError"
-        :default-date="newTaskDate"
-        @close="handleCloseTaskModal"
-        @submit="handleSaveTask"
-      />
-
       <!-- Confirm Dialog -->
       <ConfirmDialog
         :show="showConfirm"
@@ -841,8 +832,8 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useTasksStore } from '@/stores/tasks'
-import TaskModal from '@/components/tasks/TaskModal.vue'
 import TaskView from '@/components/tasks/TaskView.vue'
+import { useTaskDraft } from '@/composables/useTaskDraft'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
@@ -867,7 +858,6 @@ watch(() => route.query.view, (newView) => {
     viewMode.value = newView
   }
 }, { immediate: true })
-const showTaskModal = ref(false)
 const showTaskView = ref(false)
 const selectedTask = ref(null)
 const taskError = ref('')
@@ -1337,7 +1327,7 @@ const handleTaskClick = (task) => {
 
 const handleEnterEdit = () => {
   showTaskView.value = false
-  showTaskModal.value = true
+  startDraft({ status: 'scheduled' })
 }
 
 const handleCompleteTask = async (task) => {
@@ -1356,11 +1346,8 @@ const handleUncompleteTask = async (task) => {
   }
 }
 
-const handleAddTaskForDay = (dateString) => {
-  selectedTask.value = null
-  newTaskDate.value = dateString
-  showTaskModal.value = true
-}
+const { draftTask, showDraft, startDraft, closeDraft } = useTaskDraft(() => tasksStore.fetchTasks?.())
+const handleAddTaskForDay = (dateString) => startDraft({ status: 'scheduled', due_date: dateString })
 
 const handleDayClick = (dateString) => {
   currentDate.value = dayjs(dateString)
@@ -1375,7 +1362,7 @@ const handleSaveTask = async (taskData) => {
     } else {
       await tasksStore.createTask(taskData)
     }
-    showTaskModal.value = false
+    
     selectedTask.value = null
   } catch (error) {
     console.error('Error saving task:', error)
@@ -1388,13 +1375,6 @@ const handleSaveTask = async (taskData) => {
     }
     taskError.value = errorMessage
   }
-}
-
-const handleCloseTaskModal = () => {
-  showTaskModal.value = false
-  selectedTask.value = null
-  newTaskDate.value = ''
-  taskError.value = ''
 }
 
 const handleToggleComplete = (task) => {

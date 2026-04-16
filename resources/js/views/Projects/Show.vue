@@ -13,9 +13,22 @@
                 {{ allTasks.length }}
               </span>
             </div>
-            <div v-if="projectWorkspace" class="flex items-center gap-1.5 mt-1 text-sm text-gray-500 dark:text-gray-400">
-              <span v-if="projectWorkspace.emoji" class="grayscale">{{ projectWorkspace.emoji }}</span>
-              <span>{{ projectWorkspace.name }}</span>
+            <div class="flex flex-wrap items-center gap-1.5 mt-2">
+              <router-link
+                v-if="projectGoal"
+                :to="`/goals/${projectGoal.id}`"
+                class="inline-flex items-center gap-1.5 px-2 py-0.5 text-[12.5px] bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700"
+              >
+                <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-4a4 4 0 100 8 4 4 0 000-8z" /></svg>
+                {{ projectGoal.name }}
+              </router-link>
+              <span
+                v-if="projectSphere"
+                class="inline-flex items-center gap-1.5 px-2 py-0.5 text-[12.5px] bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-md"
+              >
+                <span class="w-1.5 h-1.5 rounded-full" :style="{ backgroundColor: projectSphere.color }"></span>
+                {{ projectSphere.name }}
+              </span>
             </div>
             <p v-if="project?.description" class="text-sm text-gray-600 dark:text-gray-400 mt-1 truncate">
               {{ project.description }}
@@ -136,18 +149,15 @@
         :show="showTaskView"
         :task="selectedTask"
         @close="showTaskView = false; selectedTask = null"
-        @enter-edit="handleEnterEdit"
         @complete-task="handleCompleteTask"
         @uncomplete-task="handleUncompleteTask"
       />
 
-      <!-- Task Modal -->
-      <TaskModal
-        :show="showTaskModal"
-        :task="selectedTask"
-        :server-error="taskError"
-        @close="handleCloseTaskModal"
-        @submit="handleSaveTask"
+      <!-- Черновик новой задачи -->
+      <TaskView
+        :show="showDraft"
+        :task="draftTask"
+        @close="handleCloseDraft"
       />
 
       <!-- Project Modal -->
@@ -167,11 +177,12 @@ import { ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useProjectsStore } from '@/stores/projects'
 import { useTasksStore } from '@/stores/tasks'
-import { useWorkspaceStore } from '@/stores/workspace'
+import { useGoalsStore } from '@/stores/goals'
+import { useLifeSpheresStore } from '@/stores/lifeSpheres'
 import { RectangleStackIcon, PencilIcon, ArchiveBoxArrowDownIcon, ArrowUturnLeftIcon } from '@heroicons/vue/24/outline'
 import { PlusIcon } from '@heroicons/vue/24/solid'
 import TaskList from '@/components/tasks/TaskList.vue'
-import TaskModal from '@/components/tasks/TaskModal.vue'
+import { useTaskDraft } from '@/composables/useTaskDraft'
 import TaskView from '@/components/tasks/TaskView.vue'
 import ProjectModal from '@/components/projects/ProjectModal.vue'
 
@@ -179,15 +190,14 @@ const route = useRoute()
 const router = useRouter()
 const projectsStore = useProjectsStore()
 const tasksStore = useTasksStore()
-const workspaceStore = useWorkspaceStore()
+const goalsStore = useGoalsStore()
+const lifeSpheresStore = useLifeSpheresStore()
 
 const project = ref(null)
 const loading = ref(false)
-const showTaskModal = ref(false)
 const showTaskView = ref(false)
 const showProjectModal = ref(false)
 const selectedTask = ref(null)
-const taskError = ref('')
 const projectError = ref('')
 
 const allTasks = computed(() => {
@@ -198,38 +208,24 @@ const allTasks = computed(() => {
 
 const activeTasks = computed(() => allTasks.value.filter(t => !t.completed_at))
 const completedTasks = computed(() => allTasks.value.filter(t => t.completed_at))
-const projectWorkspace = computed(() => {
-  if (!project.value) return null
-  return workspaceStore.workspaces.find(w => w.id === project.value.workspace_id)
-})
+const projectWorkspace = computed(() => null)
 
 const loadProject = async () => {
   const projectId = parseInt(route.params.projectId)
-  const workspaceId = parseInt(route.params.id)
-
-  if (!workspaceId || !projectId) {
-    console.error('Missing workspaceId or projectId', { workspaceId, projectId })
-    return
-  }
+  if (!projectId) return
 
   loading.value = true
   try {
     const projectData = await projectsStore.fetchProject(projectId)
     if (!projectData) {
-      router.push(`/workspaces/${workspaceId}/projects`)
+      router.push('/projects')
       return
     }
     project.value = projectData
-
-    if (project.value.workspace_id !== workspaceId) {
-      console.error('Project does not belong to workspace from URL')
-      router.push(`/workspaces/${workspaceId}/projects`)
-      return
-    }
   } catch (error) {
     console.error('Error loading project:', error)
     if (error.response?.status === 404) {
-      router.push(`/workspaces/${workspaceId}/projects`)
+      router.push('/projects')
     }
   } finally {
     loading.value = false
@@ -247,7 +243,7 @@ const handleArchiveProject = async () => {
 
   try {
     await projectsStore.archiveProject(project.value.id)
-    router.push(`/workspaces/${project.value.workspace_id}/projects`)
+    router.push('/projects')
   } catch (error) {
     console.error('Error archiving project:', error)
     alert('Ошибка при архивировании потока')
@@ -264,20 +260,34 @@ const handleUnarchiveProject = async () => {
   }
 }
 
+const { draftTask, showDraft, startDraft, closeDraft } = useTaskDraft(() => {
+  tasksStore.fetchTasks?.()
+})
+
 const handleCreateTask = () => {
   if (!project.value) return
-  selectedTask.value = { project_id: project.value.id }
-  showTaskModal.value = true
+  startDraft({
+    project_id: project.value.id,
+    goal_id: project.value.goal_id || projectGoal.value?.id || null,
+    life_sphere_id: project.value.life_sphere_id || projectGoal.value?.life_sphere_id || null,
+  })
 }
+
+const projectGoal = computed(() => {
+  const gid = project.value?.goal_id
+  if (!gid) return null
+  return goalsStore.allGoals.find(g => g.id === gid) || null
+})
+const projectSphere = computed(() =>
+  projectGoal.value?.life_sphere || (project.value?.life_sphere_id
+    ? lifeSpheresStore.allSpheres.find(s => s.id === project.value.life_sphere_id)
+    : null)
+)
+const handleCloseDraft = () => closeDraft()
 
 const handleTaskClick = (task) => {
   selectedTask.value = task
   showTaskView.value = true
-}
-
-const handleEnterEdit = () => {
-  showTaskView.value = false
-  showTaskModal.value = true
 }
 
 const handleCompleteTask = async (task) => {
@@ -294,29 +304,6 @@ const handleUncompleteTask = async (task) => {
   } catch (error) {
     console.error('Error uncompleting task:', error)
   }
-}
-
-const handleSaveTask = async (taskData) => {
-  taskError.value = ''
-  try {
-    if (selectedTask.value?.id) {
-      await tasksStore.updateTask(selectedTask.value.id, taskData)
-    } else {
-      taskData.project_id = project.value.id
-      await tasksStore.createTask(taskData)
-    }
-    showTaskModal.value = false
-    selectedTask.value = null
-  } catch (error) {
-    console.error('Error saving task:', error)
-    taskError.value = error.response?.data?.message || error.message || 'Ошибка при сохранении задачи'
-  }
-}
-
-const handleCloseTaskModal = () => {
-  showTaskModal.value = false
-  selectedTask.value = null
-  taskError.value = ''
 }
 
 const handleSaveProject = async (projectData) => {

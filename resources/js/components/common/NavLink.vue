@@ -1,6 +1,6 @@
 <template>
   <router-link
-    :to="computedTo"
+    :to="to"
     @click="handleLinkClick"
     class="flex items-center justify-between px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
     :class="isActive ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'"
@@ -22,7 +22,6 @@
 <script setup>
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { useWorkspaceStore } from '@/stores/workspace'
 import {
   InboxIcon,
   BoltIcon,
@@ -34,6 +33,7 @@ import {
   RectangleStackIcon,
   Cog6ToothIcon,
   ChartBarIcon,
+  UserGroupIcon,
 } from '@heroicons/vue/24/outline'
 
 const props = defineProps({
@@ -54,10 +54,8 @@ const props = defineProps({
 const emit = defineEmits(['close-sidebar'])
 
 const route = useRoute()
-const workspaceStore = useWorkspaceStore()
 
 const handleLinkClick = () => {
-  // Закрываем сайдбар только на мобилке (lg breakpoint = 1024px)
   if (window.innerWidth < 1024) {
     emit('close-sidebar')
   }
@@ -71,22 +69,17 @@ const iconMap = {
   archive: ArchiveBoxIcon,
   folder: FolderIcon,
   'calendar-days': CalendarDaysIcon,
-  target: FolderIcon, // Заглушка, можно добавить кастомную иконку
+  target: FolderIcon,
   'rectangle-stack': RectangleStackIcon,
   cog: Cog6ToothIcon,
   'chart-bar': ChartBarIcon,
   'archive-box': ArchiveBoxIcon,
+  'user-group': UserGroupIcon,
 }
 
 const iconComponent = computed(() => iconMap[props.icon] || FolderIcon)
 
-const computedTo = computed(() => {
-  const workspaceId = workspaceStore.currentWorkspace?.id
-  return props.to.replace(':id', workspaceId || '1')
-})
-
 const isActive = computed(() => {
-  return route.path === computedTo.value
+  return route.path === props.to
 })
 </script>
-

@@ -7,33 +7,34 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Responses\ApiResponse;
 use App\Models\Context;
-use App\Models\Workspace;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class ContextController extends Controller
 {
-    // Список контекстов
-    public function index(Workspace $workspace): JsonResponse
+    // Все контексты пользователя
+    public function all(Request $request): JsonResponse
     {
-        $this->authorize('view', $workspace);
+        $workspaceIds = [$request->user()->defaultWorkspace()->id];
 
-        $contexts = $workspace->contexts()->withCount('tasks')->get();
+        $contexts = Context::whereIn('workspace_id', $workspaceIds)
+            ->withCount('tasks')
+            ->get();
 
         return ApiResponse::success($contexts, 'Список контекстов получен');
     }
 
     // Создание контекста
-    public function store(Request $request, Workspace $workspace): JsonResponse
+    public function store(Request $request): JsonResponse
     {
-        $this->authorize('createContent', $workspace);
-
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'icon' => 'nullable|string',
             'color' => 'nullable|string|size:7',
         ]);
 
+        $workspace = $request->user()->defaultWorkspace();
         $validated['workspace_id'] = $workspace->id;
 
         $context = Context::create($validated);
@@ -42,20 +43,15 @@ class ContextController extends Controller
     }
 
     // Получение контекста
-    public function show(Workspace $workspace, Context $context): JsonResponse
+    public function show(Context $context): JsonResponse
     {
-        $this->authorize('view', $workspace);
-
-        $context->load(['tasks.workspace', 'tasks.project', 'tasks.context', 'tasks.assignee', 'tasks.tags']);
-
+        $context->load(['tasks.project', 'tasks.context', 'tasks.assignee', 'tasks.tags']);
         return ApiResponse::success($context, 'Контекст получен');
     }
 
     // Обновление контекста
-    public function update(Request $request, Workspace $workspace, Context $context): JsonResponse
+    public function update(Request $request, Context $context): JsonResponse
     {
-        $this->authorize('update', $workspace);
-
         $validated = $request->validate([
             'name' => 'sometimes|string|max:255',
             'icon' => 'nullable|string',
@@ -68,14 +64,9 @@ class ContextController extends Controller
     }
 
     // Удаление контекста
-    public function destroy(Workspace $workspace, Context $context): JsonResponse
+    public function destroy(Context $context): JsonResponse
     {
-        $this->authorize('update', $workspace);
-
         $context->delete();
-
         return ApiResponse::success(null, 'Контекст удален');
     }
 }
-
-

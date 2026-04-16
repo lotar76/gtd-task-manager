@@ -25,8 +25,6 @@
             <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">На сегодня задач нет</h3>
             <p class="text-sm text-gray-500 dark:text-gray-400 mb-6 leading-relaxed">
               Здесь находятся задачи, которые вы решили выполнить именно сегодня.
-              Выбирайте реалистичное количество — лучше сделать 3 задачи полностью,
-              чем начать 10 и не закончить ни одной.
             </p>
             <button
               @click="handleAddTask"
@@ -39,22 +37,8 @@
         </div>
       </template>
 
-      <TaskView
-        :show="showTaskView"
-        :task="selectedTask"
-        @close="showTaskView = false; selectedTask = null"
-        @enter-edit="handleEnterEdit"
-        @complete-task="handleCompleteTask"
-        @uncomplete-task="handleUncompleteTask"
-      />
-
-      <TaskModal
-        :show="showTaskModal"
-        :task="selectedTask"
-        :server-error="taskError"
-        @close="handleCloseModal"
-        @submit="handleSaveTask"
-      />
+      <TaskView :show="showTaskView" :task="selectedTask" @close="showTaskView = false; selectedTask = null" />
+      <TaskView :show="showDraft" :task="draftTask" @close="closeDraft" />
     </div>
   </div>
 </template>
@@ -63,81 +47,23 @@
 import { ref, computed } from 'vue'
 import { useTasksStore } from '@/stores/tasks'
 import TaskList from '@/components/tasks/TaskList.vue'
-import TaskModal from '@/components/tasks/TaskModal.vue'
 import TaskView from '@/components/tasks/TaskView.vue'
 import { CalendarIcon, PlusIcon } from '@heroicons/vue/24/outline'
+import { useTaskDraft } from '@/composables/useTaskDraft'
 
 const tasksStore = useTasksStore()
-
 const tasks = computed(() => tasksStore.todayTasks)
 const loading = computed(() => tasksStore.loading)
-const showTaskModal = ref(false)
 const showTaskView = ref(false)
 const selectedTask = ref(null)
-const taskError = ref('')
 
-const handleTaskClick = (task) => {
-  selectedTask.value = task
-  showTaskView.value = true
-}
+const { draftTask, showDraft, startDraft, closeDraft } = useTaskDraft(() => tasksStore.fetchTasks?.())
 
-const handleAddTask = () => {
-  selectedTask.value = null
-  showTaskModal.value = true
-}
-
-const handleEnterEdit = () => {
-  showTaskView.value = false
-  showTaskModal.value = true
-}
-
-const handleCompleteTask = async (task) => {
-  try {
-    await tasksStore.completeTask(task.id)
-  } catch (error) {
-    console.error('Error completing task:', error)
-  }
-}
-
-const handleUncompleteTask = async (task) => {
-  try {
-    await tasksStore.uncompleteTask(task.id)
-  } catch (error) {
-    console.error('Error uncompleting task:', error)
-  }
-}
+const handleTaskClick = (task) => { selectedTask.value = task; showTaskView.value = true }
+const handleAddTask = () => startDraft({ status: 'today', due_date: new Date().toISOString().split('T')[0] })
 
 const handleToggleComplete = async (task) => {
-  try {
-    if (task.completed_at) {
-      await tasksStore.uncompleteTask(task.id)
-    } else {
-      await tasksStore.completeTask(task.id)
-    }
-  } catch (error) {
-    console.error('Error toggling task:', error)
-  }
-}
-
-const handleSaveTask = async (taskData) => {
-  taskError.value = ''
-  try {
-    if (selectedTask.value) {
-      await tasksStore.updateTask(selectedTask.value.id, taskData)
-    } else {
-      await tasksStore.createTask(taskData)
-    }
-    showTaskModal.value = false
-    selectedTask.value = null
-  } catch (error) {
-    console.error('Error saving task:', error)
-    taskError.value = error.response?.data?.message || error.message || 'Ошибка при сохранении задачи'
-  }
-}
-
-const handleCloseModal = () => {
-  showTaskModal.value = false
-  selectedTask.value = null
-  taskError.value = ''
+  if (task.completed_at) await tasksStore.uncompleteTask(task.id)
+  else await tasksStore.completeTask(task.id)
 }
 </script>

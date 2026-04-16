@@ -69,7 +69,7 @@ class TelegramSubscriptionController extends Controller
         $linkToken = Str::random(64);
 
         $user = auth()->user();
-        $defaultWorkspace = $user->allWorkspaces()->first();
+        $defaultWorkspace = $user->defaultWorkspace();
 
         TelegramSubscription::create([
             'user_id' => $user->id,

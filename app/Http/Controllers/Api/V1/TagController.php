@@ -7,32 +7,33 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Responses\ApiResponse;
 use App\Models\Tag;
-use App\Models\Workspace;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class TagController extends Controller
 {
-    // Список тегов
-    public function index(Workspace $workspace): JsonResponse
+    // Все теги пользователя
+    public function all(Request $request): JsonResponse
     {
-        $this->authorize('view', $workspace);
+        $workspaceIds = [$request->user()->defaultWorkspace()->id];
 
-        $tags = $workspace->tags()->withCount('tasks')->get();
+        $tags = Tag::whereIn('workspace_id', $workspaceIds)
+            ->withCount('tasks')
+            ->get();
 
         return ApiResponse::success($tags, 'Список тегов получен');
     }
 
     // Создание тега
-    public function store(Request $request, Workspace $workspace): JsonResponse
+    public function store(Request $request): JsonResponse
     {
-        $this->authorize('createContent', $workspace);
-
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'color' => 'nullable|string|size:7',
         ]);
 
+        $workspace = $request->user()->defaultWorkspace();
         $validated['workspace_id'] = $workspace->id;
 
         $tag = Tag::create($validated);
@@ -41,20 +42,15 @@ class TagController extends Controller
     }
 
     // Получение тега
-    public function show(Workspace $workspace, Tag $tag): JsonResponse
+    public function show(Tag $tag): JsonResponse
     {
-        $this->authorize('view', $workspace);
-
-        $tag->load(['tasks.workspace', 'tasks.project', 'tasks.context', 'tasks.assignee', 'tasks.tags']);
-
+        $tag->load(['tasks.project', 'tasks.context', 'tasks.assignee', 'tasks.tags']);
         return ApiResponse::success($tag, 'Тег получен');
     }
 
     // Обновление тега
-    public function update(Request $request, Workspace $workspace, Tag $tag): JsonResponse
+    public function update(Request $request, Tag $tag): JsonResponse
     {
-        $this->authorize('update', $workspace);
-
         $validated = $request->validate([
             'name' => 'sometimes|string|max:255',
             'color' => 'nullable|string|size:7',
@@ -66,14 +62,9 @@ class TagController extends Controller
     }
 
     // Удаление тега
-    public function destroy(Workspace $workspace, Tag $tag): JsonResponse
+    public function destroy(Tag $tag): JsonResponse
     {
-        $this->authorize('update', $workspace);
-
         $tag->delete();
-
         return ApiResponse::success(null, 'Тег удален');
     }
 }
-
-

@@ -232,6 +232,63 @@ class TelegramService
      * Уведомить участников workspace о событии с задачей.
      * Отправляет сообщение всем активным Telegram-подписчикам workspace, кроме исполнителя.
      */
+    /**
+     * Уведомление участников задачи: создатель + исполнители + наблюдатели.
+     * Исключается actor (тот, кто совершил действие).
+     * $action: created | updated | completed | assigned | commented
+     * $extra: дополнительный текст (например, тело комментария)
+     */
+    public function notifyTaskParticipants(Task $task, User $actor, string $action, ?string $extra = null): void
+    {
+        $task->loadMissing(['assignees.user:id', 'watchers.user:id']);
+
+        $userIds = [];
+        if ($task->created_by) {
+            $userIds[] = $task->created_by;
+        }
+        foreach ($task->assignees as $c) {
+            if ($c->contact_user_id) {
+                $userIds[] = $c->contact_user_id;
+            }
+        }
+        foreach ($task->watchers as $c) {
+            if ($c->contact_user_id) {
+                $userIds[] = $c->contact_user_id;
+            }
+        }
+        $userIds = array_values(array_unique(array_filter($userIds, fn ($id) => $id !== $actor->id)));
+
+        if (empty($userIds)) {
+            return;
+        }
+
+        $subscriptions = TelegramSubscription::whereIn('user_id', $userIds)
+            ->where('is_active', true)
+            ->whereNotNull('chat_id')
+            ->get();
+
+        if ($subscriptions->isEmpty()) {
+            return;
+        }
+
+        $actionHeaders = [
+            'created' => "📝 <b>{$actor->name}</b> создал задачу",
+            'updated' => "✏️ <b>{$actor->name}</b> обновил задачу",
+            'completed' => "✅ <b>{$actor->name}</b> выполнил задачу",
+            'assigned' => "👤 <b>{$actor->name}</b> назначил задачу",
+            'commented' => "💬 <b>{$actor->name}</b> прокомментировал задачу",
+        ];
+        $header = $actionHeaders[$action] ?? "📌 <b>{$actor->name}</b> обновил задачу";
+        $message = "{$header}\n\n" . $this->formatTaskLine($task);
+        if ($extra) {
+            $message .= "\n\n<i>" . e($extra) . "</i>";
+        }
+
+        foreach ($subscriptions as $sub) {
+            $this->sendMessage($sub->chat_id, $message);
+        }
+    }
+
     public function notifyWorkspaceMembers(Task $task, User $actor, string $action): void
     {
         $workspace = $task->workspace;

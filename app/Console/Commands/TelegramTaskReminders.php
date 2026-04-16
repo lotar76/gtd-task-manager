@@ -34,7 +34,7 @@ class TelegramTaskReminders extends Command
 
         foreach ($subscriptions as $subscription) {
             $user = $subscription->user;
-            $workspaces = $user->allWorkspaces();
+            $workspaces = collect([$user->defaultWorkspace()]);
             $reminderMinutes = $subscription->reminder_minutes_before;
             $reminderTime = $now->copy()->addMinutes($reminderMinutes)->format('H:i');
 

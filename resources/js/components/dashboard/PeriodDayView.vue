@@ -124,20 +124,12 @@
     />
 
     <!-- Task Modal -->
-    <TaskModal
-      v-if="showTaskModal"
-      :show="showTaskModal"
-      :task="editingTask"
-      :server-error="taskError"
-      @close="closeTaskModal"
-      @submit="handleSaveTask"
-    />
-  </div>
+    </div>
 </template>
 
 <script setup>
 import { computed, ref } from 'vue'
-import TaskModal from '@/components/tasks/TaskModal.vue'
+import { useTaskDraft } from '@/composables/useTaskDraft'
 import TaskView from '@/components/tasks/TaskView.vue'
 import { useTasksStore } from '@/stores/tasks'
 import { useDashboardStore } from '@/stores/dashboard'
@@ -153,7 +145,7 @@ const props = defineProps({
 
 const emit = defineEmits(['task-hover', 'task-leave'])
 
-const showTaskModal = ref(false)
+
 const showTaskView = ref(false)
 const editingTask = ref(null)
 const selectedTask = ref(null)
@@ -216,30 +208,14 @@ const handleTaskClick = (task) => {
   showTaskView.value = true
 }
 
+const { draftTask, showDraft, startDraft, closeDraft } = useTaskDraft(() => tasksStore.fetchTasks?.())
+
 const openCreateModal = () => {
-  // Create a new task with today's date, workspace, and "Сегодня" status
   const today = new Date().toISOString().split('T')[0]
-  editingTask.value = {
-    workspace_id: props.workspaceId,
-    due_date: today,
-    status: 'today', // Папка "Сегодня"
-    estimated_time: null,
-    end_time: null,
-  }
-  showTaskModal.value = true
+  startDraft({ due_date: today, status: 'today' })
 }
 
-const closeTaskModal = () => {
-  showTaskModal.value = false
-  editingTask.value = null
-  taskError.value = ''
-}
-
-const handleEnterEdit = () => {
-  editingTask.value = selectedTask.value
-  showTaskView.value = false
-  showTaskModal.value = true
-}
+const handleEnterEdit = () => { /* редактирование встроено в TaskView */ }
 
 const handleCompleteTask = async (task) => {
   try {
@@ -279,7 +255,7 @@ const handleSaveTask = async (taskData) => {
     } else {
       await tasksStore.createTask(taskData)
     }
-    closeTaskModal()
+    
     // Refresh dashboard data to show the new/updated task
     await dashboardStore.fetchLifeMirror(props.workspaceId)
     await dashboardStore.fetchAiMessage(props.workspaceId, false)

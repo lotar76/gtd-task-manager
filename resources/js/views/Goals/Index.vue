@@ -127,13 +127,11 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useGoalsStore } from '@/stores/goals'
-import { useWorkspaceStore } from '@/stores/workspace'
 import GoalModal from '@/components/goals/GoalModal.vue'
 
 const router = useRouter()
 const route = useRoute()
 const goalsStore = useGoalsStore()
-const workspaceStore = useWorkspaceStore()
 
 const showGoalModal = ref(false)
 const selectedGoal = ref(null)
@@ -171,7 +169,7 @@ const deadlineClass = (deadlineStr) => {
 }
 
 const openGoal = (goal) => {
-  router.push(`/workspaces/${route.params.id}/goals/${goal.id}`)
+  router.push(`/goals/${goal.id}`)
 }
 
 const handleSaveGoal = async (goalData) => {

@@ -35,7 +35,7 @@ class TelegramMorningDigest extends Command
 
         foreach ($subscriptions as $subscription) {
             $user = $subscription->user;
-            $workspaces = $user->allWorkspaces();
+            $workspaces = collect([$user->defaultWorkspace()]);
 
             $allTodayTasks = collect();
             $allOverdueTasks = collect();

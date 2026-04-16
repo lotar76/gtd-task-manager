@@ -20,13 +20,23 @@ class TaskService
         $this->telegramService = $telegramService;
     }
 
-    // GTD: Входящие (inbox)
-    public function getInbox(Workspace $workspace, ?int $userId = null): Collection
+    private function userTasksQuery(User $user)
     {
-        $query = $workspace->tasks()
+        $workspaceId = $user->defaultWorkspace()->id;
+        $userId = $user->id;
+        return Task::where(function ($q) use ($workspaceId, $userId) {
+            $q->where('workspace_id', $workspaceId)
+              ->orWhereHas('contacts', fn ($c) => $c->where('contacts.contact_user_id', $userId));
+        });
+    }
+
+    // GTD: Входящие (inbox)
+    public function getInbox(User $user, ?int $userId = null): Collection
+    {
+        $query = $this->userTasksQuery($user)
             ->inbox()
             ->whereNull('completed_at')
-            ->with(['workspace', 'project', 'context', 'assignee', 'tags']);
+            ->with(['project', 'context', 'assignee', 'tags', 'contacts']);
 
         if ($userId) {
             $query->where('assigned_to', $userId);
@@ -36,12 +46,12 @@ class TaskService
     }
 
     // GTD: Следующие действия (next_action)
-    public function getNextActions(Workspace $workspace, ?int $userId = null): Collection
+    public function getNextActions(User $user, ?int $userId = null): Collection
     {
-        $query = $workspace->tasks()
+        $query = $this->userTasksQuery($user)
             ->nextAction()
             ->whereNull('completed_at')
-            ->with(['workspace', 'project', 'context', 'assignee', 'tags']);
+            ->with(['project', 'context', 'assignee', 'tags', 'contacts']);
 
         if ($userId) {
             $query->where('assigned_to', $userId);
@@ -52,13 +62,20 @@ class TaskService
             ->get();
     }
 
-    // GTD: Ожидание (waiting)
-    public function getWaiting(Workspace $workspace, ?int $userId = null): Collection
+    // GTD: Ожидание (waiting) + задачи, в которых назначен другой исполнитель
+    public function getWaiting(User $user, ?int $userId = null): Collection
     {
-        $query = $workspace->tasks()
-            ->waiting()
+        $me = $user->id;
+        $query = $this->userTasksQuery($user)
             ->whereNull('completed_at')
-            ->with(['workspace', 'project', 'context', 'assignee', 'tags']);
+            ->where(function ($q) use ($me) {
+                $q->where('status', 'waiting')
+                  ->orWhereHas('contacts', function ($c) use ($me) {
+                      $c->where('task_contact.role', 'assignee')
+                        ->where('contacts.contact_user_id', '!=', $me);
+                  });
+            })
+            ->with(['project', 'context', 'assignee', 'tags', 'contacts']);
 
         if ($userId) {
             $query->where('assigned_to', $userId);
@@ -68,12 +85,12 @@ class TaskService
     }
 
     // GTD: Когда-нибудь (someday)
-    public function getSomeday(Workspace $workspace, ?int $userId = null): Collection
+    public function getSomeday(User $user, ?int $userId = null): Collection
     {
-        $query = $workspace->tasks()
+        $query = $this->userTasksQuery($user)
             ->someday()
             ->whereNull('completed_at')
-            ->with(['workspace', 'project', 'context', 'assignee', 'tags']);
+            ->with(['project', 'context', 'assignee', 'tags', 'contacts']);
 
         if ($userId) {
             $query->where('assigned_to', $userId);
@@ -83,12 +100,12 @@ class TaskService
     }
 
     // Задачи на сегодня
-    public function getToday(Workspace $workspace, ?int $userId = null): Collection
+    public function getToday(User $user, ?int $userId = null): Collection
     {
-        $query = $workspace->tasks()
+        $query = $this->userTasksQuery($user)
             ->today()
             ->whereNull('completed_at')
-            ->with(['workspace', 'project', 'context', 'assignee', 'tags']);
+            ->with(['project', 'context', 'assignee', 'tags', 'contacts']);
 
         if ($userId) {
             $query->where('assigned_to', $userId);
@@ -98,12 +115,12 @@ class TaskService
     }
 
     // Задачи на завтра
-    public function getTomorrow(Workspace $workspace, ?int $userId = null): Collection
+    public function getTomorrow(User $user, ?int $userId = null): Collection
     {
-        $query = $workspace->tasks()
+        $query = $this->userTasksQuery($user)
             ->where('status', 'tomorrow')
             ->whereNull('completed_at')
-            ->with(['workspace', 'project', 'context', 'assignee', 'tags']);
+            ->with(['project', 'context', 'assignee', 'tags', 'contacts']);
 
         if ($userId) {
             $query->where('assigned_to', $userId);
@@ -113,12 +130,12 @@ class TaskService
     }
 
     // Просроченные задачи
-    public function getOverdue(Workspace $workspace, ?int $userId = null): Collection
+    public function getOverdue(User $user, ?int $userId = null): Collection
     {
-        $query = $workspace->tasks()
+        $query = $this->userTasksQuery($user)
             ->overdue()
             ->whereNull('completed_at')
-            ->with(['workspace', 'project', 'context', 'assignee', 'tags']);
+            ->with(['project', 'context', 'assignee', 'tags', 'contacts']);
 
         if ($userId) {
             $query->where('assigned_to', $userId);
@@ -128,12 +145,12 @@ class TaskService
     }
 
     // Предстоящие задачи (на неделю)
-    public function getUpcoming(Workspace $workspace, ?int $userId = null): Collection
+    public function getUpcoming(User $user, ?int $userId = null): Collection
     {
-        $query = $workspace->tasks()
+        $query = $this->userTasksQuery($user)
             ->upcoming()
             ->whereNull('completed_at')
-            ->with(['workspace', 'project', 'context', 'assignee', 'tags']);
+            ->with(['project', 'context', 'assignee', 'tags', 'contacts']);
 
         if ($userId) {
             $query->where('assigned_to', $userId);
@@ -143,27 +160,27 @@ class TaskService
     }
 
     // Создание задачи
-    public function createTask(Workspace $workspace, array $data, int $userId): Task
+    public function createTask(User $user, array $data, int $userId): Task
     {
-        // Используем workspace_id из формы, если передан, иначе из URL
-        if (!isset($data['workspace_id'])) {
+        // Берём первый workspace пользователя для workspace_id (legacy)
+        $workspace = $user->defaultWorkspace();
         $data['workspace_id'] = $workspace->id;
-        }
-        
         $data['created_by'] = $userId;
-        
+        $data['title'] = $data['title'] ?? '';
+
         // Если не указан assigned_to, назначаем создателя
         if (!isset($data['assigned_to'])) {
             $data['assigned_to'] = $userId;
         }
 
-        // Определяем workspace для позиции
-        $targetWorkspace = Workspace::find($data['workspace_id']);
-
         // Автоматическая позиция
         if (!isset($data['position'])) {
-            $data['position'] = $targetWorkspace->tasks()->max('position') + 1;
+            $data['position'] = Task::where('workspace_id', $workspace->id)->max('position') + 1;
         }
+
+        // Извлекаем contact_ids перед созданием задачи
+        $contactIds = $data['contact_ids'] ?? [];
+        unset($data['contact_ids']);
 
         $task = Task::create($data);
 
@@ -172,9 +189,16 @@ class TaskService
             $task->tags()->sync($data['tags']);
         }
 
-        $task->load(['workspace', 'project', 'context', 'assignee', 'tags', 'creator']);
+        // Привязка контактов
+        if (!empty($contactIds)) {
+            $task->contacts()->sync(
+                collect($contactIds)->mapWithKeys(fn ($id) => [$id => ['role' => 'informed']])->toArray()
+            );
+        }
 
-        // Уведомляем участников workspace
+        $task->load(['project', 'context', 'assignee', 'tags', 'creator', 'contacts']);
+
+        // Уведомляем
         $this->notifyMembers($task, $userId, 'created');
 
         return $task;
@@ -184,27 +208,25 @@ class TaskService
     public function updateTask(Task $task, array $data): Task
     {
         // Если устанавливается due_date, проверяем нужно ли изменить статус
-        // Но только если статус не меняется явно и задача не завершена
         if (isset($data['due_date']) && $data['due_date'] && !isset($data['status'])) {
             $dueDate = \Carbon\Carbon::parse($data['due_date'])->startOfDay();
             $today = \Carbon\Carbon::today();
             $tomorrow = \Carbon\Carbon::tomorrow();
-            
-            // Если дата = сегодня и задача не завершена - меняем на today
+
             if ($dueDate->isSameDay($today) && $task->status !== 'completed') {
                 $data['status'] = 'today';
-            }
-            // Если дата = завтра и задача не завершена - меняем на tomorrow
-            elseif ($dueDate->isSameDay($tomorrow) && $task->status !== 'completed') {
+            } elseif ($dueDate->isSameDay($tomorrow) && $task->status !== 'completed') {
                 $data['status'] = 'tomorrow';
-            }
-            // Если дата установлена, но не сегодня и не завтра - меняем статус на scheduled
-            elseif ($task->status !== 'completed' && 
+            } elseif ($task->status !== 'completed' &&
                     !in_array($task->status, ['today', 'tomorrow', 'completed'])) {
                 $data['status'] = 'scheduled';
             }
         }
-        
+
+        // Извлекаем contact_ids перед обновлением
+        $contactIds = $data['contact_ids'] ?? null;
+        unset($data['contact_ids']);
+
         $task->update($data);
 
         // Привязка тегов
@@ -212,15 +234,20 @@ class TaskService
             $task->tags()->sync($data['tags']);
         }
 
-        // Загружаем связи безопасно, пропуская несуществующие
-        $relations = [];
-        if ($task->workspace_id) $relations[] = 'workspace';
+        // Привязка контактов
+        if ($contactIds !== null) {
+            $task->contacts()->sync(
+                collect($contactIds)->mapWithKeys(fn ($id) => [$id => ['role' => 'informed']])->toArray()
+            );
+        }
+
+        // Загружаем связи
+        $relations = ['tags', 'contacts'];
         if ($task->project_id) $relations[] = 'project';
         if ($task->context_id) $relations[] = 'context';
         if ($task->assigned_to) $relations[] = 'assignee';
         if ($task->created_by) $relations[] = 'creator';
-        $relations[] = 'tags'; // Теги всегда могут быть пустыми
-        
+
         return $task->load($relations);
     }
 
@@ -229,23 +256,17 @@ class TaskService
     {
         $updateData = ['status' => $status];
 
-        // Если статус = 'today' - автоматически устанавливаем дату на сегодня
         if ($status === 'today') {
             $updateData['due_date'] = \Carbon\Carbon::today()->format('Y-m-d');
-        }
-        // Если статус = 'tomorrow' - автоматически устанавливаем дату на завтра
-        elseif ($status === 'tomorrow') {
+        } elseif ($status === 'tomorrow') {
             $updateData['due_date'] = \Carbon\Carbon::tomorrow()->format('Y-m-d');
         }
 
         $task->update($updateData);
 
-        // LEGACY: Поддержка старого способа с status='completed'
-        // В новой логике используем completeTask() вместо changeStatus($task, 'completed')
         if ($status === 'completed' && !$task->completed_at) {
             $task->update(['completed_at' => now()]);
 
-            // Уведомляем участников
             if ($actorUserId) {
                 $this->notifyMembers($task, $actorUserId, 'completed');
             }
@@ -257,11 +278,9 @@ class TaskService
     // Завершение задачи
     public function completeTask(Task $task, ?int $actorUserId = null): Task
     {
-        // Не меняем status, только устанавливаем completed_at
         $task->update(['completed_at' => now()]);
         $task = $task->fresh();
 
-        // Уведомляем участников при завершении задачи
         if ($actorUserId) {
             $this->notifyMembers($task, $actorUserId, 'completed');
         }
@@ -272,7 +291,6 @@ class TaskService
     // Возврат задачи в работу
     public function uncompleteTask(Task $task): Task
     {
-        // Не меняем status, только очищаем completed_at
         $task->update(['completed_at' => null]);
         return $task->fresh();
     }
@@ -284,7 +302,6 @@ class TaskService
         $task->update(['assigned_to' => $userId]);
         $task = $task->fresh();
 
-        // Уведомляем назначенного (если сменился)
         if ($userId && $userId !== $oldAssignee && $actorUserId) {
             $this->notifyMembers($task, $actorUserId, 'assigned');
         }
@@ -309,13 +326,25 @@ class TaskService
     }
 
     // Получить задачи для календаря
-    public function getCalendarTasks(Workspace $workspace, string $startDate, string $endDate, ?int $userId = null)
+    public function getCalendarTasks(User $user, string $startDate, string $endDate, ?int $userId = null)
     {
-        $query = $workspace->tasks()
-            ->whereNotNull('due_date')
-            ->whereBetween('due_date', [$startDate, $endDate])
+        $today = \Carbon\Carbon::today()->toDateString();
+        $tomorrow = \Carbon\Carbon::tomorrow()->toDateString();
+        $todayInRange = $today >= $startDate && $today <= $endDate;
+        $tomorrowInRange = $tomorrow >= $startDate && $tomorrow <= $endDate;
+
+        $query = $this->userTasksQuery($user)
             ->whereNull('completed_at')
-            ->with(['workspace', 'project', 'context', 'assignee', 'tags']);
+            ->where(function ($q) use ($startDate, $endDate, $todayInRange, $tomorrowInRange) {
+                $q->whereBetween('due_date', [$startDate, $endDate]);
+                if ($todayInRange) {
+                    $q->orWhere(fn ($qq) => $qq->where('status', 'today')->whereNull('due_date'));
+                }
+                if ($tomorrowInRange) {
+                    $q->orWhere(fn ($qq) => $qq->where('status', 'tomorrow')->whereNull('due_date'));
+                }
+            })
+            ->with(['project', 'context', 'assignee', 'tags', 'contacts']);
 
         if ($userId) {
             $query->where('assigned_to', $userId);
@@ -325,9 +354,9 @@ class TaskService
     }
 
     // Получить счетчики задач для навигации
-    public function getTaskCounts(Workspace $workspace, ?int $userId = null): array
+    public function getTaskCounts(User $user, ?int $userId = null): array
     {
-        $query = $workspace->tasks()->whereNull('completed_at');
+        $query = $this->userTasksQuery($user)->whereNull('completed_at');
 
         if ($userId) {
             $query->where('assigned_to', $userId);
@@ -338,10 +367,15 @@ class TaskService
             'next_actions' => (clone $query)->where('status', 'next_action')->count(),
             'today' => (clone $query)->where('status', 'today')->count(),
             'tomorrow' => (clone $query)->where('status', 'tomorrow')->count(),
-            'waiting' => (clone $query)->where('status', 'waiting')->count(),
+            'waiting' => (clone $query)->where(function ($q) use ($user) {
+                $q->where('status', 'waiting')
+                  ->orWhereHas('contacts', function ($c) use ($user) {
+                      $c->where('task_contact.role', 'assignee')
+                        ->where('contacts.contact_user_id', '!=', $user->id);
+                  });
+            })->count(),
             'someday' => (clone $query)->where('status', 'someday')->count(),
             'scheduled' => (clone $query)->where('status', 'scheduled')->count(),
         ];
     }
 }
-

@@ -66,6 +66,16 @@
             {{ inboxCount }}
           </span>
         </router-link>
+        <router-link
+          to="/contacts"
+          class="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+          :class="$route.path === '/contacts' ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-5.13a4 4 0 11-8 0 4 4 0 018 0zm6 3a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+          <span>Контакты</span>
+        </router-link>
       </nav>
 
       <!-- Spacer -->
@@ -214,13 +224,11 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useThemeStore } from '@/stores/theme'
-import { useWorkspaceStore } from '@/stores/workspace'
 import logoLight from '@/assets/images/logo.svg'
 import logoDark from '@/assets/images/logo-dark.svg'
 
 const route = useRoute()
 const themeStore = useThemeStore()
-const workspaceStore = useWorkspaceStore()
 const logo = computed(() => themeStore.isDark ? logoDark : logoLight)
 
 const props = defineProps({
@@ -234,13 +242,10 @@ const props = defineProps({
   },
 })
 
-const inboxRoute = computed(() => {
-  const wsId = workspaceStore.currentWorkspace?.id || 1
-  return `/workspaces/${wsId}/inbox`
-})
+const inboxRoute = '/inbox'
 
 const isDashboardActive = computed(() => route.path === '/')
-const isInboxActive = computed(() => route.path === inboxRoute.value)
+const isInboxActive = computed(() => route.path === '/inbox')
 
 const emit = defineEmits(['quick-add', 'quick-add-task', 'quick-add-project', 'quick-add-goal', 'search', 'logout', 'profile', 'settings'])
 

@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\V1\AttachmentController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CommentController;
+use App\Http\Controllers\Api\V1\ContactController;
 use App\Http\Controllers\Api\V1\ContextController;
 use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\FileController;
@@ -36,7 +37,7 @@ Route::get('/test', function () {
 
 // API Version 1
 Route::prefix('v1')->group(function () {
-    
+
     // Telegram Webhook (публичный, защищён через secret в URL)
     Route::post('/telegram/webhook/{secret}', [TelegramWebhookController::class, 'handle']);
 
@@ -49,7 +50,7 @@ Route::prefix('v1')->group(function () {
 
     // Защищённые маршруты (требуют аутентификации)
     Route::middleware('auth:sanctum')->group(function () {
-        
+
         // Аутентификация
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::get('/me', [AuthController::class, 'me']);
@@ -58,89 +59,96 @@ Route::prefix('v1')->group(function () {
         Route::put('/profile', [AuthController::class, 'updateProfile']);
         Route::put('/password', [AuthController::class, 'updatePassword']);
 
-        // Все задачи пользователя (по всем workspace)
+        // === ЗАДАЧИ (без workspace) ===
         Route::get('/tasks', [TaskController::class, 'all']);
+        Route::post('/tasks', [TaskController::class, 'store']);
+        Route::post('/tasks/cleanup-empty', [TaskController::class, 'cleanupEmpty']);
+        Route::get('/tasks/{task}', [TaskController::class, 'show']);
+        Route::put('/tasks/{task}', [TaskController::class, 'update']);
+        Route::delete('/tasks/{task}', [TaskController::class, 'destroy']);
+        Route::post('/tasks/{task}/complete', [TaskController::class, 'complete']);
+        Route::post('/tasks/{task}/uncomplete', [TaskController::class, 'uncomplete']);
+        Route::post('/tasks/{task}/move', [TaskController::class, 'move']);
+        Route::post('/tasks/{task}/assign', [TaskController::class, 'assign']);
 
-        // Все проекты пользователя (по всем workspace)
+        // GTD виды задач
+        Route::get('/inbox', [TaskController::class, 'inbox']);
+        Route::get('/next-actions', [TaskController::class, 'nextActions']);
+        Route::get('/waiting', [TaskController::class, 'waiting']);
+        Route::get('/someday', [TaskController::class, 'someday']);
+        Route::get('/today', [TaskController::class, 'today']);
+        Route::get('/tomorrow', [TaskController::class, 'tomorrow']);
+        Route::get('/my-tasks', [TaskController::class, 'myTasks']);
+        Route::get('/calendar', [TaskController::class, 'calendar']);
+        Route::get('/counts', [TaskController::class, 'counts']);
+
+        // === ПРОЕКТЫ ===
         Route::get('/projects', [ProjectController::class, 'all']);
+        Route::post('/projects', [ProjectController::class, 'store']);
+        Route::get('/projects/{project}', [ProjectController::class, 'show']);
+        Route::put('/projects/{project}', [ProjectController::class, 'update']);
+        Route::delete('/projects/{project}', [ProjectController::class, 'destroy']);
+        Route::get('/projects/{project}/tasks', [ProjectController::class, 'tasks']);
 
-        // Все цели пользователя (по всем workspace)
+        // === ЦЕЛИ ===
         Route::get('/goals', [GoalController::class, 'all']);
+        Route::post('/goals', [GoalController::class, 'store']);
+        Route::get('/goals/{goal}', [GoalController::class, 'show']);
+        Route::put('/goals/{goal}', [GoalController::class, 'update']);
+        Route::delete('/goals/{goal}', [GoalController::class, 'destroy']);
+        Route::delete('/goals/{goal}/image', [GoalController::class, 'deleteImage']);
 
-        // Все сферы жизни пользователя (по всем workspace)
+        // === СФЕРЫ ЖИЗНИ ===
         Route::get('/life-spheres', [LifeSphereController::class, 'all']);
+        Route::post('/life-spheres', [LifeSphereController::class, 'store']);
+        Route::get('/life-spheres/{life_sphere}', [LifeSphereController::class, 'show']);
+        Route::put('/life-spheres/{life_sphere}', [LifeSphereController::class, 'update']);
+        Route::delete('/life-spheres/{life_sphere}', [LifeSphereController::class, 'destroy']);
+        Route::post('/life-spheres/seed', [LifeSphereController::class, 'seed']);
+
+        // === КОНТАКТЫ ===
+        Route::apiResource('contacts', ContactController::class);
+
+        // === КОНТЕКСТЫ ===
+        Route::get('/contexts', [ContextController::class, 'all']);
+        Route::post('/contexts', [ContextController::class, 'store']);
+        Route::get('/contexts/{context}', [ContextController::class, 'show']);
+        Route::put('/contexts/{context}', [ContextController::class, 'update']);
+        Route::delete('/contexts/{context}', [ContextController::class, 'destroy']);
+
+        // === ТЕГИ ===
+        Route::get('/tags', [TagController::class, 'all']);
+        Route::post('/tags', [TagController::class, 'store']);
+        Route::get('/tags/{tag}', [TagController::class, 'show']);
+        Route::put('/tags/{tag}', [TagController::class, 'update']);
+        Route::delete('/tags/{tag}', [TagController::class, 'destroy']);
+
+        // === КОММЕНТАРИИ ===
+        Route::get('/tasks/{task}/comments', [CommentController::class, 'index']);
+        Route::post('/tasks/{task}/comments', [CommentController::class, 'store']);
+        Route::delete('/comments/{comment}', [CommentController::class, 'destroy']);
+
+        // === ВЛОЖЕНИЯ ===
+        Route::post('/tasks/{task}/attachments', [AttachmentController::class, 'upload']);
+        Route::get('/attachments/{attachment}', [AttachmentController::class, 'show']);
+        Route::get('/attachments/{attachment}/download', [AttachmentController::class, 'download']);
+        Route::delete('/attachments/{attachment}', [AttachmentController::class, 'destroy']);
 
         // Dashboard
         Route::get('/dashboard/stats', [DashboardController::class, 'getStats']);
         Route::get('/dashboard/life-mirror', [DashboardController::class, 'getLifeMirror']);
         Route::get('/dashboard/ai-message', [DashboardController::class, 'getAiMessage']);
 
-        // === WORKSPACES (Команды) ===
+        // === WORKSPACES (legacy, оставляем для обратной совместимости) ===
         Route::apiResource('workspaces', WorkspaceController::class);
-        Route::get('workspaces/{workspace}/members', [WorkspaceController::class, 'members']);
-        Route::post('workspaces/{workspace}/members', [WorkspaceController::class, 'addMember']);
-        Route::delete('workspaces/{workspace}/members/{user}', [WorkspaceController::class, 'removeMember']);
-        Route::put('workspaces/{workspace}/members/{user}/role', [WorkspaceController::class, 'updateMemberRole']);
 
-        // === В КОНТЕКСТЕ WORKSPACE ===
-        Route::prefix('workspaces/{workspace}')->group(function () {
-            
-            // GTD Виды задач
-            Route::get('inbox', [TaskController::class, 'inbox']);
-            Route::get('next-actions', [TaskController::class, 'nextActions']);
-            Route::get('waiting', [TaskController::class, 'waiting']);
-            Route::get('someday', [TaskController::class, 'someday']);
-            Route::get('today', [TaskController::class, 'today']);
-            Route::get('tomorrow', [TaskController::class, 'tomorrow']);
-            Route::get('my-tasks', [TaskController::class, 'myTasks']);
-            Route::get('calendar', [TaskController::class, 'calendar']);
-            Route::get('counts', [TaskController::class, 'counts']);
-
-            // CRUD Задач
-            Route::apiResource('tasks', TaskController::class);
-            Route::post('tasks/{task}/complete', [TaskController::class, 'complete']);
-            Route::post('tasks/{task}/uncomplete', [TaskController::class, 'uncomplete']);
-            Route::post('tasks/{task}/move', [TaskController::class, 'move']);
-            Route::post('tasks/{task}/assign', [TaskController::class, 'assign']);
-
-            // Проекты
-            Route::apiResource('projects', ProjectController::class);
-            Route::get('projects/{project}/tasks', [ProjectController::class, 'tasks']);
-
-            // Цели
-            Route::apiResource('goals', GoalController::class);
-            Route::delete('goals/{goal}/image', [GoalController::class, 'deleteImage']);
-
-            // Сферы жизни
-            Route::apiResource('life-spheres', LifeSphereController::class);
-            Route::post('life-spheres/seed', [LifeSphereController::class, 'seed']);
-
-            // Контексты
-            Route::apiResource('contexts', ContextController::class);
-
-            // Теги
-            Route::apiResource('tags', TagController::class);
-
-            // Комментарии
-            Route::get('tasks/{task}/comments', [CommentController::class, 'index']);
-            Route::post('tasks/{task}/comments', [CommentController::class, 'store']);
-            Route::delete('comments/{comment}', [CommentController::class, 'destroy']);
-
-            // Вложения
-            Route::post('tasks/{task}/attachments', [AttachmentController::class, 'upload']);
-            Route::get('attachments/{attachment}', [AttachmentController::class, 'show']);
-            Route::get('attachments/{attachment}/download', [AttachmentController::class, 'download']);
-            Route::delete('attachments/{attachment}', [AttachmentController::class, 'destroy']);
-
-        });
-
-        // Telegram — подписка пользователя (user-level, не привязана к workspace)
+        // Telegram — подписка пользователя
         Route::get('telegram/subscription', [TelegramSubscriptionController::class, 'show']);
         Route::post('telegram/subscription', [TelegramSubscriptionController::class, 'store']);
         Route::put('telegram/subscription', [TelegramSubscriptionController::class, 'update']);
         Route::delete('telegram/subscription', [TelegramSubscriptionController::class, 'destroy']);
 
-        // Работа с файлами в S3 (старый функционал)
+        // Работа с файлами в S3
         Route::prefix('files')->middleware('throttle:uploads')->group(function () {
             Route::post('/upload', [FileController::class, 'upload']);
             Route::get('/show', [FileController::class, 'show']);
@@ -149,4 +157,3 @@ Route::prefix('v1')->group(function () {
         });
     });
 });
-

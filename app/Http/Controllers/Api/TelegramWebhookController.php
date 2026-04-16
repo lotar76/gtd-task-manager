@@ -34,7 +34,6 @@ class TelegramWebhookController extends Controller
 
         $update = $request->all();
 
-        // Обработка callback query (нажатие inline-кнопки)
         if (isset($update['callback_query'])) {
             return $this->handleCallbackQuery($update['callback_query']);
         }
@@ -76,8 +75,6 @@ class TelegramWebhookController extends Controller
         return $this->handleCreateTask($subscription, $chatId, $text);
     }
 
-    // ─── Команды ───────────────────────────────────────────────
-
     private function handleStart(string $chatId, string $text): JsonResponse
     {
         $parts = explode(' ', $text, 2);
@@ -108,15 +105,11 @@ class TelegramWebhookController extends Controller
         ]);
 
         $user = $subscription->user;
-        $workspaces = $user->allWorkspaces();
-        $wsNames = $workspaces->pluck('name')->implode(', ');
 
         $this->telegramService->sendMessage(
             $chatId,
             "Привет, {$user->name}! 👋\n"
             . "Вы подключены к GTD Task Manager.\n\n"
-            . "📂 Ваши пространства:\n"
-            . "<b>{$wsNames}</b>\n\n"
             . "Что я умею:\n"
             . "💬 Отправьте текст — создам задачу\n"
             . "📋 /today — задачи на сегодня\n"
@@ -130,37 +123,24 @@ class TelegramWebhookController extends Controller
     private function handleToday(TelegramSubscription $subscription, string $chatId): JsonResponse
     {
         $user = $subscription->user;
-        $workspaces = $user->allWorkspaces();
+        $workspaceIds = $user->defaultWorkspace()->id;
 
-        $allTasks = collect();
-
-        foreach ($workspaces as $workspace) {
-            $tasks = $workspace->tasks()
-                ->with(['project', 'context'])
-                ->where('status', 'today')
-                ->where(function ($q) use ($user) {
-                    $q->where('assigned_to', $user->id)
-                      ->orWhere('created_by', $user->id);
-                })
-                ->orderBy('estimated_time', 'asc')
-                ->orderBy('priority', 'desc')
-                ->get()
-                ->each(fn ($task) => $task->_workspace_name = $workspace->name);
-
-            $allTasks = $allTasks->merge($tasks);
-        }
-
-        $allTasks = $allTasks->sortBy([
-            ['estimated_time', 'asc'],
-            ['priority', 'desc'],
-        ])->values();
+        $allTasks = Task::whereIn('workspace_id', $workspaceIds)
+            ->with(['project', 'context'])
+            ->where('status', 'today')
+            ->whereNull('completed_at')
+            ->where(function ($q) use ($user) {
+                $q->where('assigned_to', $user->id)
+                  ->orWhere('created_by', $user->id);
+            })
+            ->orderBy('estimated_time', 'asc')
+            ->orderBy('priority', 'desc')
+            ->get();
 
         if ($allTasks->isEmpty()) {
             $this->telegramService->sendMessage($chatId, "На сегодня задач нет 🎉");
             return response()->json(['ok' => true]);
         }
-
-        $showWorkspaceName = $workspaces->count() > 1;
 
         $text = "<b>📋 Задачи на сегодня ({$allTasks->count()}):</b>\n\n";
 
@@ -169,13 +149,7 @@ class TelegramWebhookController extends Controller
         foreach ($allTasks as $i => $task) {
             $num = $i + 1;
             $line = $this->telegramService->formatTaskLine($task);
-
-            if ($showWorkspaceName) {
-                $line .= "\n     📂 {$task->_workspace_name}";
-            }
-
             $text .= "{$num}. {$line}\n\n";
-
             $keyboard[] = [['text' => "✅ {$num}. Отметить как выполнено", 'callback_data' => "done:{$task->id}"]];
         }
 
@@ -190,8 +164,7 @@ class TelegramWebhookController extends Controller
             . "📋 /today — задачи на сегодня\n"
             . "❓ /help — эта справка\n\n"
             . "<b>Создание задач:</b>\n"
-            . "Отправьте любой текст — и я создам задачу.\n"
-            . "Если у вас несколько пространств, предложу выбрать.\n\n"
+            . "Отправьте любой текст — и я создам задачу.\n\n"
             . "<b>Уведомления:</b>\n"
             . "Настройте в приложении → Настройки → Telegram:\n"
             . "☀️ Утренний дайджест\n"
@@ -202,53 +175,21 @@ class TelegramWebhookController extends Controller
         return response()->json(['ok' => true]);
     }
 
-    // ─── Создание задачи ───────────────────────────────────────
-
     private function handleCreateTask(TelegramSubscription $subscription, string $chatId, string $text): JsonResponse
     {
         try {
             $user = $subscription->user;
-            $workspaces = $user->allWorkspaces();
 
-            if ($workspaces->isEmpty()) {
-                $this->telegramService->sendMessage(
-                    $chatId,
-                    "У вас нет ни одного пространства.\nСоздайте пространство в приложении."
-                );
-                return response()->json(['ok' => true]);
-            }
-
-            // Одно пространство — создаём сразу
-            if ($workspaces->count() === 1) {
-                $workspace = $workspaces->first();
-                $task = $this->taskService->createTask($workspace, [
-                    'title' => $text,
-                    'status' => 'inbox',
-                ], $user->id);
-
-                $this->telegramService->sendMessageWithKeyboard(
-                    $chatId,
-                    "✅ Задача создана во Входящих\n\n"
-                    . "<b>{$task->title}</b>\n"
-                    . "📂 {$workspace->name}",
-                    [[['text' => 'Отметить как выполнено', 'callback_data' => "done:{$task->id}"]]]
-                );
-
-                return response()->json(['ok' => true]);
-            }
-
-            // Несколько пространств — показываем кнопки выбора
-            $subscription->update(['pending_task_text' => $text]);
-
-            $keyboard = [];
-            foreach ($workspaces as $ws) {
-                $keyboard[] = [['text' => "📂 {$ws->name}", 'callback_data' => "ws:{$ws->id}"]];
-            }
+            $task = $this->taskService->createTask($user, [
+                'title' => $text,
+                'status' => 'inbox',
+            ], $user->id);
 
             $this->telegramService->sendMessageWithKeyboard(
                 $chatId,
-                "📝 Создать задачу:\n<b>{$text}</b>\n\nВыберите пространство:",
-                $keyboard
+                "✅ Задача создана во Входящих\n\n"
+                . "<b>{$task->title}</b>",
+                [[['text' => 'Отметить как выполнено', 'callback_data' => "done:{$task->id}"]]]
             );
         } catch (\Exception $e) {
             Log::error('Telegram create task error: ' . $e->getMessage());
@@ -260,8 +201,6 @@ class TelegramWebhookController extends Controller
 
         return response()->json(['ok' => true]);
     }
-
-    // ─── Callback Query (нажатие кнопки) ───────────────────────
 
     private function handleCallbackQuery(array $callbackQuery): JsonResponse
     {
@@ -291,12 +230,6 @@ class TelegramWebhookController extends Controller
             return $this->handleCompleteTask($subscription, $callbackId, $chatId, $messageId, $taskId);
         }
 
-        // ws:{workspace_id} — выбрать пространство для создания задачи
-        if (str_starts_with($data, 'ws:')) {
-            $workspaceId = (int) substr($data, 3);
-            return $this->handleSelectWorkspace($subscription, $callbackId, $chatId, $messageId, $workspaceId);
-        }
-
         $this->telegramService->answerCallbackQuery($callbackId);
         return response()->json(['ok' => true]);
     }
@@ -323,7 +256,7 @@ class TelegramWebhookController extends Controller
             return response()->json(['ok' => true]);
         }
 
-        if ($task->status === 'completed') {
+        if ($task->completed_at) {
             $this->telegramService->answerCallbackQuery($callbackId, 'Уже выполнена');
             return response()->json(['ok' => true]);
         }
@@ -332,62 +265,11 @@ class TelegramWebhookController extends Controller
 
         $this->telegramService->answerCallbackQuery($callbackId, '✅ Задача закрыта!');
 
-        // Обновляем сообщение — зачёркиваем задачу
         $this->telegramService->editMessageText(
             $chatId,
             $messageId,
             "✅ <s>{$task->title}</s>\n\nЗадача выполнена!"
         );
-
-        return response()->json(['ok' => true]);
-    }
-
-    private function handleSelectWorkspace(
-        TelegramSubscription $subscription,
-        string $callbackId,
-        string $chatId,
-        int $messageId,
-        int $workspaceId
-    ): JsonResponse {
-        $user = $subscription->user;
-        $pendingText = $subscription->pending_task_text;
-
-        if (!$pendingText) {
-            $this->telegramService->answerCallbackQuery($callbackId, 'Нет текста задачи');
-            return response()->json(['ok' => true]);
-        }
-
-        $workspace = $user->allWorkspaces()->firstWhere('id', $workspaceId);
-
-        if (!$workspace) {
-            $this->telegramService->answerCallbackQuery($callbackId, 'Пространство не найдено');
-            return response()->json(['ok' => true]);
-        }
-
-        try {
-            $task = $this->taskService->createTask($workspace, [
-                'title' => $pendingText,
-                'status' => 'inbox',
-            ], $user->id);
-
-            $subscription->update(['pending_task_text' => null]);
-
-            $this->telegramService->answerCallbackQuery($callbackId, '✅ Задача создана!');
-
-            // Обновляем сообщение — показываем подтверждение с кнопкой «Закрыть»
-            $this->telegramService->editMessageText(
-                $chatId,
-                $messageId,
-                "✅ Задача создана во Входящих\n\n"
-                . "<b>{$task->title}</b>\n"
-                . "📂 {$workspace->name}",
-                'HTML',
-                [[['text' => 'Отметить как выполнено', 'callback_data' => "done:{$task->id}"]]]
-            );
-        } catch (\Exception $e) {
-            Log::error('Telegram select workspace error: ' . $e->getMessage());
-            $this->telegramService->answerCallbackQuery($callbackId, 'Ошибка создания задачи');
-        }
 
         return response()->json(['ok' => true]);
     }

@@ -99,6 +99,34 @@ class Task extends Model
         return $this->hasMany(Attachment::class);
     }
 
+    public function contacts(): BelongsToMany
+    {
+        return $this->belongsToMany(Contact::class, 'task_contact')
+            ->withPivot('role')
+            ->withTimestamps();
+    }
+
+    public function assignees(): BelongsToMany
+    {
+        return $this->belongsToMany(Contact::class, 'task_contact')
+            ->wherePivot('role', 'assignee')
+            ->withPivot('role')
+            ->withTimestamps();
+    }
+
+    public function watchers(): BelongsToMany
+    {
+        return $this->belongsToMany(Contact::class, 'task_contact')
+            ->wherePivot('role', 'watcher')
+            ->withPivot('role')
+            ->withTimestamps();
+    }
+
+    public function checklistItems(): HasMany
+    {
+        return $this->hasMany(TaskChecklistItem::class)->orderBy('position');
+    }
+
     // Scope для фильтрации по GTD статусам
     public function scopeInbox($query)
     {
