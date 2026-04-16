@@ -276,9 +276,12 @@ class TaskController extends Controller
         $user = $request->user();
         $workspaceId = $user->defaultWorkspace()->id;
 
+        // Чистим брошенные пустые черновики старше 10 минут в своём пространстве.
+        $threshold = now()->subMinutes(10);
+
         $query = Task::where('workspace_id', $workspaceId)
             ->whereNull('completed_at')
-            ->where('created_by', $user->id)
+            ->where('created_at', '<', $threshold)
             ->where(function ($q) {
                 $q->whereNull('title')->orWhere('title', '')->orWhere('title', 'Без названия');
             })
