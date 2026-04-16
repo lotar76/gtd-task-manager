@@ -183,7 +183,7 @@ const saveSphereName = async (sphereId) => {
     return
   }
   try {
-    await lifeSpheresStore.update(props.workspace.id, sphereId, { name: trimmed })
+    await lifeSpheresStore.update(sphereId, { name: trimmed })
   } catch (e) {
     error.value = 'Ошибка при переименовании'
   }
@@ -192,7 +192,7 @@ const saveSphereName = async (sphereId) => {
 
 const handleUpdateSphere = async (sphereId, data) => {
   try {
-    await lifeSpheresStore.update(props.workspace.id, sphereId, data)
+    await lifeSpheresStore.update(sphereId, data)
   } catch (e) {
     error.value = 'Ошибка при обновлении'
   }
@@ -200,7 +200,7 @@ const handleUpdateSphere = async (sphereId, data) => {
 
 const handleToggleHidden = async (sphere) => {
   try {
-    await lifeSpheresStore.update(props.workspace.id, sphere.id, { is_hidden: !sphere.is_hidden })
+    await lifeSpheresStore.update(sphere.id, { is_hidden: !sphere.is_hidden })
     dashboardStore.invalidateWorkspace(props.workspace.id)
   } catch (e) {
     error.value = 'Ошибка при обновлении'
@@ -221,7 +221,7 @@ const handleDeleteSphere = async () => {
   showDeleteConfirm.value = false
   if (!sphereToDelete.value) return
   try {
-    await lifeSpheresStore.remove(props.workspace.id, sphereToDelete.value.id)
+    await lifeSpheresStore.remove(sphereToDelete.value.id)
   } catch (e) {
     const msg = e.response?.data?.message || 'Ошибка при удалении'
     error.value = msg
@@ -235,7 +235,7 @@ const handleAddSphere = async () => {
   error.value = ''
   loading.value = true
   try {
-    await lifeSpheresStore.create(props.workspace.id, {
+    await lifeSpheresStore.create({
       name,
       color: newSphere.value.color,
       position: spheres.value.length,
@@ -253,7 +253,7 @@ const handleSeedSpheres = async () => {
   error.value = ''
   loading.value = true
   try {
-    await lifeSpheresStore.seedDefaults(props.workspace.id)
+    await lifeSpheresStore.seedDefaults()
   } catch (e) {
     error.value = 'Ошибка при создании сфер по умолчанию'
   } finally {
