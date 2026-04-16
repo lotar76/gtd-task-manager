@@ -201,7 +201,7 @@ const handleUpdateSphere = async (sphereId, data) => {
 const handleToggleHidden = async (sphere) => {
   try {
     await lifeSpheresStore.update(sphere.id, { is_hidden: !sphere.is_hidden })
-    dashboardStore.invalidateWorkspace(props.workspace.id)
+    dashboardStore.invalidate?.()
   } catch (e) {
     error.value = 'Ошибка при обновлении'
   }
