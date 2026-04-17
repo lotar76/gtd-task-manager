@@ -99,6 +99,11 @@ const routes = [
         name: 'Contacts',
         component: () => import('@/views/Contacts/Index.vue'),
       },
+      {
+        path: 'challenge',
+        name: 'Challenge',
+        component: () => import('@/views/Challenge/Index.vue'),
+      },
     ],
   },
 ]

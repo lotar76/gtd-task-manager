@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\V1\ProjectController;
 use App\Http\Controllers\Api\V1\TagController;
 use App\Http\Controllers\Api\V1\TaskController;
 use App\Http\Controllers\Api\V1\TelegramSubscriptionController;
+use App\Http\Controllers\Api\V1\ChallengeController;
 use App\Http\Controllers\Api\V1\WorkspaceController;
 use App\Http\Controllers\Api\TelegramWebhookController;
 
@@ -138,6 +139,13 @@ Route::prefix('v1')->group(function () {
         Route::get('/dashboard/stats', [DashboardController::class, 'getStats']);
         Route::get('/dashboard/life-mirror', [DashboardController::class, 'getLifeMirror']);
         Route::get('/dashboard/ai-message', [DashboardController::class, 'getAiMessage']);
+
+        // === ЧЕЛЛЕНДЖИ ===
+        Route::get('/challenges', [ChallengeController::class, 'index']);
+        Route::post('/challenges', [ChallengeController::class, 'store']);
+        Route::put('/challenges/{challenge}', [ChallengeController::class, 'update']);
+        Route::delete('/challenges/{challenge}', [ChallengeController::class, 'destroy']);
+        Route::post('/challenges/{challenge}/toggle', [ChallengeController::class, 'toggle']);
 
         // === WORKSPACES (legacy, оставляем для обратной совместимости) ===
         Route::apiResource('workspaces', WorkspaceController::class);

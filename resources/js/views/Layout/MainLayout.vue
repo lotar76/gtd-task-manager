@@ -290,6 +290,13 @@
             <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
               <div class="space-y-1">
                 <NavLink
+                  to="/challenge"
+                  icon="table-cells"
+                  @close-sidebar="sidebarOpen = false"
+                >
+                  Чеендж
+                </NavLink>
+                <NavLink
                   to="/archive"
                   icon="archive-box"
                   :count="archivedCount"
