@@ -176,7 +176,7 @@
                   <div class="space-y-1 text-[13px]">
                     <!-- Collapsible: Цель/Поток/Сфера/Контекст -->
                     <template v-if="!isGuest">
-                      <button @click="mobileFieldsExpanded = !mobileFieldsExpanded" class="flex items-center gap-1.5 w-full py-1.5 px-1 -mx-1 text-gray-400 text-[12px] uppercase tracking-wider font-medium">
+                      <button @click="mobileFieldsExpanded = !mobileFieldsExpanded" class="flex items-center gap-1.5 w-full py-1.5 px-1 -mx-1 text-gray-500 dark:text-gray-400 text-[12px] uppercase tracking-wider font-medium">
                         <svg class="w-3 h-3 transition-transform" :class="mobileFieldsExpanded ? 'rotate-90' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
                         <span>Категории</span>
                         <span v-if="!mobileFieldsExpanded && mobileFieldsSummary" class="text-gray-500 dark:text-gray-400 font-normal normal-case tracking-normal truncate">{{ mobileFieldsSummary }}</span>
@@ -207,7 +207,7 @@
                   <input
                     v-model="localTask.title" @input="scheduleSave" type="text" placeholder="Название задачи" :readonly="isGuest"
                     :class="[localTask.completed_at ? 'line-through text-gray-400' : 'text-gray-900 dark:text-white']"
-                    class="w-full bg-transparent border-0 outline-none text-xl font-semibold placeholder-gray-300 dark:placeholder-gray-600 px-0 leading-tight"
+                    class="w-full bg-transparent border-0 outline-none text-xl font-semibold placeholder-gray-400 dark:placeholder-gray-600 px-0 leading-tight"
                   />
                 </template>
 
@@ -216,7 +216,7 @@
                   v-if="!isMobile"
                   v-model="localTask.title" @input="scheduleSave" type="text" placeholder="Название задачи" :readonly="isGuest"
                   :class="[localTask.completed_at ? 'line-through text-gray-400' : 'text-gray-900 dark:text-white']"
-                  class="w-full bg-transparent border-0 outline-none text-2xl font-semibold placeholder-gray-300 dark:placeholder-gray-600 px-0 leading-tight"
+                  class="w-full bg-transparent border-0 outline-none text-2xl font-semibold placeholder-gray-400 dark:placeholder-gray-600 px-0 leading-tight"
                 />
 
                 <!-- Description -->
@@ -227,7 +227,7 @@
                     @input="scheduleSave"
                     :readonly="isGuest"
                     placeholder="Добавьте описание…"
-                    class="w-full bg-transparent border-0 outline-none text-[15px] text-gray-700 dark:text-gray-300 placeholder-gray-300 dark:placeholder-gray-600 leading-relaxed thin-scroll resize-none"
+                    class="w-full bg-transparent border-0 outline-none text-[15px] text-gray-800 dark:text-gray-300 placeholder-gray-400 dark:placeholder-gray-600 leading-relaxed thin-scroll resize-none"
                     style="min-height: 72px; max-height: 240px;"
                     ref="descRef"
                   ></textarea>
@@ -255,7 +255,7 @@
                       <input
                         v-model="item.text" @input="scheduleSave" @keydown.enter.prevent="addChecklistItem" type="text" :readonly="isGuest"
                         :class="item.is_done ? 'line-through text-gray-400' : 'text-gray-700 dark:text-gray-300'"
-                        class="flex-1 bg-transparent border-0 outline-none text-sm placeholder-gray-300"
+                        class="flex-1 bg-transparent border-0 outline-none text-sm placeholder-gray-400"
                       />
                       <button v-if="!isGuest" @click="removeChecklistItem(index)" class="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
@@ -500,7 +500,7 @@ const Icon = { props: ['name'], setup: (p) => () => h('svg', { class: 'w-3.5 h-3
 const FieldLabel = {
   props: ['icon'],
   setup(p, { slots }) {
-    return () => h('div', { class: 'flex items-center gap-1.5 mb-1 text-[11px] font-medium uppercase tracking-wider text-gray-400' }, [
+    return () => h('div', { class: 'flex items-center gap-1.5 mb-1 text-[11px] font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400' }, [
       h(Icon, { name: p.icon }),
       slots.default ? slots.default() : null,
     ])
@@ -576,7 +576,7 @@ const SelectRow = {
         h('div', { class: 'text-gray-400 flex-shrink-0' }, [h(Icon, { name: p.icon })]),
         current.value
           ? h('span', { class: 'text-gray-800 dark:text-gray-100 font-medium truncate' }, current.value.name)
-          : h('span', { class: 'text-gray-400' }, p.placeholder),
+          : h('span', { class: 'text-gray-500 dark:text-gray-400' }, p.placeholder),
       ]),
       p.open ? h(Teleport, { to: 'body' }, [h('div', {
         class: 'fixed z-[60] bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 p-1 max-h-64 overflow-y-auto thin-scroll',
@@ -654,7 +654,7 @@ const PeopleRow = {
                   }, '✕') : null,
                 ])
               }))
-          : h('span', { class: 'text-gray-400 text-[13px]' }, p.label),
+          : h('span', { class: 'text-gray-500 dark:text-gray-400 text-[13px]' }, p.label),
       ]),
       p.open ? h(Teleport, { to: 'body' }, [h('div', {
         class: 'fixed z-[60] bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 p-1',
@@ -689,7 +689,7 @@ const AddInline = {
   emits: ['click'],
   setup(p, { emit }) {
     return () => h('button', {
-      class: 'inline-flex items-center gap-1 px-2 py-0.5 text-xs text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800',
+      class: 'inline-flex items-center gap-1 px-2 py-0.5 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800',
       onClick: () => emit('click'),
     }, [
       h(Icon, { name: p.icon }),
