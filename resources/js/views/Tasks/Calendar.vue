@@ -832,6 +832,8 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useTasksStore } from '@/stores/tasks'
+import { useAuthStore } from '@/stores/auth'
+import { useWorkspaceStore } from '@/stores/workspace'
 import TaskView from '@/components/tasks/TaskView.vue'
 import { useTaskDraft } from '@/composables/useTaskDraft'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
@@ -847,6 +849,19 @@ dayjs.locale('ru')
 
 const route = useRoute()
 const tasksStore = useTasksStore()
+const authStore = useAuthStore()
+const workspaceStore = useWorkspaceStore()
+
+const myWorkspaceId = computed(() => {
+  const uid = authStore.user?.id
+  if (!uid) return null
+  const owned = workspaceStore.workspaces.find(w => w.owner_id === uid)
+  return owned?.id || workspaceStore.workspaces[0]?.id || null
+})
+const isOwnTask = (task) => {
+  if (!myWorkspaceId.value) return true
+  return task.workspace_id == null || task.workspace_id === myWorkspaceId.value
+}
 
 const currentDate = ref(dayjs())
 const loading = computed(() => tasksStore.loading)
@@ -1378,6 +1393,9 @@ const handleSaveTask = async (taskData) => {
 }
 
 const handleToggleComplete = (task) => {
+  // Чужие задачи нельзя завершать
+  if (!isOwnTask(task)) return
+
   // Если задача уже завершена, сразу отменяем завершение без подтверждения
   if (task.completed_at) {
     handleUncompleteTask(task)

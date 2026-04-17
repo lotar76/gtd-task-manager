@@ -17,13 +17,15 @@
             </div>
 
             <!-- Desktop: chips inline -->
-            <div v-if="!isMobile" class="flex items-center gap-1.5 flex-1 min-w-0 overflow-visible">
+            <div v-if="!isMobile" class="flex items-center gap-1.5 flex-1 min-w-0 overflow-visible" data-picker-popover>
               <div class="relative">
                 <Chip v-if="localTask.due_date" icon="calendar" :label="formattedDateTime" @click="isGuest || togglePicker('date')" :active="picker === 'date'" />
                 <AddInline v-else-if="!isGuest" icon="calendar" label="Дата" @click="togglePicker('date')" />
                 <div v-if="picker === 'date' && !isGuest" class="absolute top-full left-0 mt-1 z-20 p-3 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 flex items-center gap-2 whitespace-nowrap" data-picker-popover>
                   <input v-model="localTask.due_date" @change="onDueDateChange" type="date" class="px-2 py-1 text-sm bg-gray-50 dark:bg-gray-900 rounded border border-gray-200 dark:border-gray-700" />
-                  <input v-model="localTask.estimated_time" @change="scheduleSave" type="time" class="px-2 py-1 text-sm bg-gray-50 dark:bg-gray-900 rounded border border-gray-200 dark:border-gray-700" />
+                  <input v-model="localTask.estimated_time" @change="scheduleSave" type="time" class="px-2 py-1 text-sm bg-gray-50 dark:bg-gray-900 rounded border border-gray-200 dark:border-gray-700" title="Начало" />
+                  <span class="text-gray-400 text-xs">—</span>
+                  <input v-model="localTask.end_time" @change="scheduleSave" type="time" class="px-2 py-1 text-sm bg-gray-50 dark:bg-gray-900 rounded border border-gray-200 dark:border-gray-700" title="Конец" />
                   <button v-if="localTask.due_date" @click="clearDate" class="text-xs text-gray-400 hover:text-red-500">Очистить</button>
                 </div>
               </div>
@@ -89,7 +91,11 @@
                     <div class="text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">Дата и время</div>
                     <div class="space-y-3">
                       <input v-model="localTask.due_date" @change="onDueDateChange" type="date" class="w-full px-3 py-2.5 text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 appearance-none" />
-                      <input v-model="localTask.estimated_time" @change="scheduleSave" type="time" class="w-full px-3 py-2.5 text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 appearance-none" />
+                      <div class="flex gap-2 items-center">
+                        <input v-model="localTask.estimated_time" @change="scheduleSave" type="time" class="flex-1 px-3 py-2.5 text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 appearance-none" placeholder="Начало" />
+                        <span class="text-gray-400 text-sm">—</span>
+                        <input v-model="localTask.end_time" @change="scheduleSave" type="time" class="flex-1 px-3 py-2.5 text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 appearance-none" placeholder="Конец" />
+                      </div>
                       <div class="flex gap-2">
                         <button v-if="localTask.due_date" @click="clearDate" class="flex-1 py-2 text-sm text-red-500 bg-red-50 dark:bg-red-900/20 rounded-lg">Очистить</button>
                         <button @click="picker = null" class="flex-1 py-2 text-sm text-white bg-gray-900 dark:bg-white dark:text-gray-900 rounded-lg">Готово</button>
@@ -839,8 +845,11 @@ const formattedDateTime = computed(() => {
   if (!localTask.value.due_date) return ''
   const d = new Date(localTask.value.due_date + 'T00:00:00')
   const dateStr = d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })
-  const time = localTask.value.estimated_time
-  return time ? `${dateStr} · ${time}` : dateStr
+  const start = localTask.value.estimated_time
+  const end = localTask.value.end_time
+  if (start && end) return `${dateStr} · ${start}–${end}`
+  if (start) return `${dateStr} · ${start}`
+  return dateStr
 })
 
 const checklistDoneCount = computed(() => (localTask.value.checklist_items || []).filter(i => i.is_done).length)
