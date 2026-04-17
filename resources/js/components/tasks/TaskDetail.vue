@@ -262,7 +262,7 @@
                       </button>
                     </div>
                   </div>
-                  <button v-if="!isGuest" @click="addChecklistItem" class="mt-1 px-1 py-1 text-xs text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 flex items-center gap-1">
+                  <button v-if="!isGuest" @click="addChecklistItem" class="mt-1 px-1 py-1 text-xs text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 flex items-center gap-1">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
                     Добавить пункт
                   </button>
@@ -301,7 +301,7 @@
                 <div v-if="isMobile && !isGuest" class="pt-2 border-t border-gray-100 dark:border-gray-800 text-[13px]">
                   <div class="flex items-center justify-between mb-1.5">
                     <FieldLabel icon="paperclip">Файлы</FieldLabel>
-                    <label class="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 cursor-pointer p-0.5">
+                    <label class="text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 cursor-pointer p-0.5">
                       <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
                       <input type="file" class="hidden" @change="handleFileUpload" :disabled="uploading" multiple />
                     </label>
@@ -321,7 +321,7 @@
                       </button>
                     </div>
                   </div>
-                  <div v-else class="text-xs text-gray-400">Файлов нет</div>
+                  <div v-else class="text-xs text-gray-500 dark:text-gray-400">Файлов нет</div>
                 </div>
 
               </div>
@@ -397,7 +397,7 @@
                 <div v-if="!isGuest" class="pt-3 mt-2 border-t border-gray-200 dark:border-gray-700">
                   <div class="flex items-center justify-between mb-1.5">
                     <FieldLabel icon="paperclip">Файлы</FieldLabel>
-                    <label class="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 cursor-pointer p-0.5" :title="uploading ? 'Загружаю…' : 'Добавить файл'">
+                    <label class="text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 cursor-pointer p-0.5" :title="uploading ? 'Загружаю…' : 'Добавить файл'">
                       <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
                       <input type="file" class="hidden" @change="handleFileUpload" :disabled="uploading" multiple />
                     </label>
@@ -425,7 +425,7 @@
                       </button>
                     </div>
                   </div>
-                  <div v-else class="text-xs text-gray-400">Файлов нет</div>
+                  <div v-else class="text-xs text-gray-500 dark:text-gray-400">Файлов нет</div>
                 </div>
               </div>
             </div>
@@ -500,7 +500,7 @@ const Icon = { props: ['name'], setup: (p) => () => h('svg', { class: 'w-3.5 h-3
 const FieldLabel = {
   props: ['icon'],
   setup(p, { slots }) {
-    return () => h('div', { class: 'flex items-center gap-1.5 mb-1 text-[11px] font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400' }, [
+    return () => h('div', { class: 'flex items-center gap-1.5 mb-1 text-[11px] font-medium uppercase tracking-wider text-gray-600 dark:text-gray-400' }, [
       h(Icon, { name: p.icon }),
       slots.default ? slots.default() : null,
     ])
@@ -511,7 +511,7 @@ const InlineRow = {
   props: ['icon'],
   setup(p, { slots }) {
     return () => h('div', { class: 'flex items-center gap-2.5 py-1.5 px-1 -mx-1 rounded hover:bg-white/60 dark:hover:bg-gray-800/60 transition-colors' }, [
-      h('div', { class: 'text-gray-400 flex-shrink-0' }, [h(Icon, { name: p.icon })]),
+      h('div', { class: 'text-gray-500 dark:text-gray-400 flex-shrink-0' }, [h(Icon, { name: p.icon })]),
       h('div', { class: 'flex-1 min-w-0' }, slots.default ? slots.default() : null),
     ])
   },
@@ -573,10 +573,10 @@ const SelectRow = {
         class: 'flex items-center gap-2.5 py-1.5 px-1 -mx-1 rounded hover:bg-white/60 dark:hover:bg-gray-800/60 cursor-pointer transition-colors',
         onClick: (e) => { e.stopPropagation(); emit('toggle') },
       }, [
-        h('div', { class: 'text-gray-400 flex-shrink-0' }, [h(Icon, { name: p.icon })]),
+        h('div', { class: 'text-gray-500 dark:text-gray-400 flex-shrink-0' }, [h(Icon, { name: p.icon })]),
         current.value
           ? h('span', { class: 'text-gray-800 dark:text-gray-100 font-medium truncate' }, current.value.name)
-          : h('span', { class: 'text-gray-500 dark:text-gray-400' }, p.placeholder),
+          : h('span', { class: 'text-gray-600 dark:text-gray-400' }, p.placeholder),
       ]),
       p.open ? h(Teleport, { to: 'body' }, [h('div', {
         class: 'fixed z-[60] bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 p-1 max-h-64 overflow-y-auto thin-scroll',
@@ -639,7 +639,7 @@ const PeopleRow = {
           p.noAdd ? '' : 'hover:bg-white/60 dark:hover:bg-gray-800/60 cursor-pointer'],
         onClick: (e) => { if (p.noAdd) return; e.stopPropagation(); emit('toggle') },
       }, [
-        h('div', { class: 'text-gray-400 flex-shrink-0' }, [h(Icon, { name: p.icon })]),
+        h('div', { class: 'text-gray-500 dark:text-gray-400 flex-shrink-0' }, [h(Icon, { name: p.icon })]),
         selectedContacts.value.length
           ? h('div', { class: 'flex flex-wrap gap-1 flex-1 min-w-0' },
               selectedContacts.value.map(c => {
@@ -654,7 +654,7 @@ const PeopleRow = {
                   }, '✕') : null,
                 ])
               }))
-          : h('span', { class: 'text-gray-500 dark:text-gray-400 text-[13px]' }, p.label),
+          : h('span', { class: 'text-gray-600 dark:text-gray-400 text-[13px]' }, p.label),
       ]),
       p.open ? h(Teleport, { to: 'body' }, [h('div', {
         class: 'fixed z-[60] bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 p-1',
@@ -689,7 +689,7 @@ const AddInline = {
   emits: ['click'],
   setup(p, { emit }) {
     return () => h('button', {
-      class: 'inline-flex items-center gap-1 px-2 py-0.5 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800',
+      class: 'inline-flex items-center gap-1 px-2 py-0.5 text-xs text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800',
       onClick: () => emit('click'),
     }, [
       h(Icon, { name: p.icon }),
