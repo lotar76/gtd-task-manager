@@ -27,7 +27,7 @@
     </div>
 
     <!-- ========== MOBILE: карточки ========== -->
-    <div v-else-if="store.challenges.length > 0" class="block lg:hidden space-y-3">
+    <div v-if="!store.loading && store.challenges.length > 0" class="block lg:hidden space-y-3">
       <div
         v-for="challenge in store.challenges"
         :key="challenge.id"
@@ -85,7 +85,7 @@
               : isToday(day)
                 ? 'bg-primary-400 ring-1 ring-primary-300'
                 : day < todayDay
-                  ? 'bg-gray-200 dark:bg-gray-700'
+                  ? 'bg-gray-300 dark:bg-gray-600'
                   : 'bg-gray-100 dark:bg-gray-800'"
           />
         </div>
@@ -104,7 +104,7 @@
     </div>
 
     <!-- ========== DESKTOP: таблица ========== -->
-    <div v-else-if="store.challenges.length > 0" class="hidden lg:block overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
+    <div v-if="!store.loading && store.challenges.length > 0" class="hidden lg:block overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
       <table class="min-w-full border-collapse">
         <thead>
           <tr>
@@ -171,6 +171,7 @@
             >
               <div class="w-9 h-8 flex items-center justify-center">
                 <CheckIcon v-if="isDayCompleted(challenge, day)" class="w-4 h-4" />
+                <XMarkIcon v-else-if="isMissed(day)" class="w-3 h-3 text-gray-300 dark:text-gray-600" />
               </div>
             </td>
             <td class="bg-white dark:bg-gray-900 px-2 py-1.5 text-center text-xs font-medium border-b border-l border-gray-200 dark:border-gray-700"
@@ -284,6 +285,10 @@ function dateStr(day) {
 
 function isToday(day) {
   return dateStr(day) === todayStr.value
+}
+
+function isMissed(day) {
+  return dateStr(day) < todayStr.value
 }
 
 function isWeekend(day) {
