@@ -114,6 +114,58 @@
             </button>
           </div>
         </div>
+
+        <!-- Push-уведомления -->
+        <div class="card">
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Push-уведомления</h2>
+
+          <template v-if="!pushSupported">
+            <p class="text-sm text-gray-500 dark:text-gray-400">
+              Ваш браузер не поддерживает push-уведомления
+            </p>
+          </template>
+
+          <template v-else-if="pushPermission === 'denied'">
+            <p class="text-sm text-red-500 dark:text-red-400">
+              Уведомления заблокированы в настройках браузера. Разрешите их вручную.
+            </p>
+          </template>
+
+          <template v-else>
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="text-sm font-medium text-gray-900 dark:text-white">Получать уведомления</div>
+                <div class="text-sm text-gray-500 dark:text-gray-400">
+                  {{ pushSubscribed ? 'Вы подписаны на push-уведомления' : 'Напоминания о задачах и обновления' }}
+                </div>
+              </div>
+              <button
+                @click="togglePush"
+                :disabled="pushLoading"
+                class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+                :class="pushSubscribed ? 'bg-primary-600' : 'bg-gray-200 dark:bg-gray-600'"
+                role="switch"
+                :aria-checked="pushSubscribed"
+              >
+                <span
+                  class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
+                  :class="pushSubscribed ? 'translate-x-5' : 'translate-x-0'"
+                />
+              </button>
+            </div>
+
+            <div v-if="pushSubscribed" class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+              <button
+                @click="sendTestPush"
+                :disabled="testPushLoading"
+                class="text-sm text-primary-600 dark:text-primary-400 hover:underline"
+              >
+                {{ testPushLoading ? 'Отправка...' : 'Отправить тестовое уведомление' }}
+              </button>
+              <span v-if="testPushSuccess" class="ml-2 text-sm text-green-600 dark:text-green-400">Отправлено!</span>
+            </div>
+          </template>
+        </div>
       </div>
 
 
@@ -137,6 +189,8 @@ import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useThemeStore } from '@/stores/theme'
 import { useWorkspaceStore } from '@/stores/workspace'
+import { usePushNotifications } from '@/composables/usePushNotifications'
+import api from '@/services/api'
 import SpheresTab from '@/views/Workspaces/tabs/SpheresTab.vue'
 import TelegramTab from '@/views/Workspaces/tabs/TelegramTab.vue'
 import ContextsTab from '@/views/Settings/tabs/ContextsTab.vue'
@@ -144,6 +198,37 @@ import ContextsTab from '@/views/Settings/tabs/ContextsTab.vue'
 const authStore = useAuthStore()
 const themeStore = useThemeStore()
 const workspaceStore = useWorkspaceStore()
+const { permission: pushPermission, isSubscribed: pushSubscribed, subscribe, unsubscribe, checkSubscription } = usePushNotifications()
+
+const pushSupported = 'serviceWorker' in navigator && 'PushManager' in window
+const pushLoading = ref(false)
+const testPushLoading = ref(false)
+const testPushSuccess = ref(false)
+
+const togglePush = async () => {
+  pushLoading.value = true
+  try {
+    if (pushSubscribed.value) {
+      await unsubscribe()
+    } else {
+      await subscribe()
+    }
+  } finally {
+    pushLoading.value = false
+  }
+}
+
+const sendTestPush = async () => {
+  testPushLoading.value = true
+  testPushSuccess.value = false
+  try {
+    await api.post('/v1/push/test')
+    testPushSuccess.value = true
+    setTimeout(() => { testPushSuccess.value = false }, 3000)
+  } finally {
+    testPushLoading.value = false
+  }
+}
 
 const tabs = [
   { key: 'profile', label: 'Профиль' },
@@ -198,6 +283,9 @@ onMounted(async () => {
   }
   if (workspace.value) {
     faithEnabled.value = workspace.value.faith_enabled !== false
+  }
+  if (pushSupported) {
+    checkSubscription()
   }
 })
 
