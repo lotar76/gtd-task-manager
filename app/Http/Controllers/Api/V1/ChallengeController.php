@@ -87,6 +87,10 @@ class ChallengeController extends Controller
             'date' => 'required|date_format:Y-m-d',
         ]);
 
+        if ($validated['date'] !== now()->toDateString()) {
+            return ApiResponse::error('Можно отмечать только сегодняшний день', 422);
+        }
+
         $entry = ChallengeEntry::where('challenge_id', $challenge->id)
             ->where('date', $validated['date'])
             ->first();

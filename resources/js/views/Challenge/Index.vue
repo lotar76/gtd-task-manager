@@ -1,5 +1,5 @@
 <template>
-  <div class="p-4 sm:p-6 max-w-full overflow-x-auto">
+  <div class="p-4 sm:p-6 max-w-full">
     <!-- Header -->
     <div class="flex items-center justify-between mb-6">
       <div class="flex items-center space-x-4">
@@ -26,8 +26,85 @@
       <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
     </div>
 
-    <!-- Table -->
-    <div v-else class="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
+    <!-- ========== MOBILE: карточки ========== -->
+    <div v-else-if="store.challenges.length > 0" class="block lg:hidden space-y-3">
+      <div
+        v-for="challenge in store.challenges"
+        :key="challenge.id"
+        class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden"
+      >
+        <div class="flex items-center justify-between px-4 py-3">
+          <div class="flex items-center space-x-3 flex-1 min-w-0">
+            <!-- Big toggle button -->
+            <button
+              @click="toggleToday(challenge)"
+              class="flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center transition-all active:scale-95"
+              :class="isTodayCompleted(challenge)
+                ? 'bg-emerald-500 text-white shadow-sm'
+                : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 border-2 border-gray-200 dark:border-gray-700'"
+            >
+              <CheckIcon class="w-7 h-7" :class="isTodayCompleted(challenge) ? 'stroke-[3]' : ''" />
+            </button>
+            <div class="min-w-0 flex-1">
+              <span
+                v-if="editingId !== challenge.id"
+                @click="startEdit(challenge)"
+                class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate block"
+              >
+                {{ challenge.title }}
+              </span>
+              <input
+                v-else
+                ref="editInput"
+                v-model="editTitle"
+                @keydown.enter="saveEdit(challenge)"
+                @keydown.escape="cancelEdit"
+                @blur="saveEdit(challenge)"
+                class="bg-transparent border-b border-primary-500 outline-none text-sm w-full text-gray-900 dark:text-gray-100"
+              />
+              <span class="text-xs" :class="percentClass(completionPercent(challenge))">
+                {{ completionPercent(challenge) }}% за месяц
+              </span>
+            </div>
+          </div>
+          <button
+            @click="removeChallenge(challenge)"
+            class="ml-2 p-1.5 text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400"
+          >
+            <XMarkIcon class="w-4 h-4" />
+          </button>
+        </div>
+        <!-- Mini streak dots -->
+        <div class="px-4 pb-3 flex gap-[3px] flex-wrap">
+          <div
+            v-for="day in daysInMonth"
+            :key="day"
+            class="w-[7px] h-[7px] rounded-full"
+            :class="isDayCompleted(challenge, day)
+              ? 'bg-emerald-500'
+              : isToday(day)
+                ? 'bg-primary-400 ring-1 ring-primary-300'
+                : day < todayDay
+                  ? 'bg-gray-200 dark:bg-gray-700'
+                  : 'bg-gray-100 dark:bg-gray-800'"
+          />
+        </div>
+      </div>
+
+      <!-- Add (mobile) -->
+      <div class="flex items-center rounded-xl border border-dashed border-gray-300 dark:border-gray-600 px-4 py-3">
+        <PlusIcon class="w-5 h-5 text-gray-400 mr-3 flex-shrink-0" />
+        <input
+          v-model="newTitle"
+          @keydown.enter="addChallenge"
+          placeholder="Новая привычка..."
+          class="bg-transparent text-sm text-gray-700 dark:text-gray-300 placeholder-gray-400 dark:placeholder-gray-500 outline-none w-full"
+        />
+      </div>
+    </div>
+
+    <!-- ========== DESKTOP: таблица ========== -->
+    <div v-else-if="store.challenges.length > 0" class="hidden lg:block overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
       <table class="min-w-full border-collapse">
         <thead>
           <tr>
@@ -37,14 +114,15 @@
             <th
               v-for="day in daysInMonth"
               :key="day"
-              class="px-0 py-2 text-center text-xs font-medium border-b border-gray-200 dark:border-gray-700 w-9 min-w-[36px]"
+              class="px-0 py-1 text-center text-[10px] font-medium border-b border-gray-200 dark:border-gray-700 w-9 min-w-[36px]"
               :class="isToday(day)
                 ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'
                 : isWeekend(day)
                   ? 'bg-gray-100 dark:bg-gray-750 text-gray-400 dark:text-gray-500'
                   : 'bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400'"
             >
-              {{ day }}
+              <div>{{ dayOfWeekShort(day) }}</div>
+              <div class="text-xs font-semibold">{{ day }}</div>
             </th>
             <th class="bg-gray-50 dark:bg-gray-800 px-3 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-400 border-b border-l border-gray-200 dark:border-gray-700 w-12">
               %
@@ -87,9 +165,9 @@
             <td
               v-for="day in daysInMonth"
               :key="day"
-              class="px-0 py-0 text-center border-b border-gray-200 dark:border-gray-700 cursor-pointer transition-colors"
-              :class="cellClass(challenge, day)"
-              @click="toggleDay(challenge, day)"
+              class="px-0 py-0 text-center border-b border-gray-200 dark:border-gray-700 transition-colors"
+              :class="[cellClass(challenge, day), isToday(day) ? 'cursor-pointer' : 'cursor-default']"
+              @click="isToday(day) && toggleDay(challenge, day)"
             >
               <div class="w-9 h-8 flex items-center justify-center">
                 <CheckIcon v-if="isDayCompleted(challenge, day)" class="w-4 h-4" />
@@ -132,6 +210,14 @@
     >
       <TableCellsIcon class="w-12 h-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
       <p class="text-sm">Добавь первую привычку для отслеживания</p>
+      <div class="mt-4 flex items-center justify-center">
+        <input
+          v-model="newTitle"
+          @keydown.enter="addChallenge"
+          placeholder="Например: зарядка, 2л воды..."
+          class="bg-transparent border-b border-gray-300 dark:border-gray-600 text-sm text-gray-700 dark:text-gray-300 placeholder-gray-400 outline-none w-64 py-1 text-center"
+        />
+      </div>
     </div>
   </div>
 </template>
@@ -154,12 +240,14 @@ const confirmStore = useConfirmStore()
 
 const now = new Date()
 const year = ref(now.getFullYear())
-const month = ref(now.getMonth()) // 0-indexed
+const month = ref(now.getMonth())
 
 const newTitle = ref('')
 const editingId = ref(null)
 const editTitle = ref('')
 const editInput = ref(null)
+
+const SHORT_DAYS = ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб']
 
 const monthKey = computed(() => {
   const m = String(month.value + 1).padStart(2, '0')
@@ -180,6 +268,14 @@ const todayStr = computed(() => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 })
 
+const todayDay = computed(() => {
+  const d = new Date()
+  if (d.getFullYear() === year.value && d.getMonth() === month.value) {
+    return d.getDate()
+  }
+  return 0
+})
+
 function dateStr(day) {
   const m = String(month.value + 1).padStart(2, '0')
   const d = String(day).padStart(2, '0')
@@ -195,6 +291,11 @@ function isWeekend(day) {
   return d.getDay() === 0 || d.getDay() === 6
 }
 
+function dayOfWeekShort(day) {
+  const d = new Date(year.value, month.value, day)
+  return SHORT_DAYS[d.getDay()]
+}
+
 function isDayCompleted(challenge, day) {
   const ds = dateStr(day)
   return challenge.entries?.some(e => {
@@ -203,21 +304,25 @@ function isDayCompleted(challenge, day) {
   })
 }
 
+function isTodayCompleted(challenge) {
+  return isDayCompleted(challenge, todayDay.value)
+}
+
 function cellClass(challenge, day) {
   const completed = isDayCompleted(challenge, day)
   const today = isToday(day)
   const weekend = isWeekend(day)
 
   if (completed) {
-    return 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-200 dark:hover:bg-emerald-900/60'
+    return 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400'
   }
   if (today) {
-    return 'bg-primary-50/50 dark:bg-primary-900/10 hover:bg-primary-100 dark:hover:bg-primary-900/20'
+    return 'bg-primary-50 dark:bg-primary-900/20 hover:bg-primary-100 dark:hover:bg-primary-900/30'
   }
   if (weekend) {
-    return 'bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-700/50'
+    return 'bg-gray-50 dark:bg-gray-800/50'
   }
-  return 'bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800/50'
+  return 'bg-white dark:bg-gray-900'
 }
 
 function completionPercent(challenge) {
@@ -254,7 +359,13 @@ function nextMonth() {
 }
 
 async function toggleDay(challenge, day) {
+  if (!isToday(day)) return
   await store.toggle(challenge.id, dateStr(day))
+}
+
+async function toggleToday(challenge) {
+  if (!todayDay.value) return
+  await store.toggle(challenge.id, todayStr.value)
 }
 
 async function addChallenge() {

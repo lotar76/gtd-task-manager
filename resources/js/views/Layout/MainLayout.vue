@@ -294,7 +294,7 @@
                   icon="table-cells"
                   @close-sidebar="sidebarOpen = false"
                 >
-                  Чеендж
+                  Трекер
                 </NavLink>
                 <NavLink
                   to="/archive"
