@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\V1\TagController;
 use App\Http\Controllers\Api\V1\TaskController;
 use App\Http\Controllers\Api\V1\TelegramSubscriptionController;
 use App\Http\Controllers\Api\V1\ChallengeController;
+use App\Http\Controllers\Api\V1\PushSubscriptionController;
 use App\Http\Controllers\Api\V1\WorkspaceController;
 use App\Http\Controllers\Api\TelegramWebhookController;
 
@@ -146,6 +147,12 @@ Route::prefix('v1')->group(function () {
         Route::put('/challenges/{challenge}', [ChallengeController::class, 'update']);
         Route::delete('/challenges/{challenge}', [ChallengeController::class, 'destroy']);
         Route::post('/challenges/{challenge}/toggle', [ChallengeController::class, 'toggle']);
+
+        // === PUSH-УВЕДОМЛЕНИЯ ===
+        Route::get('/push/vapid-key', [PushSubscriptionController::class, 'vapidPublicKey']);
+        Route::post('/push/subscribe', [PushSubscriptionController::class, 'store']);
+        Route::post('/push/unsubscribe', [PushSubscriptionController::class, 'destroy']);
+        Route::post('/push/test', [PushSubscriptionController::class, 'test']);
 
         // === WORKSPACES (legacy, оставляем для обратной совместимости) ===
         Route::apiResource('workspaces', WorkspaceController::class);

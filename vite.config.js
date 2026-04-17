@@ -8,47 +8,16 @@ export default defineConfig(({ mode }) => {
     plugins: [
       vue(),
       VitePWA({
+        strategies: 'injectManifest',
+        srcDir: 'js',
+        filename: 'sw.js',
         registerType: 'prompt',
         outDir: '../public',
         scope: '/',
         base: '/',
-        manifest: false, // используем существующий site.webmanifest
-        workbox: {
+        manifest: false,
+        injectManifest: {
           globPatterns: [],
-          navigateFallback: null,
-          runtimeCaching: [
-            {
-              urlPattern: /\.(?:js|css|woff2?)$/,
-              handler: 'CacheFirst',
-              options: {
-                cacheName: 'static-assets',
-                expiration: { maxEntries: 60, maxAgeSeconds: 30 * 24 * 60 * 60 },
-              },
-            },
-            {
-              urlPattern: /\.(?:png|jpg|jpeg|svg|ico|webp)$/,
-              handler: 'CacheFirst',
-              options: {
-                cacheName: 'images',
-                expiration: { maxEntries: 60, maxAgeSeconds: 30 * 24 * 60 * 60 },
-              },
-            },
-            {
-              urlPattern: /\/api\//,
-              handler: 'NetworkFirst',
-              options: {
-                cacheName: 'api-cache',
-                expiration: { maxEntries: 100, maxAgeSeconds: 300 },
-              },
-            },
-            {
-              urlPattern: ({ request }) => request.mode === 'navigate',
-              handler: 'NetworkFirst',
-              options: {
-                cacheName: 'pages',
-              },
-            },
-          ],
         },
         devOptions: {
           enabled: false,
