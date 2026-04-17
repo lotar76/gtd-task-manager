@@ -48,6 +48,13 @@
         @uncomplete-task="handleUncompleteTask"
       />
 
+      <TaskView
+        :show="showDraft"
+        :task="draftTask"
+        @close="closeDraft"
+        @saved="closeDraft"
+      />
+
       </div>
   </div>
 </template>
