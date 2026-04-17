@@ -84,6 +84,12 @@ watch(() => [props.show, props.task?.id], async ([s, id]) => {
   if (s && id) {
     fullTask.value = props.task
     await Promise.all([ensureStores(), loadContacts(), loadFullTask(id)])
+  } else if (s && props.task) {
+    // Черновик без id — ставим как есть
+    fullTask.value = { ...props.task }
+    await Promise.all([ensureStores(), loadContacts()])
+  } else if (!s) {
+    fullTask.value = null
   }
 }, { immediate: true })
 

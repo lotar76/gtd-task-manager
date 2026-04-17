@@ -8,31 +8,28 @@
       >
         <div class="bg-white dark:bg-gray-900 w-full max-w-6xl min-h-screen lg:min-h-0 lg:rounded-xl lg:shadow-2xl overflow-visible flex flex-col lg:max-h-[94vh]">
           <!-- Header -->
-          <div class="flex items-center justify-between px-5 py-2 border-b border-gray-100 dark:border-gray-800 gap-3">
+          <div class="flex items-center justify-between px-4 lg:px-5 py-2 border-b border-gray-100 dark:border-gray-800 gap-3">
             <div class="flex items-center gap-2 text-xs text-gray-400 flex-shrink-0">
-              <span>#{{ task?.id }}</span>
+              <span v-if="localTask.id">#{{ localTask.id }}</span>
               <span v-if="creatorName" class="hidden md:inline">
                 от <span class="text-gray-600 dark:text-gray-300">{{ creatorName }}</span>
               </span>
             </div>
 
-            <!-- Meta chips with popovers -->
-            <div class="flex items-center gap-1.5 flex-1 min-w-0 overflow-visible" ref="chipsRef">
-              <!-- Date -->
+            <!-- Desktop: chips inline -->
+            <div v-if="!isMobile" class="flex items-center gap-1.5 flex-1 min-w-0 overflow-visible">
               <div class="relative">
                 <Chip v-if="localTask.due_date" icon="calendar" :label="formattedDateTime" @click="isGuest || togglePicker('date')" :active="picker === 'date'" />
                 <AddInline v-else-if="!isGuest" icon="calendar" label="Дата" @click="togglePicker('date')" />
-                <div v-if="picker === 'date' && !isGuest" class="absolute top-full left-0 mt-1 z-20 p-3 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 flex items-center gap-2 whitespace-nowrap">
+                <div v-if="picker === 'date' && !isGuest" class="absolute top-full left-0 mt-1 z-20 p-3 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 flex items-center gap-2 whitespace-nowrap" data-picker-popover>
                   <input v-model="localTask.due_date" @change="onDueDateChange" type="date" class="px-2 py-1 text-sm bg-gray-50 dark:bg-gray-900 rounded border border-gray-200 dark:border-gray-700" />
                   <input v-model="localTask.estimated_time" @change="scheduleSave" type="time" class="px-2 py-1 text-sm bg-gray-50 dark:bg-gray-900 rounded border border-gray-200 dark:border-gray-700" />
                   <button v-if="localTask.due_date" @click="clearDate" class="text-xs text-gray-400 hover:text-red-500">Очистить</button>
                 </div>
               </div>
-
-              <!-- Status -->
               <div class="relative">
                 <Chip icon="flag" :label="statusLabel" @click="isGuest || togglePicker('status')" :active="picker === 'status'" />
-                <div v-if="picker === 'status' && !isGuest" class="absolute top-full left-0 mt-1 z-20 p-1 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 min-w-[160px]">
+                <div v-if="picker === 'status' && !isGuest" class="absolute top-full left-0 mt-1 z-20 p-1 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 min-w-[160px]" data-picker-popover>
                   <button
                     v-for="s in statusOptions" :key="s.value"
                     @click="setField('status', s.value); picker = null"
@@ -41,11 +38,9 @@
                   >{{ s.label }}</button>
                 </div>
               </div>
-
-              <!-- Priority -->
               <div class="relative">
                 <Chip :dot-class="priorityDot" :label="priorityLabel" @click="isGuest || togglePicker('priority')" :active="picker === 'priority'" :label-class="priorityLabelClass" />
-                <div v-if="picker === 'priority' && !isGuest" class="absolute top-full left-0 mt-1 z-20 p-1 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 min-w-[140px]">
+                <div v-if="picker === 'priority' && !isGuest" class="absolute top-full left-0 mt-1 z-20 p-1 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 min-w-[140px]" data-picker-popover>
                   <button
                     v-for="p in priorityOptions" :key="p.value"
                     @click="setField('priority', p.value); picker = null"
@@ -59,9 +54,9 @@
               </div>
             </div>
 
-            <div class="flex items-center gap-3 flex-shrink-0">
+            <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0">
               <button
-                v-if="!isGuest && !localTask.completed_at"
+                v-if="!isGuest && localTask.id && !localTask.completed_at"
                 @click="handleComplete"
                 class="px-2.5 py-1 text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-md flex items-center gap-1"
               >
@@ -69,11 +64,12 @@
                 Завершить
               </button>
               <button
-                v-else-if="!isGuest && localTask.completed_at"
+                v-else-if="!isGuest && localTask.id && localTask.completed_at"
                 @click="handleUncomplete"
                 class="px-2.5 py-1 text-xs font-medium text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md"
               >
-                Вернуть в работу
+                <span class="sm:hidden">Вернуть</span>
+                <span class="hidden sm:inline">Вернуть в работу</span>
               </button>
               <span class="h-5 w-px bg-gray-200 dark:bg-gray-700"></span>
               <button @click="handleClose" class="p-1.5 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800" title="Закрыть">
@@ -82,17 +78,143 @@
             </div>
           </div>
 
+          <!-- Mobile popup for all pickers (centered top) -->
+          <Teleport to="body">
+            <Transition name="fade">
+              <div v-if="mobilePicker" class="fixed inset-0 z-[70]" @click.self="picker = null">
+                <div class="fixed inset-0 bg-black/30" @click="picker = null"></div>
+                <div class="fixed top-16 left-4 right-4 z-10 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 p-4 max-h-[70vh] overflow-y-auto">
+                  <!-- Date -->
+                  <template v-if="picker === 'date' && !isGuest">
+                    <div class="text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">Дата и время</div>
+                    <div class="space-y-3">
+                      <input v-model="localTask.due_date" @change="onDueDateChange" type="date" class="w-full px-3 py-2.5 text-sm bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700" />
+                      <input v-model="localTask.estimated_time" @change="scheduleSave" type="time" class="w-full px-3 py-2.5 text-sm bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700" />
+                      <div class="flex gap-2">
+                        <button v-if="localTask.due_date" @click="clearDate" class="flex-1 py-2 text-sm text-red-500 bg-red-50 dark:bg-red-900/20 rounded-lg">Очистить</button>
+                        <button @click="picker = null" class="flex-1 py-2 text-sm text-white bg-gray-900 dark:bg-white dark:text-gray-900 rounded-lg">Готово</button>
+                      </div>
+                    </div>
+                  </template>
+                  <!-- Status -->
+                  <template v-if="picker === 'status' && !isGuest">
+                    <div class="text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">Статус</div>
+                    <div class="space-y-1">
+                      <button v-for="s in statusOptions" :key="s.value" @click="setField('status', s.value); picker = null"
+                        class="w-full text-left px-3 py-2.5 text-sm rounded-lg transition-colors"
+                        :class="localTask.status === s.value ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900' : 'text-gray-700 dark:text-gray-200 active:bg-gray-100 dark:active:bg-gray-700'"
+                      >{{ s.label }}</button>
+                    </div>
+                  </template>
+                  <!-- Priority -->
+                  <template v-if="picker === 'priority' && !isGuest">
+                    <div class="text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">Приоритет</div>
+                    <div class="space-y-1">
+                      <button v-for="p in priorityOptions" :key="p.value" @click="setField('priority', p.value); picker = null"
+                        class="w-full text-left px-3 py-2.5 text-sm rounded-lg transition-colors flex items-center gap-2"
+                        :class="localTask.priority === p.value ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900' : 'text-gray-700 dark:text-gray-200 active:bg-gray-100 dark:active:bg-gray-700'"
+                      >
+                        <span class="w-2 h-2 rounded-full" :class="p.dotClass"></span>
+                        {{ p.label }}
+                      </button>
+                    </div>
+                  </template>
+                  <!-- Goal/Project/Sphere/Context -->
+                  <template v-if="['goal','project','sphere','context'].includes(picker) && !isGuest">
+                    <div class="text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">{{ mobilePickerTitle }}</div>
+                    <div class="space-y-1">
+                      <button @click="mobileSelectField(null)" class="w-full text-left px-3 py-2.5 text-sm rounded-lg transition-colors"
+                        :class="mobilePickerCurrentValue == null ? 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100' : 'text-gray-400 active:bg-gray-100 dark:active:bg-gray-700'"
+                      >— не выбрано</button>
+                      <button v-for="item in mobilePickerItems" :key="item.id" @click="mobileSelectField(item.id)"
+                        class="w-full text-left px-3 py-2.5 text-sm rounded-lg transition-colors truncate"
+                        :class="mobilePickerCurrentValue === item.id ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900' : 'text-gray-700 dark:text-gray-200 active:bg-gray-100 dark:active:bg-gray-700'"
+                      >{{ item.name }}</button>
+                    </div>
+                  </template>
+                  <!-- Assignees/Watchers -->
+                  <template v-if="['assignees','watchers'].includes(picker) && !isGuest">
+                    <div class="text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">{{ picker === 'assignees' ? 'Исполнители' : 'Наблюдатели' }}</div>
+                    <div class="space-y-1">
+                      <button v-for="c in knownContacts" :key="c.id" @click="toggleContactInPicker(c.id)"
+                        class="w-full text-left px-3 py-2.5 text-sm rounded-lg transition-colors flex items-center justify-between"
+                        :class="isContactSelected(c.id) ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900' : 'text-gray-700 dark:text-gray-200 active:bg-gray-100 dark:active:bg-gray-700'"
+                      >
+                        <span class="truncate">{{ c.name }}</span>
+                        <svg v-if="isContactSelected(c.id)" class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                      </button>
+                    </div>
+                    <button @click="picker = null" class="w-full mt-3 py-2 text-sm text-white bg-gray-900 dark:bg-white dark:text-gray-900 rounded-lg">Готово</button>
+                  </template>
+                </div>
+              </div>
+            </Transition>
+          </Teleport>
+
           <div class="flex-1 overflow-y-auto thin-scroll min-h-0">
             <div class="grid grid-cols-1 lg:grid-cols-[1fr_260px]">
               <!-- Main column -->
-              <div class="px-6 py-5 space-y-4 border-r border-gray-100 dark:border-gray-800 min-w-0">
-                <!-- Title -->
+              <div class="px-4 lg:px-6 py-4 lg:py-5 space-y-4 border-r border-gray-100 dark:border-gray-800 min-w-0">
+
+                <!-- === MOBILE LAYOUT === -->
+                <template v-if="isMobile">
+                  <!-- Chips: date, status, priority -->
+                  <div class="flex items-center gap-1.5 overflow-x-auto pb-1">
+                    <div class="flex-shrink-0">
+                      <Chip v-if="localTask.due_date" icon="calendar" :label="formattedDateTime" @click="isGuest || togglePicker('date')" :active="picker === 'date'" />
+                      <AddInline v-else-if="!isGuest" icon="calendar" label="Дата" @click="togglePicker('date')" />
+                    </div>
+                    <div class="flex-shrink-0">
+                      <Chip icon="flag" :label="statusLabel" @click="isGuest || togglePicker('status')" :active="picker === 'status'" />
+                    </div>
+                    <div class="flex-shrink-0">
+                      <Chip :dot-class="priorityDot" :label="priorityLabel" @click="isGuest || togglePicker('priority')" :active="picker === 'priority'" :label-class="priorityLabelClass" />
+                    </div>
+                  </div>
+
+                  <!-- Sidebar fields -->
+                  <div class="space-y-1 text-[13px]">
+                    <!-- Collapsible: Цель/Поток/Сфера/Контекст -->
+                    <template v-if="!isGuest">
+                      <button @click="mobileFieldsExpanded = !mobileFieldsExpanded" class="flex items-center gap-1.5 w-full py-1.5 px-1 -mx-1 text-gray-400 text-[12px] uppercase tracking-wider font-medium">
+                        <svg class="w-3 h-3 transition-transform" :class="mobileFieldsExpanded ? 'rotate-90' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+                        <span>Категории</span>
+                        <span v-if="!mobileFieldsExpanded && mobileFieldsSummary" class="text-gray-500 dark:text-gray-400 font-normal normal-case tracking-normal truncate">{{ mobileFieldsSummary }}</span>
+                      </button>
+                      <template v-if="mobileFieldsExpanded">
+                        <SelectRow icon="target" placeholder="Цель" :items="goals" :value="localTask.goal_id" :open="false" @toggle="togglePicker('goal')" @update:value="(v) => { localTask.goal_id = v; scheduleSave() }" />
+                        <SelectRow icon="folder" placeholder="Поток" :items="projects" :value="localTask.project_id" :open="false" @toggle="togglePicker('project')" @update:value="(v) => { localTask.project_id = v; scheduleSave() }" />
+                        <SelectRow icon="sparkles" placeholder="Сфера" :items="lifeSpheres" :value="localTask.life_sphere_id" :open="false" @toggle="togglePicker('sphere')" @update:value="(v) => { localTask.life_sphere_id = v; scheduleSave() }" />
+                        <SelectRow icon="map-pin" placeholder="Контекст" :items="contexts" :value="localTask.context_id" :open="false" @toggle="togglePicker('context')" @update:value="(v) => { localTask.context_id = v; scheduleSave() }" />
+                      </template>
+                    </template>
+                    <PeopleRow
+                      v-if="!isGuest"
+                      icon="user" label="Исполнители" :contacts="knownContacts" :selected="assigneeIds"
+                      badge-class="bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300"
+                      :open="false" @toggle="togglePicker('assignees')" @update:selected="updateAssignees"
+                    />
+                    <PeopleRow
+                      icon="eye" label="Наблюдатели" :contacts="knownContacts" :selected="watcherIds"
+                      badge-class="bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
+                      :open="false" :no-add="isGuest"
+                      :removable-ids="isGuest ? (myWatcherContactId ? [myWatcherContactId] : []) : null"
+                      @toggle="isGuest ? null : togglePicker('watchers')" @update:selected="onWatchersChanged"
+                    />
+                  </div>
+
+                  <!-- Title -->
+                  <input
+                    v-model="localTask.title" @input="scheduleSave" type="text" placeholder="Название задачи" :readonly="isGuest"
+                    :class="[localTask.completed_at ? 'line-through text-gray-400' : 'text-gray-900 dark:text-white']"
+                    class="w-full bg-transparent border-0 outline-none text-xl font-semibold placeholder-gray-300 dark:placeholder-gray-600 px-0 leading-tight"
+                  />
+                </template>
+
+                <!-- === DESKTOP LAYOUT: Title first === -->
                 <input
-                  v-model="localTask.title"
-                  @input="scheduleSave"
-                  type="text"
-                  placeholder="Название задачи"
-                  :readonly="isGuest"
+                  v-if="!isMobile"
+                  v-model="localTask.title" @input="scheduleSave" type="text" placeholder="Название задачи" :readonly="isGuest"
                   :class="[localTask.completed_at ? 'line-through text-gray-400' : 'text-gray-900 dark:text-white']"
                   class="w-full bg-transparent border-0 outline-none text-2xl font-semibold placeholder-gray-300 dark:placeholder-gray-600 px-0 leading-tight"
                 />
@@ -110,7 +232,6 @@
                     ref="descRef"
                   ></textarea>
                 </div>
-
 
                 <!-- Checklist -->
                 <div>
@@ -132,11 +253,7 @@
                       <input type="checkbox" v-model="item.is_done" @change="scheduleSave" :disabled="isGuest"
                         class="w-3.5 h-3.5 rounded border-gray-300 dark:border-gray-600 text-emerald-500 focus:ring-0 focus:ring-offset-0 disabled:opacity-60" />
                       <input
-                        v-model="item.text"
-                        @input="scheduleSave"
-                        @keydown.enter.prevent="addChecklistItem"
-                        type="text"
-                        :readonly="isGuest"
+                        v-model="item.text" @input="scheduleSave" @keydown.enter.prevent="addChecklistItem" type="text" :readonly="isGuest"
                         :class="item.is_done ? 'line-through text-gray-400' : 'text-gray-700 dark:text-gray-300'"
                         class="flex-1 bg-transparent border-0 outline-none text-sm placeholder-gray-300"
                       />
@@ -168,29 +285,49 @@
                       </div>
                     </div>
                   </div>
-                  <div class="flex gap-2">
+                  <div class="flex flex-col sm:flex-row gap-2">
                     <textarea
-                      v-model="newComment"
-                      @keydown.enter.prevent.meta="submitComment"
-                      @keydown.enter.prevent.ctrl="submitComment"
-                      placeholder="Написать комментарий… (Ctrl/Cmd+Enter — отправить)"
-                      rows="2"
+                      v-model="newComment" @keydown.enter.prevent.meta="submitComment" @keydown.enter.prevent.ctrl="submitComment"
+                      placeholder="Написать комментарий…" rows="2"
                       class="flex-1 px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-1 focus:ring-gray-300 dark:focus:ring-gray-600 resize-none"
                     ></textarea>
-                    <button
-                      @click="submitComment"
-                      :disabled="!newComment.trim() || postingComment"
-                      class="px-3 py-2 text-sm bg-gray-900 text-white dark:bg-white dark:text-gray-900 rounded-lg disabled:opacity-40 hover:opacity-90 self-end"
-                    >
-                      Отправить
-                    </button>
+                    <button @click="submitComment" :disabled="!newComment.trim() || postingComment"
+                      class="px-3 py-2 text-sm bg-gray-900 text-white dark:bg-white dark:text-gray-900 rounded-lg disabled:opacity-40 hover:opacity-90 sm:self-end"
+                    >Отправить</button>
                   </div>
+                </div>
+
+                <!-- Files (mobile) -->
+                <div v-if="isMobile && !isGuest" class="pt-2 border-t border-gray-100 dark:border-gray-800 text-[13px]">
+                  <div class="flex items-center justify-between mb-1.5">
+                    <FieldLabel icon="paperclip">Файлы</FieldLabel>
+                    <label class="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 cursor-pointer p-0.5">
+                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                      <input type="file" class="hidden" @change="handleFileUpload" :disabled="uploading" multiple />
+                    </label>
+                  </div>
+                  <div v-if="localTask.attachments?.length" class="space-y-1">
+                    <div v-for="att in localTask.attachments" :key="att.id" class="flex items-center gap-2 px-1 py-1 rounded">
+                      <a :href="attachmentUrl(att)" target="_blank" class="flex-shrink-0 w-7 h-7 rounded overflow-hidden bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                        <img v-if="isImage(att)" :src="attachmentUrl(att)" class="w-full h-full object-cover" />
+                        <svg v-else class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" :d="fileIconPath(att)" /></svg>
+                      </a>
+                      <a :href="attachmentUrl(att)" target="_blank" class="flex-1 min-w-0">
+                        <div class="truncate text-[12.5px] text-gray-700 dark:text-gray-300">{{ att.file_name }}</div>
+                        <div class="text-[10px] text-gray-400">{{ formatSize(att.file_size) }}</div>
+                      </a>
+                      <button @click="removeAttachment(att)" class="text-gray-300 hover:text-red-500 flex-shrink-0">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                      </button>
+                    </div>
+                  </div>
+                  <div v-else class="text-xs text-gray-400">Файлов нет</div>
                 </div>
 
               </div>
 
-              <!-- Side panel (inline rows, empty = ghost) -->
-              <div class="px-5 py-5 space-y-1 bg-gray-50/60 dark:bg-gray-800/30 text-[13px]">
+              <!-- Side panel (desktop only, on mobile fields are inline above) -->
+              <div v-if="!isMobile" class="hidden lg:block px-5 py-5 space-y-1 bg-gray-50/60 dark:bg-gray-800/30 text-[13px]">
                 <template v-if="!isGuest">
                   <SelectRow
                     icon="target"
@@ -431,12 +568,6 @@ const SelectRow = {
 
     const select = (id) => { emit('update:value', id); emit('toggle'); query.value = '' }
 
-    const handleOutside = (e) => {
-      if (p.open && rootRef.value && !rootRef.value.contains(e.target)) emit('toggle')
-    }
-    onMounted(() => document.addEventListener('click', handleOutside))
-    onBeforeUnmount(() => document.removeEventListener('click', handleOutside))
-
     return () => h('div', { class: 'relative', ref: rootRef }, [
       h('div', {
         class: 'flex items-center gap-2.5 py-1.5 px-1 -mx-1 rounded hover:bg-white/60 dark:hover:bg-gray-800/60 cursor-pointer transition-colors',
@@ -450,6 +581,7 @@ const SelectRow = {
       p.open ? h(Teleport, { to: 'body' }, [h('div', {
         class: 'fixed z-[60] bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 p-1 max-h-64 overflow-y-auto thin-scroll',
         style: { top: popoverPos.value.top + 'px', left: popoverPos.value.left + 'px', width: popoverPos.value.width + 'px' },
+        'data-picker-popover': '',
         onClick: (e) => e.stopPropagation(),
       }, [
         h('button', {
@@ -501,12 +633,6 @@ const PeopleRow = {
     const add = (id) => { emit('update:selected', [...(p.selected || []), id]); query.value = '' }
     const remove = (id) => emit('update:selected', (p.selected || []).filter(x => x !== id))
 
-    const handleOutside = (e) => {
-      if (p.open && rootRef.value && !rootRef.value.contains(e.target)) emit('toggle')
-    }
-    onMounted(() => document.addEventListener('click', handleOutside))
-    onBeforeUnmount(() => document.removeEventListener('click', handleOutside))
-
     return () => h('div', { class: 'relative', ref: rootRef }, [
       h('div', {
         class: ['flex items-center gap-2 py-1.5 px-1 -mx-1 rounded transition-colors',
@@ -533,6 +659,7 @@ const PeopleRow = {
       p.open ? h(Teleport, { to: 'body' }, [h('div', {
         class: 'fixed z-[60] bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 p-1',
         style: { top: popoverPos.value.top + 'px', left: popoverPos.value.left + 'px', width: popoverPos.value.width + 'px' },
+        'data-picker-popover': '',
         onClick: (e) => e.stopPropagation(),
       }, [
         h('input', {
@@ -593,13 +720,25 @@ const uploading = ref(false)
 const picker = ref(null)
 const openSections = ref({ description: false })
 const descRef = ref(null)
-const chipsRef = ref(null)
+const isMobile = ref(false)
+const mobileFieldsExpanded = ref(false)
+const updateIsMobile = () => { isMobile.value = window.innerWidth < 640 }
 const comments = ref([])
 const newComment = ref('')
 const showCommentInput = ref(false)
 const postingComment = ref(false)
 
 const creatorName = computed(() => localTask.value?.creator?.name || null)
+
+const mobileFieldsSummary = computed(() => {
+  const names = [
+    props.goals.find(i => i.id === localTask.value.goal_id)?.name,
+    props.projects.find(i => i.id === localTask.value.project_id)?.name,
+    props.lifeSpheres.find(i => i.id === localTask.value.life_sphere_id)?.name,
+    props.contexts.find(i => i.id === localTask.value.context_id)?.name,
+  ].filter(Boolean)
+  return names.length ? '— ' + names.join(', ') : ''
+})
 
 // Задача «чужая» (я только наблюдатель): workspace_id задачи != моему дефолтному.
 // В таком режиме — почти всё read-only, доступны только комментирование и выход из наблюдателей.
@@ -660,12 +799,22 @@ const submitComment = async () => {
 let saveTimer = null
 
 const handleOutsideClick = (e) => {
-  if (picker.value && chipsRef.value && !chipsRef.value.contains(e.target)) {
-    picker.value = null
-  }
+  if (!picker.value) return
+  // На мобильном пикеры закрываются через overlay bottom-sheet
+  if (isMobile.value) return
+  // Не закрываем если клик внутри teleport-поповера
+  if (e.target.closest('[data-picker-popover]')) return
+  picker.value = null
 }
-onMounted(() => document.addEventListener('click', handleOutsideClick))
-onBeforeUnmount(() => document.removeEventListener('click', handleOutsideClick))
+onMounted(() => {
+  document.addEventListener('click', handleOutsideClick)
+  updateIsMobile()
+  window.addEventListener('resize', updateIsMobile)
+})
+onBeforeUnmount(() => {
+  document.removeEventListener('click', handleOutsideClick)
+  window.removeEventListener('resize', updateIsMobile)
+})
 
 const handleEscape = (e) => {
   if (e.key !== 'Escape' || !props.show) return
@@ -703,6 +852,15 @@ const checklistProgress = computed(() => {
 const normalizeTime = (v) => (v ? String(v).slice(0, 5) : '')
 const normalizeDate = (v) => (v ? String(v).slice(0, 10) : '')
 
+watch(() => props.show, (visible) => {
+  if (!visible) {
+    picker.value = null
+    mobileFieldsExpanded.value = false
+    newComment.value = ''
+    saveState.value = 'idle'
+  }
+})
+
 watch(() => props.task, (t) => {
   if (!t) return
   localTask.value = {
@@ -726,6 +884,36 @@ watch(() => props.task, (t) => {
 }, { immediate: true })
 
 const togglePicker = (name) => { picker.value = picker.value === name ? null : name }
+
+// Mobile popup helpers
+const mobilePicker = computed(() => isMobile.value && picker.value)
+
+const pickerFieldMap = {
+  goal: { title: 'Цель', field: 'goal_id', itemsKey: 'goals' },
+  project: { title: 'Поток', field: 'project_id', itemsKey: 'projects' },
+  sphere: { title: 'Сфера', field: 'life_sphere_id', itemsKey: 'lifeSpheres' },
+  context: { title: 'Контекст', field: 'context_id', itemsKey: 'contexts' },
+}
+const mobilePickerTitle = computed(() => pickerFieldMap[picker.value]?.title || '')
+const mobilePickerItems = computed(() => props[pickerFieldMap[picker.value]?.itemsKey] || [])
+const mobilePickerCurrentValue = computed(() => localTask.value[pickerFieldMap[picker.value]?.field])
+
+const mobileSelectField = (id) => {
+  const cfg = pickerFieldMap[picker.value]
+  if (cfg) { localTask.value[cfg.field] = id; scheduleSave() }
+  picker.value = null
+}
+
+const isContactSelected = (id) => {
+  const list = picker.value === 'assignees' ? assigneeIds.value : watcherIds.value
+  return list.includes(id)
+}
+const toggleContactInPicker = (id) => {
+  const isAssignees = picker.value === 'assignees'
+  const list = isAssignees ? assigneeIds.value : watcherIds.value
+  const newList = list.includes(id) ? list.filter(x => x !== id) : [...list, id]
+  if (isAssignees) { updateAssignees(newList) } else { onWatchersChanged(newList) }
+}
 const setField = (key, value) => {
   localTask.value[key] = value
   if (key === 'status') {
@@ -942,6 +1130,10 @@ onUnmounted(() => { if (saveTimer) clearTimeout(saveTimer) })
 <style scoped>
 .fade-enter-active, .fade-leave-active { transition: opacity 0.15s ease; }
 .fade-enter-from, .fade-leave-to { opacity: 0; }
+
+.sheet-enter-active, .sheet-leave-active { transition: transform 0.25s ease, opacity 0.2s ease; }
+.sheet-enter-from, .sheet-leave-to { transform: translateY(100%); opacity: 0; }
+.sheet-enter-to, .sheet-leave-from { transform: translateY(0); opacity: 1; }
 
 .thin-scroll {
   scrollbar-width: thin;
