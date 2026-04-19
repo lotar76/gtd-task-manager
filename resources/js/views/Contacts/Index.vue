@@ -13,6 +13,35 @@
       </button>
     </div>
 
+    <!-- Входящие приглашения -->
+    <div v-if="pendingInvites.length > 0" class="mb-4 space-y-2">
+      <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Входящие приглашения</h3>
+      <div
+        v-for="invite in pendingInvites"
+        :key="invite.id"
+        class="flex items-center justify-between bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-lg px-4 py-3"
+      >
+        <div>
+          <span class="text-sm font-medium text-gray-900 dark:text-white">{{ invite.sender?.name }}</span>
+          <span class="text-sm text-gray-500 dark:text-gray-400"> хочет добавить вас в контакты</span>
+        </div>
+        <div class="flex gap-2">
+          <button
+            @click="respondToInvite(invite.id, 'accept')"
+            class="px-3 py-1 text-xs bg-emerald-600 text-white rounded hover:bg-emerald-700"
+          >
+            Принять
+          </button>
+          <button
+            @click="respondToInvite(invite.id, 'decline')"
+            class="px-3 py-1 text-xs text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+          >
+            Отклонить
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Фильтры -->
     <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3 mb-4 flex flex-wrap items-center gap-2">
       <div class="relative flex-1 min-w-[200px]">
@@ -173,6 +202,52 @@
           Свои заметки и доп. контакты — ниже.
         </div>
 
+        <!-- Поиск пользователей системы (только при создании) -->
+        <div v-if="!form.id && !isLinked" class="mb-4">
+          <label class="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Найти в системе (по email или имени)</label>
+          <div class="relative">
+            <input
+              v-model="userSearchQuery"
+              @input="searchSystemUsers"
+              type="text"
+              placeholder="Введите email или имя (от 3 символов)..."
+              class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            />
+            <div v-if="userSearchLoading" class="absolute right-3 top-1/2 -translate-y-1/2">
+              <svg class="w-4 h-4 animate-spin text-gray-400" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" class="opacity-20" /><path d="M12 2a10 10 0 019.95 9" stroke="currentColor" stroke-width="3" stroke-linecap="round" /></svg>
+            </div>
+          </div>
+          <div v-if="foundUsers.length > 0" class="mt-2 border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden">
+            <div
+              v-for="u in foundUsers"
+              :key="u.id"
+              class="flex items-center justify-between px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 border-b last:border-b-0 border-gray-100 dark:border-gray-600"
+            >
+              <div class="min-w-0">
+                <div class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ u.name }}</div>
+                <div class="text-xs text-gray-500 dark:text-gray-400">{{ u.email }}</div>
+              </div>
+              <div class="flex-shrink-0 ml-2">
+                <span v-if="u.already_linked" class="text-xs text-emerald-600 dark:text-emerald-400">Уже связан</span>
+                <span v-else-if="u.pending_invite" class="text-xs text-amber-600 dark:text-amber-400">Приглашение отправлено</span>
+                <button
+                  v-else
+                  @click="sendInviteToUser(u)"
+                  class="px-3 py-1 text-xs bg-primary-600 text-white rounded hover:bg-primary-700 transition-colors"
+                >
+                  Пригласить
+                </button>
+              </div>
+            </div>
+          </div>
+          <div v-if="userSearchQuery.length >= 3 && !userSearchLoading && foundUsers.length === 0" class="mt-1 text-xs text-gray-400">
+            Не найдено. Создайте локальный контакт ниже.
+          </div>
+          <div v-if="inviteSent" class="mt-2 text-xs text-emerald-600 dark:text-emerald-400">
+            Приглашение отправлено!
+          </div>
+        </div>
+
         <form @submit.prevent="save" class="space-y-3">
           <div>
             <label class="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Имя {{ isLinked ? '(из профиля пользователя)' : '' }}</label>
@@ -265,6 +340,14 @@ const loading = ref(false)
 const showModal = ref(false)
 const saving = ref(false)
 const editingContact = ref(null)
+
+// User search & invites
+const userSearchQuery = ref('')
+const userSearchLoading = ref(false)
+const foundUsers = ref([])
+const inviteSent = ref(false)
+const pendingInvites = ref([])
+let searchTimeout = null
 
 const emptyForm = () => ({
   id: null,
@@ -364,6 +447,9 @@ const load = async () => {
 const openCreate = () => {
   form.value = emptyForm()
   messengersDraft.value = { telegram: '', whatsapp: '', signal: '', other: '' }
+  userSearchQuery.value = ''
+  foundUsers.value = []
+  inviteSent.value = false
   showModal.value = true
 }
 
@@ -451,5 +537,63 @@ const remove = async (contact) => {
   await load()
 }
 
-onMounted(load)
+const searchSystemUsers = () => {
+  clearTimeout(searchTimeout)
+  inviteSent.value = false
+  const q = userSearchQuery.value.trim()
+  if (q.length < 3) { foundUsers.value = []; return }
+  userSearchLoading.value = true
+  searchTimeout = setTimeout(async () => {
+    try {
+      const res = await api.get('/v1/contacts-search-users', { params: { query: q } })
+      foundUsers.value = res.data || []
+    } catch (e) { foundUsers.value = [] }
+    finally { userSearchLoading.value = false }
+  }, 400)
+}
+
+const sendInviteToUser = async (user) => {
+  // First create a local contact, then send invite
+  try {
+    const contactRes = await api.post('/v1/contacts', {
+      name: user.name,
+      email: user.email,
+    })
+    const contactId = contactRes.data.id
+    await api.post('/v1/contacts-invite', {
+      contact_id: contactId,
+      receiver_id: user.id,
+    })
+    user.pending_invite = true
+    inviteSent.value = true
+    await load()
+  } catch (e) {
+    console.error('Invite error', e)
+    alert(e.response?.data?.message || 'Ошибка отправки приглашения')
+  }
+}
+
+const loadPendingInvites = async () => {
+  try {
+    const res = await api.get('/v1/contacts-invites')
+    pendingInvites.value = res.data || []
+  } catch (e) { pendingInvites.value = [] }
+}
+
+const respondToInvite = async (inviteId, action) => {
+  try {
+    await api.post(`/v1/contacts-invites/${inviteId}/respond`, { action })
+    await Promise.all([loadPendingInvites(), load()])
+  } catch (e) {
+    alert(e.response?.data?.message || 'Ошибка')
+  }
+}
+
+const openCreateClean = openCreate
+const originalOpenCreate = openCreate
+
+onMounted(() => {
+  load()
+  loadPendingInvites()
+})
 </script>
