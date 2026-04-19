@@ -10,6 +10,7 @@ use App\Models\Goal;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -150,6 +151,55 @@ class GoalController extends Controller
         $fresh->append('progress');
 
         return ApiResponse::success($fresh, 'Изображение удалено');
+    }
+
+    // Генерация стиха из Библии через AI
+    public function generateBibleVerse(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'description' => 'required|string|max:2000',
+        ]);
+
+        $apiKey = config('openrouter.api_key');
+        if (empty($apiKey)) {
+            return ApiResponse::error('API ключ не настроен', 500);
+        }
+
+        $baseUrl = config('openrouter.base_url');
+        $model = config('openrouter.model');
+
+        $response = Http::timeout(30)
+            ->withHeaders([
+                'Authorization' => "Bearer {$apiKey}",
+                'Content-Type' => 'application/json',
+            ])
+            ->post("{$baseUrl}/chat/completions", [
+                'model' => $model,
+                'messages' => [
+                    [
+                        'role' => 'system',
+                        'content' => 'Ты помощник, который находит стихи из Библии. Пользователь даёт тебе свою цель и видение. Найди ОДИН стих из Библии (Синодальный перевод), который станет основанием и вдохновением для этой цели. Ответь ТОЛЬКО текстом стиха и ссылкой, в формате: "Текст стиха" (Книга глава:стих). Ничего больше не пиши.',
+                    ],
+                    [
+                        'role' => 'user',
+                        'content' => "Цель: {$validated['name']}\nВидение: {$validated['description']}",
+                    ],
+                ],
+                'temperature' => 0.7,
+                'max_tokens' => 256,
+            ]);
+
+        if (!$response->successful()) {
+            return ApiResponse::error('Ошибка генерации', 500);
+        }
+
+        $content = $response->json('choices.0.message.content');
+        if (!$content) {
+            return ApiResponse::error('Пустой ответ от AI', 500);
+        }
+
+        return ApiResponse::success(['verse' => trim($content)], 'Стих получен');
     }
 
     private function processImage($file, int $workspaceId): array

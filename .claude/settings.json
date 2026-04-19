@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git checkout:*)",
+      "Bash(docker stop:*)",
+      "Bash(docker start:*)",
+      "Bash(docker rm:*)",
+      "Read(//tmp/**)",
+      "Bash(docker restart:*)",
+      "Bash(find /home/igor/projects/gtd-task-manager -name *.example -o -name example.*)",
+      "Bash(find /home/igor/projects/gtd-task-manager/public -name *.json -o -name *.webmanifest)",
+      "Bash(find /home/igor/projects/gtd-task-manager -name *.sql -o -name schema.sql)",
+      "Bash(ls -la /home/igor/projects/gtd-task-manager/*.md)"
+    ],
+    "additionalDirectories": [
+      "/home/igor/projects/gtd-task-manager"
+    ]
+  }
+}

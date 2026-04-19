@@ -35,6 +35,7 @@ import {
   ChartBarIcon,
   UserGroupIcon,
   TableCellsIcon,
+  DocumentTextIcon,
 } from '@heroicons/vue/24/outline'
 
 const props = defineProps({
@@ -75,6 +76,7 @@ const iconMap = {
   cog: Cog6ToothIcon,
   'chart-bar': ChartBarIcon,
   'archive-box': ArchiveBoxIcon,
+  'document-text': DocumentTextIcon,
   'user-group': UserGroupIcon,
   'table-cells': TableCellsIcon,
 }

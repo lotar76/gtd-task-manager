@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\V1\TagController;
 use App\Http\Controllers\Api\V1\TaskController;
 use App\Http\Controllers\Api\V1\TelegramSubscriptionController;
 use App\Http\Controllers\Api\V1\ChallengeController;
+use App\Http\Controllers\Api\V1\NoteController;
 use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\PushSubscriptionController;
 use App\Http\Controllers\Api\V1\WorkspaceController;
@@ -100,6 +101,7 @@ Route::prefix('v1')->group(function () {
         Route::put('/goals/{goal}', [GoalController::class, 'update']);
         Route::delete('/goals/{goal}', [GoalController::class, 'destroy']);
         Route::delete('/goals/{goal}/image', [GoalController::class, 'deleteImage']);
+        Route::post('/goals/generate-bible-verse', [GoalController::class, 'generateBibleVerse']);
 
         // === СФЕРЫ ЖИЗНИ ===
         Route::get('/life-spheres', [LifeSphereController::class, 'all']);
@@ -129,6 +131,13 @@ Route::prefix('v1')->group(function () {
         Route::get('/tags/{tag}', [TagController::class, 'show']);
         Route::put('/tags/{tag}', [TagController::class, 'update']);
         Route::delete('/tags/{tag}', [TagController::class, 'destroy']);
+
+        // === ЗАМЕТКИ ===
+        Route::get('/notes', [NoteController::class, 'all']);
+        Route::post('/notes', [NoteController::class, 'store']);
+        Route::get('/notes/{note}', [NoteController::class, 'show']);
+        Route::put('/notes/{note}', [NoteController::class, 'update']);
+        Route::delete('/notes/{note}', [NoteController::class, 'destroy']);
 
         // === КОММЕНТАРИИ ===
         Route::get('/tasks/{task}/comments', [CommentController::class, 'index']);

@@ -62,6 +62,11 @@ class Goal extends Model
         return $this->hasMany(Task::class);
     }
 
+    public function notes(): HasMany
+    {
+        return $this->hasMany(Note::class);
+    }
+
     // Получить все задачи (через проекты + напрямую привязанные)
     public function tasks()
     {

@@ -25,7 +25,7 @@ class TaskController extends Controller
     {
         $tasks = Task::query()
             ->where(fn ($q) => $this->scopeVisibleToUser($q, $request->user()))
-            ->with(['project:id,name', 'context:id,name', 'assignee:id,name', 'creator:id,name', 'tags:id,name', 'lifeSphere:id,name,color', 'contacts'])
+            ->with(['project:id,name', 'context:id,name', 'assignee:id,name', 'creator:id,name', 'tags:id,name', 'lifeSphere:id,name,color', 'contacts', 'attachments'])
             ->orderBy('created_at', 'desc')
             ->get();
 

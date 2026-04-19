@@ -24,13 +24,13 @@
             <textarea
               v-model="form.description"
               rows="2"
-              placeholder="Зачем мне это нужно?"
+              placeholder="Видение"
               class="w-full bg-transparent border-0 outline-none text-sm text-gray-700 dark:text-gray-300 placeholder-gray-300 dark:placeholder-gray-600 leading-relaxed resize-none"
             ></textarea>
 
-            <!-- Inline rows -->
-            <div class="space-y-1">
-              <InlineRow icon="calendar" label="Дата">
+            <!-- Дата + Сфера в одну строку -->
+            <div class="flex items-center gap-3">
+              <InlineRow icon="calendar" label="Дата" class="flex-1">
                 <input v-model="form.deadline" type="date" class="w-full bg-transparent border-0 outline-none text-sm text-gray-800 dark:text-gray-100 py-0" />
               </InlineRow>
               <InlineSelect
@@ -39,14 +39,27 @@
                 label="Сфера"
                 placeholder="Не выбрано"
                 :items="availableSpheres"
+                class="flex-1"
               />
             </div>
 
             <!-- Стих из Библии -->
             <div>
-              <div class="flex items-center gap-1.5 mb-1 text-[11px] font-medium uppercase tracking-wider text-gray-400">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 19.5A2.5 2.5 0 016.5 17H20M4 19.5V6.5A2.5 2.5 0 016.5 4H20v13M4 19.5A2.5 2.5 0 006.5 22H20v-5" /></svg>
-                Стих из Библии
+              <div class="flex items-center justify-between mb-1">
+                <div class="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wider text-gray-400">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 19.5A2.5 2.5 0 016.5 17H20M4 19.5V6.5A2.5 2.5 0 016.5 4H20v13M4 19.5A2.5 2.5 0 006.5 22H20v-5" /></svg>
+                  Стих из Библии
+                </div>
+                <button
+                  type="button"
+                  @click="requestBibleVerse"
+                  :disabled="!canRequestVerse || loadingVerse"
+                  class="text-[11px] transition-colors flex items-center gap-1"
+                  :class="!canRequestVerse || loadingVerse ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed' : 'text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300'"
+                >
+                  <svg v-if="loadingVerse" class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" /><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+                  {{ loadingVerse ? 'Получаем...' : 'Запросить' }}
+                </button>
               </div>
               <textarea v-model="form.bible_verse" rows="2" placeholder="Стих для вдохновения"
                 class="w-full bg-transparent border-0 outline-none text-sm italic text-gray-700 dark:text-gray-300 placeholder-gray-300 dark:placeholder-gray-600 resize-none border-l-2 border-gray-200 dark:border-gray-700 pl-3"></textarea>
@@ -91,6 +104,7 @@
 import { ref, computed, watch, onMounted, onUnmounted, h } from 'vue'
 import { useLifeSpheresStore } from '@/stores/lifeSpheres'
 import InlineSelect from '@/components/common/InlineSelect.vue'
+import api from '@/services/api'
 
 const ICONS = {
   calendar: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z',
@@ -163,6 +177,26 @@ const removeImage = () => {
   imagePreview.value = null
   if (fileInput.value) fileInput.value.value = ''
 }
+const loadingVerse = ref(false)
+const canRequestVerse = computed(() => form.value.name.trim() && form.value.description.trim())
+
+const requestBibleVerse = async () => {
+  if (!canRequestVerse.value || loadingVerse.value) return
+  loadingVerse.value = true
+  error.value = ''
+  try {
+    const res = await api.post('/v1/goals/generate-bible-verse', {
+      name: form.value.name,
+      description: form.value.description,
+    })
+    form.value.bible_verse = res.data?.data?.verse || res.data?.verse || ''
+  } catch (e) {
+    error.value = 'Не удалось получить стих'
+  } finally {
+    loadingVerse.value = false
+  }
+}
+
 const handleSubmit = () => {
   error.value = ''
   loading.value = true

@@ -453,6 +453,28 @@
                   </div>
                   <div v-else class="text-xs text-gray-500 dark:text-gray-400">Файлов нет</div>
                 </div>
+
+                <!-- Заметки -->
+                <div>
+                  <div class="flex items-center justify-between mb-1">
+                    <FieldLabel icon="document-text">Заметки</FieldLabel>
+                    <button @click="showTaskNoteModal = true; taskNoteForModal = null" class="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 p-0.5" title="Добавить заметку">
+                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                    </button>
+                  </div>
+                  <div v-if="taskNotes.length" class="space-y-1">
+                    <div
+                      v-for="note in taskNotes"
+                      :key="note.id"
+                      class="px-2 py-1.5 rounded border border-gray-100 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-800/60 cursor-pointer"
+                      @click="taskNoteForModal = note; showTaskNoteModal = true"
+                    >
+                      <div class="text-[12.5px] text-gray-700 dark:text-gray-200 truncate">{{ note.title }}</div>
+                      <div v-if="note.content" class="text-[10px] text-gray-400 mt-0.5 line-clamp-1">{{ note.content }}</div>
+                    </div>
+                  </div>
+                  <div v-else class="text-xs text-gray-500 dark:text-gray-400">Заметок нет</div>
+                </div>
               </div>
             </div>
           </div>
@@ -508,6 +530,16 @@
         </div>
       </div>
     </Transition>
+
+    <NoteModal
+      :show="showTaskNoteModal"
+      :note="taskNoteForModal"
+      :task-id="localTask?.id"
+      :goal-id="localTask?.goal_id"
+      @close="showTaskNoteModal = false; taskNoteForModal = null"
+      @submit="handleSaveTaskNote"
+      @delete="handleDeleteTaskNote"
+    />
   </Teleport>
 </template>
 
@@ -518,6 +550,8 @@ import ContactPicker from '@/components/tasks/ContactPicker.vue'
 import { useConfirmStore } from '@/stores/confirm'
 import { useTasksStore } from '@/stores/tasks'
 import { useDashboardStore } from '@/stores/dashboard'
+import { useNotesStore } from '@/stores/notes'
+import NoteModal from '@/components/notes/NoteModal.vue'
 
 const confirmStore = useConfirmStore()
 const tasksStore = useTasksStore()
@@ -552,6 +586,7 @@ const ICONS = {
   'map-pin': 'M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z M15 11a3 3 0 11-6 0 3 3 0 016 0z',
   plus: 'M12 4v16m8-8H4',
   chat: 'M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z',
+  'document-text': 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
 }
 const Icon = { props: ['name'], setup: (p) => () => h('svg', { class: 'w-3.5 h-3.5', fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24' },
   [h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'stroke-width': '1.8', d: ICONS[p.name] || '' })]) }
@@ -788,6 +823,31 @@ const newComment = ref('')
 const showCommentInput = ref(false)
 const postingComment = ref(false)
 
+const notesStore = useNotesStore()
+const showTaskNoteModal = ref(false)
+const taskNoteForModal = ref(null)
+const taskNotes = computed(() => localTask.value?.id ? notesStore.notesByTaskId(localTask.value.id) : [])
+
+const handleSaveTaskNote = async (data) => {
+  try {
+    if (data.id) {
+      await notesStore.updateNote(data.id, data)
+    } else {
+      await notesStore.createNote(data)
+    }
+    showTaskNoteModal.value = false
+    taskNoteForModal.value = null
+  } catch (e) {
+    console.error('Error saving note:', e)
+  }
+}
+const handleDeleteTaskNote = async (note) => {
+  if (!confirm(`Удалить заметку "${note.title}"?`)) return
+  await notesStore.deleteNote(note.id)
+  showTaskNoteModal.value = false
+  taskNoteForModal.value = null
+}
+
 const creatorName = computed(() => localTask.value?.creator?.name || null)
 
 const mobileFieldsSummary = computed(() => {
@@ -944,7 +1004,10 @@ watch(() => props.task, (t) => {
   showCommentInput.value = false
   newComment.value = ''
   comments.value = (t.comments || []).slice().sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
-  if (t.id) loadComments()
+  if (t.id) {
+    loadComments()
+    notesStore.fetchAllNotes()
+  }
 }, { immediate: true })
 
 const togglePicker = (name) => { picker.value = picker.value === name ? null : name }

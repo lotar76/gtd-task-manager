@@ -95,6 +95,11 @@ const routes = [
         component: () => import('@/views/Goals/Show.vue'),
       },
       {
+        path: 'documents',
+        name: 'Documents',
+        component: () => import('@/views/Documents/Index.vue'),
+      },
+      {
         path: 'contacts',
         name: 'Contacts',
         component: () => import('@/views/Contacts/Index.vue'),
