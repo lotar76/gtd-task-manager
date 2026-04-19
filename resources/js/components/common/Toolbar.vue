@@ -196,7 +196,7 @@
           <div
             v-if="showNotifications"
             v-click-outside="() => showNotifications = false"
-            class="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-700 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 z-50 max-h-96 overflow-y-auto"
+            class="fixed left-2 right-2 top-14 lg:absolute lg:left-auto lg:top-auto lg:right-0 lg:mt-2 lg:w-80 bg-white dark:bg-gray-700 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 z-50 max-h-96 overflow-y-auto"
           >
             <div class="flex items-center justify-between px-4 py-2 border-b border-gray-200 dark:border-gray-600">
               <span class="text-sm font-medium text-gray-900 dark:text-white">Уведомления</span>
