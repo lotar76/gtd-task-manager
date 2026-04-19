@@ -1,7 +1,7 @@
 <template>
   <div class="p-4 sm:p-6 max-w-full">
     <!-- Header -->
-    <div class="flex items-center justify-between mb-6">
+    <div class="flex items-center justify-center mb-6">
       <div class="flex items-center space-x-4">
         <button
           @click="prevMonth"
@@ -31,24 +31,23 @@
       <div
         v-for="challenge in store.challenges"
         :key="challenge.id"
-        class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden"
+        class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 active:scale-[0.98] transition-transform relative"
+        @click="toggleToday(challenge)"
       >
         <div class="flex items-center justify-between px-4 py-3">
           <div class="flex items-center space-x-3 flex-1 min-w-0">
-            <!-- Big toggle button -->
-            <button
-              @click="toggleToday(challenge)"
-              class="flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center transition-all active:scale-95"
+            <!-- Status indicator -->
+            <div
+              class="flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center transition-all"
               :class="isTodayCompleted(challenge)
                 ? 'bg-emerald-500 text-white shadow-sm'
                 : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 border-2 border-gray-200 dark:border-gray-700'"
             >
               <CheckIcon class="w-7 h-7" :class="isTodayCompleted(challenge) ? 'stroke-[3]' : ''" />
-            </button>
+            </div>
             <div class="min-w-0 flex-1">
               <span
                 v-if="editingId !== challenge.id"
-                @click="startEdit(challenge)"
                 class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate block"
               >
                 {{ challenge.title }}
@@ -60,6 +59,7 @@
                 @keydown.enter="saveEdit(challenge)"
                 @keydown.escape="cancelEdit"
                 @blur="saveEdit(challenge)"
+                @click.stop
                 class="bg-transparent border-b border-primary-500 outline-none text-sm w-full text-gray-900 dark:text-gray-100"
               />
               <span class="text-xs" :class="percentClass(completionPercent(challenge))">
@@ -67,12 +67,35 @@
               </span>
             </div>
           </div>
-          <button
-            @click="removeChallenge(challenge)"
-            class="ml-2 p-1.5 text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400"
-          >
-            <XMarkIcon class="w-4 h-4" />
-          </button>
+          <!-- Three-dot menu -->
+          <div class="relative ml-2 z-50">
+            <button
+              @click.stop="toggleMobileMenu(challenge.id)"
+              class="p-1.5 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
+            >
+              <EllipsisVerticalIcon class="w-5 h-5" />
+            </button>
+            <div
+              v-if="mobileMenuId === challenge.id"
+              v-click-outside="() => mobileMenuId = null"
+              class="absolute right-0 top-full mt-1 w-40 bg-white dark:bg-gray-700 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 py-1 z-50"
+            >
+              <button
+                @click.stop="startEditMobile(challenge)"
+                class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 flex items-center space-x-2"
+              >
+                <PencilIcon class="w-4 h-4" />
+                <span>Переименовать</span>
+              </button>
+              <button
+                @click.stop="removeMobile(challenge)"
+                class="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center space-x-2"
+              >
+                <TrashIcon class="w-4 h-4" />
+                <span>Удалить</span>
+              </button>
+            </div>
+          </div>
         </div>
         <!-- Mini streak dots -->
         <div class="px-4 pb-3 flex gap-[3px] flex-wrap">
@@ -234,6 +257,9 @@ import {
   XMarkIcon,
   PlusIcon,
   TableCellsIcon,
+  EllipsisVerticalIcon,
+  PencilIcon,
+  TrashIcon,
 } from '@heroicons/vue/24/outline'
 
 const store = useChallengesStore()
@@ -247,6 +273,8 @@ const newTitle = ref('')
 const editingId = ref(null)
 const editTitle = ref('')
 const editInput = ref(null)
+
+const mobileMenuId = ref(null)
 
 const SHORT_DAYS = ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб']
 
@@ -401,6 +429,20 @@ function cancelEdit() {
   editingId.value = null
 }
 
+function toggleMobileMenu(id) {
+  mobileMenuId.value = mobileMenuId.value === id ? null : id
+}
+
+function startEditMobile(challenge) {
+  mobileMenuId.value = null
+  startEdit(challenge)
+}
+
+function removeMobile(challenge) {
+  mobileMenuId.value = null
+  removeChallenge(challenge)
+}
+
 async function removeChallenge(challenge) {
   const confirmed = await confirmStore.confirm({
     title: 'Удалить привычку',
@@ -412,6 +454,18 @@ async function removeChallenge(challenge) {
   if (confirmed) {
     await store.remove(challenge.id)
   }
+}
+
+const vClickOutside = {
+  mounted(el, binding) {
+    el._clickOutside = (e) => {
+      if (!el.contains(e.target)) binding.value()
+    }
+    document.addEventListener('click', el._clickOutside)
+  },
+  unmounted(el) {
+    document.removeEventListener('click', el._clickOutside)
+  },
 }
 
 onMounted(() => {
