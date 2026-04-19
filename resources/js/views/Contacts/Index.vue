@@ -541,14 +541,18 @@ const searchSystemUsers = () => {
   clearTimeout(searchTimeout)
   inviteSent.value = false
   const q = userSearchQuery.value.trim()
-  if (q.length < 3) { foundUsers.value = []; return }
+  if (q.length < 3) { foundUsers.value = []; userSearchLoading.value = false; return }
   userSearchLoading.value = true
   searchTimeout = setTimeout(async () => {
     try {
       const res = await api.get('/v1/contacts-search-users', { params: { query: q } })
       foundUsers.value = res.data || []
-    } catch (e) { foundUsers.value = [] }
-    finally { userSearchLoading.value = false }
+    } catch (e) {
+      foundUsers.value = []
+      console.error('User search error:', e)
+    } finally {
+      userSearchLoading.value = false
+    }
   }, 400)
 }
 
