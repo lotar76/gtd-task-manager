@@ -228,7 +228,7 @@
                         <!-- Compact badges -->
                         <div class="flex flex-wrap gap-0.5 mt-0.5">
                           <span v-if="task.project" class="inline-block px-0.5 rounded text-[8px] font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">{{ task.project.name }}</span>
-                          <span v-if="task.assignee" class="inline-block px-0.5 rounded text-[8px] font-medium bg-gray-200 dark:bg-gray-600">{{ task.assignee.name }}</span>
+                          <span v-for="p in taskPeople(task)" :key="p.name" class="inline-block px-0.5 rounded text-[8px] font-medium" :class="p.role === 'assignee' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300' : 'bg-gray-200 dark:bg-gray-600'">{{ p.name }}</span>
                         </div>
                       </div>
                       <!-- Priority dot -->
@@ -291,7 +291,7 @@
                       <div class="flex flex-wrap gap-0.5 mt-0.5">
                         <span v-if="task.project" class="inline-block px-1 py-0 rounded text-[9px] font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">{{ task.project.name }}</span>
                         <span v-if="task.workspace" class="inline-block px-1 py-0 rounded text-[9px] font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400">{{ task.workspace.name }}</span>
-                        <span v-if="task.assignee" class="inline-block px-1 py-0 rounded text-[9px] font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">{{ task.assignee.name }}</span>
+                        <span v-for="p in taskPeople(task)" :key="p.name" class="inline-block px-1 py-0 rounded text-[9px] font-medium" :class="p.role === 'assignee' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300' : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'">{{ p.name }}</span>
                         <span v-if="task.context" class="inline-block px-1 py-0 rounded text-[9px] font-medium" :style="{ backgroundColor: task.context.color + '20', color: task.context.color }">{{ task.context.name }}</span>
                         <span v-for="tag in task.tags" :key="tag.id" class="inline-block px-1 py-0 rounded text-[9px] font-medium" :style="{ backgroundColor: tag.color + '20', color: tag.color }">{{ tag.name }}</span>
                       </div>
@@ -397,8 +397,8 @@
                         </span>
 
                         <!-- Assignee -->
-                        <span v-if="task.assignee" class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">
-                          {{ task.assignee.name }}
+                        <span v-for="p in taskPeople(task)" :key="p.name" class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium" :class="p.role === 'assignee' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300' : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'">
+                          {{ p.name }}
                         </span>
 
                         <!-- Context -->
@@ -558,8 +558,8 @@
                           </span>
 
                           <!-- Assignee -->
-                          <span v-if="task.assignee" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">
-                            {{ task.assignee.name }}
+                          <span v-for="p in taskPeople(task)" :key="p.name" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium" :class="p.role === 'assignee' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300' : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'">
+                            {{ p.name }}
                           </span>
 
                           <!-- Context -->
@@ -666,9 +666,9 @@
                           {{ task.project.name }}
                         </span>
 
-                        <!-- Assignee -->
-                        <span v-if="task.assignee" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">
-                          {{ task.assignee.name }}
+                        <!-- People -->
+                        <span v-for="p in taskPeople(task)" :key="p.name" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium" :class="p.role === 'assignee' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300' : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'">
+                          {{ p.name }}
                         </span>
 
                         <!-- Context -->
@@ -768,9 +768,9 @@
                       {{ task.project.name }}
                     </span>
 
-                    <!-- Assignee -->
-                    <span v-if="task.assignee" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">
-                      {{ task.assignee.name }}
+                    <!-- People -->
+                    <span v-for="p in taskPeople(task)" :key="p.name" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium" :class="p.role === 'assignee' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300' : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'">
+                      {{ p.name }}
                     </span>
 
                     <!-- Context -->
@@ -851,6 +851,12 @@ const route = useRoute()
 const tasksStore = useTasksStore()
 const authStore = useAuthStore()
 const workspaceStore = useWorkspaceStore()
+
+const taskPeople = (task) => {
+  return (task.contacts || [])
+    .filter(c => c.pivot?.role === 'assignee' || c.pivot?.role === 'watcher')
+    .map(c => ({ name: c.name, role: c.pivot.role }))
+}
 
 const myWorkspaceId = computed(() => {
   const uid = authStore.user?.id
