@@ -268,8 +268,15 @@ class TaskController extends Controller
             $this->telegram->notifyTaskParticipants($task, auth()->user(), 'updated');
 
             // Schedule push notifications
+            // Skip if a watcher is just removing themselves (no other changes)
             $notifyService = app(\App\Services\TaskNotificationService::class);
-            $notifyService->scheduleNotification($task, $oldAttributes, $oldAssigneeIds, $oldWatcherIds, $request->user());
+            $isGuestSelfRemove = $task->created_by !== $request->user()->id
+                && empty($validated) // no field changes (assignee_ids/watcher_ids/checklist were unset)
+                && $checklist === null;
+
+            if (!$isGuestSelfRemove) {
+                $notifyService->scheduleNotification($task, $oldAttributes, $oldAssigneeIds, $oldWatcherIds, $request->user());
+            }
 
             // Immediate notification for newly added assignees/watchers
             if ($assigneeIds !== null || $watcherIds !== null) {
