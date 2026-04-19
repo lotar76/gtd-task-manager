@@ -6,7 +6,7 @@
         class="fixed inset-0 z-50 flex items-start lg:items-center justify-center p-0 lg:p-6 bg-black/40 backdrop-blur-sm overflow-y-auto"
         @click.self="handleClose"
       >
-        <div class="bg-white dark:bg-gray-900 w-full max-w-6xl h-screen lg:h-auto lg:min-h-0 lg:rounded-xl lg:shadow-2xl overflow-visible flex flex-col lg:max-h-[94vh]">
+        <div class="relative bg-white dark:bg-gray-900 w-full max-w-6xl h-screen lg:h-auto lg:min-h-0 lg:rounded-xl lg:shadow-2xl overflow-visible flex flex-col lg:max-h-[94vh]">
           <!-- Header -->
           <div class="flex items-center justify-between px-4 lg:px-5 py-2 border-b border-gray-100 dark:border-gray-800 gap-3">
             <div class="flex items-center gap-2 text-xs text-gray-400 flex-shrink-0">
@@ -485,6 +485,26 @@
               {{ saveState === 'saving' ? 'Сохраняю…' : 'Сохранить' }}
             </button>
           </div>
+
+          <!-- Save overlay -->
+          <Transition name="save-overlay">
+            <div
+              v-if="saveState === 'saving' || saveState === 'saved'"
+              class="absolute inset-0 z-10 flex items-center justify-center bg-white/60 dark:bg-gray-900/60 backdrop-blur-[2px] pointer-events-none rounded-xl"
+            >
+              <div class="flex flex-col items-center gap-2">
+                <div v-if="saveState === 'saving'" class="w-10 h-10 text-primary-500 animate-spin">
+                  <svg fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" class="opacity-20" /><path d="M12 2a10 10 0 019.95 9" stroke="currentColor" stroke-width="3" stroke-linecap="round" /></svg>
+                </div>
+                <div v-else class="w-12 h-12 text-emerald-500 animate-bounce-once">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                </div>
+                <span class="text-sm font-medium" :class="saveState === 'saving' ? 'text-gray-500 dark:text-gray-400' : 'text-emerald-600 dark:text-emerald-400'">
+                  {{ saveState === 'saving' ? 'Сохраняю…' : 'Сохранено' }}
+                </span>
+              </div>
+            </div>
+          </Transition>
         </div>
       </div>
     </Transition>
@@ -1092,6 +1112,7 @@ const save = async () => {
 
 const handleSave = async () => {
   if (isGuest.value || !isDirty.value) return
+  saveState.value = 'saving'
   await save()
   isDirty.value = false
 }
@@ -1222,4 +1243,16 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   background-image: none;
 }
 .inline-select:focus { @apply ring-0; }
+
+.save-overlay-enter-active { transition: opacity 0.15s ease; }
+.save-overlay-leave-active { transition: opacity 0.4s ease 0.3s; }
+.save-overlay-enter-from, .save-overlay-leave-to { opacity: 0; }
+
+@keyframes bounce-once {
+  0% { transform: scale(0.3); opacity: 0; }
+  50% { transform: scale(1.15); }
+  70% { transform: scale(0.95); }
+  100% { transform: scale(1); opacity: 1; }
+}
+.animate-bounce-once { animation: bounce-once 0.4s ease-out; }
 </style>
