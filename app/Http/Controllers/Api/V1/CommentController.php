@@ -8,6 +8,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Responses\ApiResponse;
 use App\Models\Comment;
 use App\Models\Task;
+use App\Models\User;
+use App\Notifications\TaskChanged;
 use App\Services\TelegramService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -41,6 +43,34 @@ class CommentController extends Controller
 
         // Уведомляем участников задачи
         $telegram->notifyTaskParticipants($task, Auth::user(), 'commented', $validated['content']);
+
+        // Push-уведомление участникам
+        $changer = Auth::user();
+        $shortText = mb_strlen($validated['content']) > 60
+            ? mb_substr($validated['content'], 0, 60) . '…'
+            : $validated['content'];
+
+        $recipientIds = collect();
+
+        // Creator
+        if ($task->created_by && $task->created_by !== $changer->id) {
+            $recipientIds->push($task->created_by);
+        }
+
+        // Contacts linked to users
+        $contactUserIds = $task->contacts()
+            ->whereNotNull('contacts.contact_user_id')
+            ->pluck('contacts.contact_user_id');
+        $recipientIds = $recipientIds->merge($contactUserIds)
+            ->unique()
+            ->reject(fn ($id) => $id === $changer->id);
+
+        foreach ($recipientIds as $userId) {
+            $user = User::find($userId);
+            if ($user) {
+                $user->notify(new TaskChanged($task, $changer->name, ["комментарий: {$shortText}"]));
+            }
+        }
 
         return ApiResponse::success($comment, 'Комментарий добавлен', 201);
     }
