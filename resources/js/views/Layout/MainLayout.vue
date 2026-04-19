@@ -452,6 +452,7 @@ import { useTaskDraft } from '@/composables/useTaskDraft'
 import GoalModal from '@/components/goals/GoalModal.vue'
 import { useGoalsStore } from '@/stores/goals'
 import { useLifeSpheresStore } from '@/stores/lifeSpheres'
+import { useNotificationsStore } from '@/stores/notifications'
 
 const router = useRouter()
 const route = useRoute()
@@ -460,6 +461,7 @@ const tasksStore = useTasksStore()
 const projectsStore = useProjectsStore()
 const goalsStore = useGoalsStore()
 const lifeSpheresStore = useLifeSpheresStore()
+const notificationsStore = useNotificationsStore()
 const themeStore = useThemeStore()
 // Логотип для заставки (старые файлы)
 const loadingLogo = computed(() => themeStore.isDark ? loadingLogoDark : loadingLogoLight)
@@ -717,11 +719,13 @@ onMounted(async () => {
   }
   tasksStore.startSync()
   projectsStore.startSync()
+  notificationsStore.startPolling()
 })
 
 onUnmounted(() => {
   tasksStore.stopSync()
   projectsStore.stopSync()
+  notificationsStore.stopPolling()
 })
 
 const isProjectActive = (projectId) => {

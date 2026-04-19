@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\V1\TagController;
 use App\Http\Controllers\Api\V1\TaskController;
 use App\Http\Controllers\Api\V1\TelegramSubscriptionController;
 use App\Http\Controllers\Api\V1\ChallengeController;
+use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\PushSubscriptionController;
 use App\Http\Controllers\Api\V1\WorkspaceController;
 use App\Http\Controllers\Api\TelegramWebhookController;
@@ -110,6 +111,10 @@ Route::prefix('v1')->group(function () {
 
         // === КОНТАКТЫ ===
         Route::apiResource('contacts', ContactController::class);
+        Route::get('/contacts-search-users', [ContactController::class, 'searchUsers']);
+        Route::post('/contacts-invite', [ContactController::class, 'sendInvite']);
+        Route::get('/contacts-invites', [ContactController::class, 'pendingInvites']);
+        Route::post('/contacts-invites/{invite}/respond', [ContactController::class, 'respondInvite']);
 
         // === КОНТЕКСТЫ ===
         Route::get('/contexts', [ContextController::class, 'all']);
@@ -147,6 +152,12 @@ Route::prefix('v1')->group(function () {
         Route::put('/challenges/{challenge}', [ChallengeController::class, 'update']);
         Route::delete('/challenges/{challenge}', [ChallengeController::class, 'destroy']);
         Route::post('/challenges/{challenge}/toggle', [ChallengeController::class, 'toggle']);
+
+        // === УВЕДОМЛЕНИЯ (in-app) ===
+        Route::get('/notifications', [NotificationController::class, 'index']);
+        Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount']);
+        Route::post('/notifications/{id}/read', [NotificationController::class, 'markRead']);
+        Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead']);
 
         // === PUSH-УВЕДОМЛЕНИЯ ===
         Route::get('/push/vapid-key', [PushSubscriptionController::class, 'vapidPublicKey']);

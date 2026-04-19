@@ -7,6 +7,9 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Responses\ApiResponse;
 use App\Models\Contact;
+use App\Models\ContactInvite;
+use App\Models\User;
+use App\Notifications\ContactInviteReceived;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -79,6 +82,149 @@ class ContactController extends Controller
         $contact->delete();
 
         return ApiResponse::success(null, 'Контакт удалён');
+    }
+
+    /**
+     * Search system users by email or phone (for linking contacts).
+     */
+    public function searchUsers(Request $request): JsonResponse
+    {
+        $request->validate(['query' => 'required|string|min:3|max:255']);
+
+        $q = $request->input('query');
+        $userId = Auth::id();
+
+        $users = User::where('id', '!=', $userId)
+            ->where(function ($query) use ($q) {
+                $query->where('email', 'like', "%{$q}%")
+                      ->orWhere('name', 'like', "%{$q}%");
+            })
+            ->select('id', 'name', 'email')
+            ->take(10)
+            ->get()
+            ->map(function ($user) use ($userId) {
+                $alreadyLinked = Contact::where('owner_id', $userId)
+                    ->where('contact_user_id', $user->id)
+                    ->exists();
+                $pendingInvite = ContactInvite::where('sender_id', $userId)
+                    ->where('receiver_id', $user->id)
+                    ->where('status', 'pending')
+                    ->exists();
+                return [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'already_linked' => $alreadyLinked,
+                    'pending_invite' => $pendingInvite,
+                ];
+            });
+
+        return response()->json($users);
+    }
+
+    /**
+     * Send an invite to link contact with a system user.
+     */
+    public function sendInvite(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'contact_id' => 'required|exists:contacts,id',
+            'receiver_id' => 'required|exists:users,id',
+        ]);
+
+        $contact = Contact::findOrFail($validated['contact_id']);
+        if ($contact->owner_id !== Auth::id()) {
+            return ApiResponse::error('Нет доступа', 403);
+        }
+
+        if ($validated['receiver_id'] === Auth::id()) {
+            return ApiResponse::error('Нельзя отправить приглашение самому себе', 422);
+        }
+
+        if ($contact->contact_user_id) {
+            return ApiResponse::error('Контакт уже привязан к пользователю', 422);
+        }
+
+        // Check existing invite
+        $existing = ContactInvite::where('sender_id', Auth::id())
+            ->where('receiver_id', $validated['receiver_id'])
+            ->where('contact_id', $contact->id)
+            ->where('status', 'pending')
+            ->first();
+
+        if ($existing) {
+            return ApiResponse::error('Приглашение уже отправлено', 422);
+        }
+
+        $invite = ContactInvite::create([
+            'sender_id' => Auth::id(),
+            'receiver_id' => $validated['receiver_id'],
+            'contact_id' => $contact->id,
+        ]);
+
+        $invite->load('sender');
+
+        // Send in-app notification
+        $receiver = User::find($validated['receiver_id']);
+        $receiver->notify(new ContactInviteReceived($invite));
+
+        return ApiResponse::success($invite, 'Приглашение отправлено', 201);
+    }
+
+    /**
+     * List pending invites for current user.
+     */
+    public function pendingInvites(): JsonResponse
+    {
+        $invites = ContactInvite::where('receiver_id', Auth::id())
+            ->where('status', 'pending')
+            ->with('sender:id,name,email')
+            ->orderByDesc('created_at')
+            ->get();
+
+        return response()->json($invites);
+    }
+
+    /**
+     * Accept or decline an invite.
+     */
+    public function respondInvite(Request $request, ContactInvite $invite): JsonResponse
+    {
+        if ($invite->receiver_id !== Auth::id()) {
+            return ApiResponse::error('Нет доступа', 403);
+        }
+
+        if ($invite->status !== 'pending') {
+            return ApiResponse::error('Приглашение уже обработано', 422);
+        }
+
+        $validated = $request->validate([
+            'action' => 'required|in:accept,decline',
+        ]);
+
+        if ($validated['action'] === 'accept') {
+            $invite->update(['status' => 'accepted']);
+
+            // Link the contact to this user
+            $contact = $invite->contact;
+            $contact->update([
+                'contact_user_id' => Auth::id(),
+                'name' => Auth::user()->name,
+                'email' => Auth::user()->email,
+            ]);
+
+            // Create mutual contact (receiver adds sender)
+            Contact::firstOrCreate(
+                ['owner_id' => Auth::id(), 'contact_user_id' => $invite->sender_id],
+                ['name' => $invite->sender->name, 'email' => $invite->sender->email],
+            );
+
+            return ApiResponse::success($invite, 'Приглашение принято');
+        }
+
+        $invite->update(['status' => 'declined']);
+
+        return ApiResponse::success($invite, 'Приглашение отклонено');
     }
 
     /**

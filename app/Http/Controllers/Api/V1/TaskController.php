@@ -214,6 +214,15 @@ class TaskController extends Controller
         $checklist = $validated['checklist'] ?? null;
         unset($validated['assignee_ids'], $validated['watcher_ids'], $validated['checklist']);
 
+        // Snapshot before update for notification diffing
+        $oldAttributes = $task->getAttributes();
+        $oldAssigneeIds = $assigneeIds !== null
+            ? $task->assignees()->pluck('contacts.id')->sort()->values()->all()
+            : null;
+        $oldWatcherIds = $watcherIds !== null
+            ? $task->watchers()->pluck('contacts.id')->sort()->values()->all()
+            : null;
+
         try {
             $task = $this->taskService->updateTask($task, $validated);
 
@@ -257,6 +266,23 @@ class TaskController extends Controller
             ]);
 
             $this->telegram->notifyTaskParticipants($task, auth()->user(), 'updated');
+
+            // Schedule push notifications
+            $notifyService = app(\App\Services\TaskNotificationService::class);
+            $notifyService->scheduleNotification($task, $oldAttributes, $oldAssigneeIds, $oldWatcherIds, $request->user());
+
+            // Immediate notification for newly added assignees/watchers
+            if ($assigneeIds !== null || $watcherIds !== null) {
+                $newAssigneeUserIds = $oldAssigneeIds !== null
+                    ? $task->assignees()->whereNotIn('contacts.id', $oldAssigneeIds)->whereNotNull('contacts.contact_user_id')->pluck('contacts.contact_user_id')->all()
+                    : [];
+                $newWatcherUserIds = $oldWatcherIds !== null
+                    ? $task->watchers()->whereNotIn('contacts.id', $oldWatcherIds)->whereNotNull('contacts.contact_user_id')->pluck('contacts.contact_user_id')->all()
+                    : [];
+                if (!empty($newAssigneeUserIds) || !empty($newWatcherUserIds)) {
+                    $notifyService->notifyRoleAdded($task, $newAssigneeUserIds, $newWatcherUserIds, $request->user());
+                }
+            }
 
             return ApiResponse::success($task, 'Задача обновлена');
         } catch (\Exception $e) {

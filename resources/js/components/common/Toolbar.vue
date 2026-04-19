@@ -175,6 +175,73 @@
           </svg>
         </button>
 
+        <!-- Notifications Bell -->
+        <div class="relative">
+          <button
+            @click.stop="toggleNotifications"
+            class="relative p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+          >
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+            </svg>
+            <span
+              v-if="notificationsStore.unreadCount > 0"
+              class="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 text-[10px] font-bold text-white bg-red-500 rounded-full flex items-center justify-center"
+            >
+              {{ notificationsStore.unreadCount > 9 ? '9+' : notificationsStore.unreadCount }}
+            </span>
+          </button>
+
+          <!-- Notifications Dropdown -->
+          <div
+            v-if="showNotifications"
+            v-click-outside="() => showNotifications = false"
+            class="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-700 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 z-50 max-h-96 overflow-y-auto"
+          >
+            <div class="flex items-center justify-between px-4 py-2 border-b border-gray-200 dark:border-gray-600">
+              <span class="text-sm font-medium text-gray-900 dark:text-white">Уведомления</span>
+              <button
+                v-if="notificationsStore.unreadCount > 0"
+                @click="notificationsStore.markAllRead()"
+                class="text-xs text-primary-600 dark:text-primary-400 hover:underline"
+              >
+                Прочитать все
+              </button>
+            </div>
+            <div v-if="notificationsStore.notifications.length === 0" class="px-4 py-6 text-center text-sm text-gray-500">
+              Нет уведомлений
+            </div>
+            <div v-else>
+              <div
+                v-for="n in notificationsStore.notifications"
+                :key="n.id"
+                @click="handleNotificationClick(n)"
+                class="px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer border-b border-gray-100 dark:border-gray-600 last:border-b-0"
+                :class="!n.read_at ? 'bg-primary-50/50 dark:bg-primary-900/10' : ''"
+              >
+                <div class="text-sm text-gray-900 dark:text-gray-100">
+                  <template v-if="n.data?.type === 'task_changed'">
+                    <span class="font-medium">{{ n.data.task_title }}</span>
+                    <div class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                      {{ n.data.changer_name }}: {{ n.data.changes?.join(', ') }}
+                    </div>
+                  </template>
+                  <template v-else-if="n.data?.type === 'contact_invite'">
+                    <span class="font-medium">{{ n.data.sender_name }}</span>
+                    <span> хочет добавить вас в контакты</span>
+                  </template>
+                  <template v-else>
+                    {{ JSON.stringify(n.data) }}
+                  </template>
+                </div>
+                <div class="text-[10px] text-gray-400 mt-1">
+                  {{ formatTimeAgo(n.created_at) }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- User Menu -->
         <div class="relative">
           <button
@@ -257,13 +324,16 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useThemeStore } from '@/stores/theme'
+import { useNotificationsStore } from '@/stores/notifications'
 import logoLight from '@/assets/images/logo.svg'
 import logoDark from '@/assets/images/logo-dark.svg'
 
 const route = useRoute()
+const router = useRouter()
 const themeStore = useThemeStore()
+const notificationsStore = useNotificationsStore()
 const logo = computed(() => themeStore.isDark ? logoDark : logoLight)
 
 const props = defineProps({
@@ -287,6 +357,7 @@ const emit = defineEmits(['quick-add', 'quick-add-task', 'quick-add-project', 'q
 const searchQuery = ref('')
 const showUserMenu = ref(false)
 const showQuickAddMenu = ref(false)
+const showNotifications = ref(false)
 const quickAddMenuContainer = ref(null)
 
 const userInitials = computed(() => {
@@ -382,6 +453,35 @@ const handleSettings = () => {
 const handleToggleTheme = () => {
   themeStore.toggleTheme()
   showUserMenu.value = false
+}
+
+const toggleNotifications = () => {
+  showNotifications.value = !showNotifications.value
+  if (showNotifications.value) {
+    notificationsStore.fetchNotifications()
+  }
+}
+
+const handleNotificationClick = (n) => {
+  if (!n.read_at) notificationsStore.markRead(n.id)
+  showNotifications.value = false
+  if (n.data?.type === 'contact_invite') {
+    router.push('/contacts')
+  } else if (n.data?.task_id) {
+    // Task notifications will be handled by opening the task
+    router.push('/today')
+  }
+}
+
+const formatTimeAgo = (dateStr) => {
+  if (!dateStr) return ''
+  const d = new Date(dateStr)
+  const now = new Date()
+  const diff = Math.floor((now - d) / 1000)
+  if (diff < 60) return 'только что'
+  if (diff < 3600) return `${Math.floor(diff / 60)} мин назад`
+  if (diff < 86400) return `${Math.floor(diff / 3600)} ч назад`
+  return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })
 }
 
 // Директива для закрытия при клике вне элемента (для других dropdown)

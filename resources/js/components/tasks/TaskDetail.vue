@@ -457,9 +457,9 @@
             </div>
           </div>
 
-          <!-- Footer: status + primary action -->
-          <div class="px-5 py-2 border-t border-gray-100 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-800/30 flex items-center justify-between min-h-[40px] text-[11px] text-gray-400">
-            <div class="flex items-center gap-1.5">
+          <!-- Footer: status + save button -->
+          <div class="px-4 lg:px-5 py-2 border-t border-gray-100 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-800/30 flex items-center justify-between min-h-[44px]">
+            <div class="flex items-center gap-1.5 text-[11px] text-gray-400">
               <template v-if="saveState === 'saving'">
                 <svg class="w-3 h-3 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke-width="3" stroke-dasharray="30 60" /></svg>
                 <span>сохраняю…</span>
@@ -469,9 +469,21 @@
                 <span class="text-emerald-500">сохранено</span>
               </template>
               <span v-else-if="saveState === 'error'" class="text-red-500">ошибка сохранения</span>
+              <span v-if="isGuest">режим наблюдателя</span>
+              <span v-else-if="localTask.completed_at" class="text-emerald-500">✓ задача завершена</span>
             </div>
-            <span v-if="isGuest" class="ml-auto">режим наблюдателя</span>
-            <span v-else-if="localTask.completed_at" class="ml-auto text-emerald-500">✓ задача завершена</span>
+            <button
+              v-if="!isGuest"
+              @click="handleSave"
+              :disabled="!isDirty || saveState === 'saving'"
+              class="relative px-4 py-1.5 text-sm font-medium rounded-lg transition-all"
+              :class="isDirty
+                ? 'bg-primary-600 text-white hover:bg-primary-700 active:scale-95'
+                : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-default'"
+            >
+              <span v-if="isDirty" class="absolute -top-0.5 -right-0.5 w-2 h-2 bg-amber-400 rounded-full"></span>
+              {{ saveState === 'saving' ? 'Сохраняю…' : 'Сохранить' }}
+            </button>
           </div>
         </div>
       </div>
@@ -480,7 +492,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onUnmounted, onMounted, onBeforeUnmount, nextTick, h, Teleport } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick, h, Teleport } from 'vue'
 import api from '@/services/api'
 import ContactPicker from '@/components/tasks/ContactPicker.vue'
 import { useConfirmStore } from '@/stores/confirm'
@@ -743,6 +755,7 @@ const localTask = ref({})
 const assigneeIds = ref([])
 const watcherIds = ref([])
 const saveState = ref('idle')
+const isDirty = ref(false)
 const uploading = ref(false)
 const picker = ref(null)
 const openSections = ref({ description: false })
@@ -823,7 +836,6 @@ const submitComment = async () => {
     postingComment.value = false
   }
 }
-let saveTimer = null
 
 const handleOutsideClick = (e) => {
   if (!picker.value) return
@@ -888,6 +900,7 @@ watch(() => props.show, (visible) => {
     mobileFieldsExpanded.value = false
     newComment.value = ''
     saveState.value = 'idle'
+    isDirty.value = false
   }
 })
 
@@ -905,6 +918,7 @@ watch(() => props.task, (t) => {
   assigneeIds.value = (t.assignees || []).map(c => c.id)
   watcherIds.value = (t.watchers || []).map(c => c.id)
   saveState.value = 'idle'
+  isDirty.value = false
   picker.value = null
   openSections.value = { description: false }
   showCommentInput.value = false
@@ -985,9 +999,8 @@ const onDueDateChange = () => {
 
 const scheduleSave = () => {
   if (isGuest.value) return
-  if (saveTimer) clearTimeout(saveTimer)
-  saveState.value = 'saving'
-  saveTimer = setTimeout(save, 600)
+  isDirty.value = true
+  saveState.value = 'idle'
 }
 
 const onWatchersChanged = async (ids) => {
@@ -1077,8 +1090,26 @@ const save = async () => {
   }
 }
 
+const handleSave = async () => {
+  if (isGuest.value || !isDirty.value) return
+  await save()
+  isDirty.value = false
+}
+
 const handleClose = async () => {
-  if (saveTimer) { clearTimeout(saveTimer); await save() }
+  if (isDirty.value) {
+    const ok = await confirmStore.ask({
+      title: 'Несохранённые изменения',
+      message: 'Сохранить изменения перед закрытием?',
+      confirmText: 'Сохранить',
+      cancelText: 'Не сохранять',
+      danger: false,
+    })
+    if (ok) {
+      await save()
+    }
+    isDirty.value = false
+  }
   emit('close')
 }
 
@@ -1154,7 +1185,6 @@ const removeAttachment = async (att) => {
   localTask.value.attachments = localTask.value.attachments.filter(a => a.id !== att.id)
 }
 
-onUnmounted(() => { if (saveTimer) clearTimeout(saveTimer) })
 </script>
 
 <style scoped>
