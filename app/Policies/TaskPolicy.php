@@ -9,50 +9,51 @@ use App\Models\User;
 
 class TaskPolicy
 {
-    // Просмотр задачи (любой участник workspace)
+    // Просмотр задачи (создатель или связан через task_contact)
     public function view(User $user, Task $task): bool
     {
-        return $task->workspace->hasMember($user->id);
+        if ($task->created_by === $user->id) {
+            return true;
+        }
+
+        return $task->contacts()
+            ->where('contacts.contact_user_id', $user->id)
+            ->exists();
     }
 
-    // Обновление задачи (создатель, назначенный, admin, owner)
+    // Обновление задачи (создатель или assignee)
     public function update(User $user, Task $task): bool
     {
         if ($task->created_by === $user->id || $task->assigned_to === $user->id) {
             return true;
         }
 
-        $role = $task->workspace->getMemberRole($user->id);
-        return in_array($role, ['owner', 'admin']);
+        return $task->assignees()
+            ->where('contacts.contact_user_id', $user->id)
+            ->exists();
     }
 
-    // Удаление задачи (создатель, admin, owner)
+    // Удаление задачи (только создатель)
     public function delete(User $user, Task $task): bool
     {
-        if ($task->created_by === $user->id) {
-            return true;
-        }
-
-        $role = $task->workspace->getMemberRole($user->id);
-        return in_array($role, ['owner', 'admin']);
+        return $task->created_by === $user->id;
     }
 
-    // Назначение задачи (admin, owner, создатель)
+    // Назначение задачи (создатель)
     public function assign(User $user, Task $task): bool
     {
+        return $task->created_by === $user->id;
+    }
+
+    // Комментирование (создатель или связан через task_contact)
+    public function comment(User $user, Task $task): bool
+    {
         if ($task->created_by === $user->id) {
             return true;
         }
 
-        $role = $task->workspace->getMemberRole($user->id);
-        return in_array($role, ['owner', 'admin']);
-    }
-
-    // Комментирование (любой участник workspace)
-    public function comment(User $user, Task $task): bool
-    {
-        return $task->workspace->hasMember($user->id);
+        return $task->contacts()
+            ->where('contacts.contact_user_id', $user->id)
+            ->exists();
     }
 }
-
-
