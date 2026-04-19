@@ -2,6 +2,7 @@
   <TaskDetail
     :show="show"
     :task="fullTask"
+    :loading="taskLoading"
     :projects="projectsStore.activeProjects"
     :goals="goalsStore.activeGoals"
     :life-spheres="lifeSpheresStore.allSpheres"
@@ -51,6 +52,7 @@ const lifeSpheresStore = useLifeSpheresStore()
 const contextsStore = useContextsStore()
 
 const fullTask = ref(null)
+const taskLoading = ref(false)
 const contacts = ref([])
 
 const ensureStores = async () => {
@@ -82,14 +84,17 @@ const loadFullTask = async (id) => {
 
 watch(() => [props.show, props.task?.id], async ([s, id]) => {
   if (s && id) {
-    fullTask.value = props.task
+    taskLoading.value = true
+    fullTask.value = null
     await Promise.all([ensureStores(), loadContacts(), loadFullTask(id)])
+    taskLoading.value = false
   } else if (s && props.task) {
     // Черновик без id — ставим как есть
     fullTask.value = { ...props.task }
-    await Promise.all([ensureStores(), loadContacts()])
+    taskLoading.value = false
   } else if (!s) {
     fullTask.value = null
+    taskLoading.value = false
   }
 }, { immediate: true })
 

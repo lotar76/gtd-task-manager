@@ -21,14 +21,14 @@ class TaskPolicy
             ->exists();
     }
 
-    // Обновление задачи (создатель или assignee)
+    // Обновление задачи (создатель, assignee или watcher)
     public function update(User $user, Task $task): bool
     {
         if ($task->created_by === $user->id || $task->assigned_to === $user->id) {
             return true;
         }
 
-        return $task->assignees()
+        return $task->contacts()
             ->where('contacts.contact_user_id', $user->id)
             ->exists();
     }

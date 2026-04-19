@@ -157,7 +157,27 @@
             </Transition>
           </Teleport>
 
-          <div class="flex-1 overflow-y-auto thin-scroll min-h-0">
+          <!-- Skeleton loader -->
+          <div v-if="props.loading" class="flex-1 overflow-y-auto p-4 lg:p-6 space-y-4 animate-pulse">
+            <div class="h-7 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+            <div class="flex gap-2">
+              <div class="h-6 bg-gray-200 dark:bg-gray-700 rounded-full w-24"></div>
+              <div class="h-6 bg-gray-200 dark:bg-gray-700 rounded-full w-20"></div>
+              <div class="h-6 bg-gray-200 dark:bg-gray-700 rounded-full w-20"></div>
+            </div>
+            <div class="space-y-2 pt-2">
+              <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
+              <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-5/6"></div>
+              <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-2/3"></div>
+            </div>
+            <div class="space-y-2 pt-4">
+              <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/4"></div>
+              <div class="h-10 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
+              <div class="h-10 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
+            </div>
+          </div>
+
+          <div v-else class="flex-1 overflow-y-auto thin-scroll min-h-0">
             <div class="grid grid-cols-1 lg:grid-cols-[1fr_260px]">
               <!-- Main column -->
               <div class="px-4 lg:px-6 py-4 lg:py-5 space-y-4 border-r border-gray-100 dark:border-gray-800 min-w-0">
@@ -291,14 +311,14 @@
                       </div>
                     </div>
                   </div>
-                  <div class="flex flex-col sm:flex-row gap-2">
+                  <div class="flex flex-col gap-2">
                     <textarea
                       v-model="newComment" @keydown.enter.prevent.meta="submitComment" @keydown.enter.prevent.ctrl="submitComment"
                       placeholder="Написать комментарий…" rows="2"
-                      class="flex-1 px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-1 focus:ring-gray-300 dark:focus:ring-gray-600 resize-none"
+                      class="w-full px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-1 focus:ring-gray-300 dark:focus:ring-gray-600 resize-none"
                     ></textarea>
                     <button @click="submitComment" :disabled="!newComment.trim() || postingComment"
-                      class="px-3 py-2 text-sm bg-gray-900 text-white dark:bg-white dark:text-gray-900 rounded-lg disabled:opacity-40 hover:opacity-90 sm:self-end"
+                      class="self-end px-3 py-2 text-sm bg-gray-900 text-white dark:bg-white dark:text-gray-900 rounded-lg disabled:opacity-40 hover:opacity-90"
                     >Отправить</button>
                   </div>
                 </div>
@@ -474,6 +494,7 @@ const dashboardStore = useDashboardStore()
 const props = defineProps({
   show: { type: Boolean, default: false },
   task: { type: Object, default: null },
+  loading: { type: Boolean, default: false },
   projects: { type: Array, default: () => [] },
   goals: { type: Array, default: () => [] },
   lifeSpheres: { type: Array, default: () => [] },
