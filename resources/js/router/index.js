@@ -104,6 +104,11 @@ const routes = [
         name: 'Challenge',
         component: () => import('@/views/Challenge/Index.vue'),
       },
+      {
+        path: 'tasks/:taskId',
+        name: 'TaskPage',
+        component: () => import('@/views/Tasks/TaskPage.vue'),
+      },
     ],
   },
 ]

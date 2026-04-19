@@ -71,36 +71,35 @@ class TaskNotificationService
     }
 
     /**
-     * Notify users when they are added as assignee or watcher (immediate).
+     * Notify users when they are added/removed as assignee or watcher (immediate).
      */
-    public function notifyRoleAdded(
+    public function notifyRoleChanges(
         Task $task,
         array $addedAssigneeUserIds,
         array $addedWatcherUserIds,
+        array $removedAssigneeUserIds,
+        array $removedWatcherUserIds,
         User $changer,
     ): void {
-        foreach ($addedAssigneeUserIds as $userId) {
-            if ($userId === $changer->id) continue;
-            $user = User::find($userId);
-            if (!$user) continue;
+        $notifications = [
+            ['ids' => $addedAssigneeUserIds, 'msg' => 'вас добавили как исполнителя'],
+            ['ids' => $addedWatcherUserIds, 'msg' => 'вас добавили как наблюдателя'],
+            ['ids' => $removedAssigneeUserIds, 'msg' => 'вас убрали из исполнителей'],
+            ['ids' => $removedWatcherUserIds, 'msg' => 'вас убрали из наблюдателей'],
+        ];
 
-            $user->notify(new \App\Notifications\TaskChanged(
-                $task,
-                $changer->name,
-                ['назначен исполнителем'],
-            ));
-        }
+        foreach ($notifications as $n) {
+            foreach ($n['ids'] as $userId) {
+                if ($userId === $changer->id) continue;
+                $user = User::find($userId);
+                if (!$user) continue;
 
-        foreach ($addedWatcherUserIds as $userId) {
-            if ($userId === $changer->id) continue;
-            $user = User::find($userId);
-            if (!$user) continue;
-
-            $user->notify(new \App\Notifications\TaskChanged(
-                $task,
-                $changer->name,
-                ['добавлен наблюдателем'],
-            ));
+                $user->notify(new \App\Notifications\TaskChanged(
+                    $task,
+                    $changer->name,
+                    [$n['msg']],
+                ));
+            }
         }
     }
 

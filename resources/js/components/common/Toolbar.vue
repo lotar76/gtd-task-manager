@@ -1,8 +1,8 @@
 <template>
   <header class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-20">
     <div class="flex items-center justify-between px-4 lg:px-8 py-3">
-      <!-- Mobile: Nav Icons + Date -->
-      <div class="lg:hidden flex items-center gap-2">
+      <!-- Mobile: Nav Icons -->
+      <div class="lg:hidden flex items-center justify-around flex-1">
         <router-link
           to="/"
           class="p-1.5 rounded-lg transition-colors"
@@ -465,8 +465,7 @@ const handleNotificationClick = (n) => {
   if (n.data?.type === 'contact_invite') {
     router.push('/contacts')
   } else if (n.data?.task_id) {
-    // Task notifications will be handled by opening the task
-    router.push('/today')
+    router.push(`/tasks/${n.data.task_id}`)
   }
 }
 

@@ -271,17 +271,29 @@ class TaskController extends Controller
             $notifyService = app(\App\Services\TaskNotificationService::class);
             $notifyService->scheduleNotification($task, $oldAttributes, $oldAssigneeIds, $oldWatcherIds, $request->user());
 
-            // Immediate notification for newly added assignees/watchers
+            // Immediate notification for added/removed assignees/watchers
             if ($assigneeIds !== null || $watcherIds !== null) {
-                $newAssigneeUserIds = $oldAssigneeIds !== null
-                    ? $task->assignees()->whereNotIn('contacts.id', $oldAssigneeIds)->whereNotNull('contacts.contact_user_id')->pluck('contacts.contact_user_id')->all()
-                    : [];
-                $newWatcherUserIds = $oldWatcherIds !== null
-                    ? $task->watchers()->whereNotIn('contacts.id', $oldWatcherIds)->whereNotNull('contacts.contact_user_id')->pluck('contacts.contact_user_id')->all()
-                    : [];
-                if (!empty($newAssigneeUserIds) || !empty($newWatcherUserIds)) {
-                    $notifyService->notifyRoleAdded($task, $newAssigneeUserIds, $newWatcherUserIds, $request->user());
-                }
+                $getLinkedUserIds = fn ($contactIds) => \App\Models\Contact::whereIn('id', $contactIds)
+                    ->whereNotNull('contact_user_id')
+                    ->pluck('contact_user_id')->all();
+
+                $newAssigneeContactIds = $oldAssigneeIds !== null
+                    ? array_diff($task->assignees()->pluck('contacts.id')->all(), $oldAssigneeIds) : [];
+                $removedAssigneeContactIds = $oldAssigneeIds !== null
+                    ? array_diff($oldAssigneeIds, $task->assignees()->pluck('contacts.id')->all()) : [];
+                $newWatcherContactIds = $oldWatcherIds !== null
+                    ? array_diff($task->watchers()->pluck('contacts.id')->all(), $oldWatcherIds) : [];
+                $removedWatcherContactIds = $oldWatcherIds !== null
+                    ? array_diff($oldWatcherIds, $task->watchers()->pluck('contacts.id')->all()) : [];
+
+                $notifyService->notifyRoleChanges(
+                    $task,
+                    $getLinkedUserIds($newAssigneeContactIds),
+                    $getLinkedUserIds($newWatcherContactIds),
+                    $getLinkedUserIds($removedAssigneeContactIds),
+                    $getLinkedUserIds($removedWatcherContactIds),
+                    $request->user(),
+                );
             }
 
             return ApiResponse::success($task, 'Задача обновлена');
