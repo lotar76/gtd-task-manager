@@ -546,7 +546,7 @@ const searchSystemUsers = () => {
   searchTimeout = setTimeout(async () => {
     try {
       const res = await api.get('/v1/contacts-search-users', { params: { query: q } })
-      foundUsers.value = res.data || []
+      foundUsers.value = Array.isArray(res) ? res : (res.data || res || [])
     } catch (e) {
       foundUsers.value = []
       console.error('User search error:', e)
@@ -580,7 +580,7 @@ const sendInviteToUser = async (user) => {
 const loadPendingInvites = async () => {
   try {
     const res = await api.get('/v1/contacts-invites')
-    pendingInvites.value = res.data || []
+    pendingInvites.value = Array.isArray(res) ? res : (res.data || [])
   } catch (e) { pendingInvites.value = [] }
 }
 

@@ -11,7 +11,7 @@ export const useNotificationsStore = defineStore('notifications', () => {
   const fetchNotifications = async () => {
     try {
       const res = await api.get('/v1/notifications')
-      notifications.value = res.data || []
+      notifications.value = Array.isArray(res) ? res : (res.data || [])
     } catch (e) {
       console.error('Failed to fetch notifications', e)
     }
@@ -20,7 +20,7 @@ export const useNotificationsStore = defineStore('notifications', () => {
   const fetchUnreadCount = async () => {
     try {
       const res = await api.get('/v1/notifications/unread-count')
-      unreadCount.value = res.data.count || 0
+      unreadCount.value = res?.count ?? res?.data?.count ?? 0
     } catch (e) {}
   }
 
