@@ -1,13 +1,8 @@
 <template>
   <header class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-20">
     <div class="flex items-center justify-between px-4 lg:px-8 py-3">
-      <!-- Mobile: Logo + Nav Icons + Date -->
+      <!-- Mobile: Nav Icons + Date -->
       <div class="lg:hidden flex items-center gap-2">
-        <img
-          :src="logo"
-          alt="GTD TODO"
-          class="h-8 w-8 object-contain"
-        />
         <router-link
           to="/"
           class="p-1.5 rounded-lg transition-colors"
@@ -33,11 +28,20 @@
           </span>
         </router-link>
         <router-link
+          to="/contacts"
+          class="p-1.5 rounded-lg transition-colors"
+          :class="$route.path === '/contacts' ? 'text-primary-600 dark:text-primary-400' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'"
+        >
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-5.13a4 4 0 11-8 0 4 4 0 018 0zm6 3a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+        </router-link>
+        <router-link
           to="/challenge"
           class="p-1.5 rounded-lg transition-colors"
           :class="$route.path === '/challenge' ? 'text-primary-600 dark:text-primary-400' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'"
         >
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
           </svg>
         </router-link>
@@ -157,17 +161,15 @@
           </Transition>
         </div>
 
-        <!-- Theme Toggle -->
+        <!-- Theme Toggle (desktop only) -->
         <button
           @click="themeStore.toggleTheme()"
-          class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+          class="hidden lg:block p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
           :title="themeStore.isDark ? 'Светлая тема' : 'Тёмная тема'"
         >
-          <!-- Sun icon (shown in dark mode) -->
           <svg v-if="themeStore.isDark" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
           </svg>
-          <!-- Moon icon (shown in light mode) -->
           <svg v-else class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
           </svg>
@@ -218,6 +220,20 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
                 <span>Настройки</span>
+              </div>
+            </button>
+            <button
+              @click="handleToggleTheme"
+              class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+            >
+              <div class="flex items-center space-x-2">
+                <svg v-if="themeStore.isDark" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+                <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                </svg>
+                <span>{{ themeStore.isDark ? 'Светлая тема' : 'Тёмная тема' }}</span>
               </div>
             </button>
             <div class="border-t border-gray-200 dark:border-gray-600 my-2" />
@@ -361,6 +377,11 @@ const handleProfile = () => {
 const handleSettings = () => {
   showUserMenu.value = false
   emit('settings')
+}
+
+const handleToggleTheme = () => {
+  themeStore.toggleTheme()
+  showUserMenu.value = false
 }
 
 // Директива для закрытия при клике вне элемента (для других dropdown)
