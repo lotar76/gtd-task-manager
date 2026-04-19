@@ -6,7 +6,7 @@
         class="fixed inset-0 z-50 flex items-start lg:items-center justify-center p-0 lg:p-6 bg-black/40 backdrop-blur-sm overflow-y-auto"
         @click.self="handleClose"
       >
-        <div class="bg-white dark:bg-gray-900 w-full max-w-6xl min-h-screen lg:min-h-0 lg:rounded-xl lg:shadow-2xl overflow-visible flex flex-col lg:max-h-[94vh]">
+        <div class="bg-white dark:bg-gray-900 w-full max-w-6xl h-screen lg:h-auto lg:min-h-0 lg:rounded-xl lg:shadow-2xl overflow-visible flex flex-col lg:max-h-[94vh]">
           <!-- Header -->
           <div class="flex items-center justify-between px-4 lg:px-5 py-2 border-b border-gray-100 dark:border-gray-800 gap-3">
             <div class="flex items-center gap-2 text-xs text-gray-400 flex-shrink-0">
@@ -158,7 +158,7 @@
           </Teleport>
 
           <!-- Skeleton loader -->
-          <div v-if="props.loading" class="flex-1 overflow-y-auto p-4 lg:p-6 space-y-4 animate-pulse">
+          <div v-if="props.loading" class="flex-1 overflow-y-auto min-h-0 p-4 lg:p-6 space-y-4 animate-pulse">
             <div class="h-7 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
             <div class="flex gap-2">
               <div class="h-6 bg-gray-200 dark:bg-gray-700 rounded-full w-24"></div>
@@ -458,7 +458,7 @@
           </div>
 
           <!-- Footer: status + save button -->
-          <div class="px-4 lg:px-5 py-2 border-t border-gray-100 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-800/30 flex items-center justify-between min-h-[44px]">
+          <div class="flex-shrink-0 px-4 lg:px-5 py-2 border-t border-gray-100 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-800/30 flex items-center justify-between min-h-[44px]">
             <div class="flex items-center gap-1.5 text-[11px] text-gray-400">
               <template v-if="saveState === 'saving'">
                 <svg class="w-3 h-3 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke-width="3" stroke-dasharray="30 60" /></svg>
