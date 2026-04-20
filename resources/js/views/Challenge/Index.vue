@@ -852,9 +852,13 @@ function toggleMobileMenu(id, event) {
   // Позиционируем меню рядом с кнопкой
   if (event) {
     const rect = event.currentTarget.getBoundingClientRect()
+    const menuWidth = 192 // w-48
+    let left = rect.right - menuWidth
+    if (left < 8) left = 8
+    if (left + menuWidth > window.innerWidth - 8) left = window.innerWidth - menuWidth - 8
     mobileMenuPos.value = {
       top: rect.bottom + 4 + 'px',
-      right: (window.innerWidth - rect.right) + 'px',
+      left: left + 'px',
     }
   }
 }
