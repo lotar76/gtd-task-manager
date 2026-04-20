@@ -45,7 +45,7 @@
     >
       <template #item="{ element: challenge }">
       <div
-        class="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 active:scale-[0.97] transition-transform relative p-3"
+        class="rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/70 active:scale-[0.97] transition-transform relative p-3"
         @click="toggleToday(challenge)"
       >
         <!-- Menu -->

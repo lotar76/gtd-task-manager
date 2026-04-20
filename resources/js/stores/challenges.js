@@ -37,50 +37,84 @@ export const useChallengesStore = defineStore('challenges', () => {
   }
 
   const remove = async (id) => {
-    await api.delete(`/v1/challenges/${id}`)
+    const idx = challenges.value.findIndex(c => c.id === id)
+    const snapshot = idx !== -1 ? challenges.value[idx] : null
     challenges.value = challenges.value.filter(c => c.id !== id)
+    try {
+      await api.delete(`/v1/challenges/${id}`)
+    } catch (err) {
+      if (snapshot) challenges.value.splice(idx, 0, snapshot)
+      throw err
+    }
   }
 
   const toggle = async (challengeId, date, extra = {}) => {
-    const res = await api.post(`/v1/challenges/${challengeId}/toggle`, { date, ...extra })
     const challenge = challenges.value.find(c => c.id === challengeId)
     if (!challenge) return
 
     const entryIdx = challenge.entries.findIndex(e => e.date === date || e.date?.startsWith(date))
-    if (res.data.completed) {
-      if (entryIdx === -1) {
+
+    // Snapshot for rollback
+    const snapshot = entryIdx !== -1
+      ? { ...challenge.entries[entryIdx] }
+      : null
+    const hadEntry = entryIdx !== -1
+
+    // Optimistic update
+    if (extra.subtask_index !== undefined) {
+      // Composite: toggle subtask optimistically
+      const subtaskCount = challenge.subtasks?.length || 0
+      let states = hadEntry && challenge.entries[entryIdx].subtask_states
+        ? [...challenge.entries[entryIdx].subtask_states]
+        : Array(subtaskCount).fill(false)
+      states[extra.subtask_index] = !states[extra.subtask_index]
+      const allDone = !states.includes(false)
+      if (hadEntry) {
+        challenge.entries[entryIdx].subtask_states = states
+        challenge.entries[entryIdx].completed = allDone
+      } else {
+        challenge.entries.push({
+          challenge_id: challengeId,
+          date: `${date}T00:00:00.000000Z`,
+          completed: allDone,
+          subtask_states: states,
+        })
+      }
+    } else if (hadEntry && challenge.entries[entryIdx].completed) {
+      // Was completed → remove
+      challenge.entries.splice(entryIdx, 1)
+    } else {
+      // Not completed → mark completed
+      if (hadEntry) {
+        challenge.entries[entryIdx].completed = true
+      } else {
         challenge.entries.push({
           challenge_id: challengeId,
           date: `${date}T00:00:00.000000Z`,
           completed: true,
-          subtask_states: res.data.subtask_states || null,
+          subtask_states: null,
         })
-      } else {
-        challenge.entries[entryIdx].completed = true
-        if (res.data.subtask_states) challenge.entries[entryIdx].subtask_states = res.data.subtask_states
-      }
-    } else {
-      if (res.data.subtask_states) {
-        // Composite: not all done yet but entry exists
-        if (entryIdx === -1) {
-          challenge.entries.push({
-            challenge_id: challengeId,
-            date: `${date}T00:00:00.000000Z`,
-            completed: false,
-            subtask_states: res.data.subtask_states,
-          })
-        } else {
-          challenge.entries[entryIdx].completed = false
-          challenge.entries[entryIdx].subtask_states = res.data.subtask_states
-        }
-      } else {
-        if (entryIdx !== -1) {
-          challenge.entries.splice(entryIdx, 1)
-        }
       }
     }
 
-    return res.data
+    // Send to server, rollback on error
+    try {
+      const res = await api.post(`/v1/challenges/${challengeId}/toggle`, { date, ...extra })
+      return res.data
+    } catch (err) {
+      // Rollback
+      const nowIdx = challenge.entries.findIndex(e => e.date === date || e.date?.startsWith(date))
+      if (snapshot && hadEntry) {
+        if (nowIdx !== -1) {
+          challenge.entries[nowIdx] = snapshot
+        } else {
+          challenge.entries.push(snapshot)
+        }
+      } else if (!hadEntry && nowIdx !== -1) {
+        challenge.entries.splice(nowIdx, 1)
+      }
+      throw err
+    }
   }
 
   const reorder = async (ids) => {
