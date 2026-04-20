@@ -161,6 +161,7 @@ Route::prefix('v1')->group(function () {
         Route::put('/challenges/{challenge}', [ChallengeController::class, 'update']);
         Route::delete('/challenges/{challenge}', [ChallengeController::class, 'destroy']);
         Route::post('/challenges/{challenge}/toggle', [ChallengeController::class, 'toggle']);
+        Route::post('/challenges/reorder', [ChallengeController::class, 'reorder']);
 
         // === УВЕДОМЛЕНИЯ (in-app) ===
         Route::get('/notifications', [NotificationController::class, 'index']);

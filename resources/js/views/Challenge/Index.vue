@@ -1,8 +1,8 @@
 <template>
   <div class="p-4 sm:p-6 max-w-full">
     <!-- Header -->
-    <div class="flex items-center justify-center mb-6">
-      <div class="flex items-center space-x-4">
+    <div class="flex items-center justify-between mb-6">
+      <div class="flex items-center space-x-3">
         <button
           @click="prevMonth"
           class="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 transition-colors"
@@ -19,6 +19,12 @@
           <ChevronRightIcon class="w-5 h-5" />
         </button>
       </div>
+      <button
+        @click="showCreateModal = true"
+        class="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 transition-colors"
+      >
+        <PlusIcon class="w-5 h-5" />
+      </button>
     </div>
 
     <!-- Loading -->
@@ -27,14 +33,22 @@
     </div>
 
     <!-- ========== MOBILE: карточки ========== -->
-    <div v-if="!store.loading && store.challenges.length > 0" class="block lg:hidden space-y-3">
+    <draggable
+      v-if="!store.loading && store.challenges.length > 0"
+      v-model="store.challenges"
+      tag="div"
+      item-key="id"
+      handle=".drag-handle-mobile"
+      class="block lg:hidden space-y-3"
+      @end="onDragEnd"
+    >
+      <template #item="{ element: challenge }">
       <div
-        v-for="challenge in store.challenges"
-        :key="challenge.id"
         class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 active:scale-[0.98] transition-transform relative"
         @click="toggleToday(challenge)"
       >
         <div class="flex items-center justify-between px-4 py-3">
+          <Bars3Icon class="drag-handle-mobile w-5 h-5 text-gray-300 dark:text-gray-600 cursor-grab flex-shrink-0 mr-2" @click.stop />
           <div class="flex items-center space-x-3 flex-1 min-w-0">
             <!-- Status indicator -->
             <div
@@ -43,28 +57,21 @@
                 ? 'bg-emerald-500 text-white shadow-sm'
                 : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 border-2 border-gray-200 dark:border-gray-700'"
             >
-              <CheckIcon class="w-7 h-7" :class="isTodayCompleted(challenge) ? 'stroke-[3]' : ''" />
+              <CheckIcon v-if="isTodayCompleted(challenge)" class="w-7 h-7 stroke-[3]" />
+              <PlayIcon v-else-if="challenge.type === 'timer'" class="w-7 h-7" />
+              <ListBulletIcon v-else-if="challenge.type === 'composite'" class="w-7 h-7" />
+              <CheckIcon v-else class="w-7 h-7" />
             </div>
             <div class="min-w-0 flex-1">
-              <span
-                v-if="editingId !== challenge.id"
-                class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate block"
-              >
+              <span class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate block">
                 {{ challenge.title }}
               </span>
-              <input
-                v-else
-                ref="editInput"
-                v-model="editTitle"
-                @keydown.enter="saveEdit(challenge)"
-                @keydown.escape="cancelEdit"
-                @blur="saveEdit(challenge)"
-                @click.stop
-                class="bg-transparent border-b border-primary-500 outline-none text-sm w-full text-gray-900 dark:text-gray-100"
-              />
-              <span class="text-xs" :class="percentClass(completionPercent(challenge))">
-                {{ completionPercent(challenge) }}% за месяц
-              </span>
+              <div class="flex items-center space-x-2">
+                <span class="text-xs" :class="percentClass(completionPercent(challenge))">
+                  {{ completionPercent(challenge) }}%
+                </span>
+                <span class="text-[10px] text-gray-400 dark:text-gray-500">{{ formatStartDate(challenge) }}</span>
+              </div>
             </div>
           </div>
           <!-- Three-dot menu -->
@@ -81,11 +88,11 @@
               class="absolute right-0 top-full mt-1 w-40 bg-white dark:bg-gray-700 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 py-1 z-50"
             >
               <button
-                @click.stop="startEditMobile(challenge)"
+                @click.stop="openEditModal(challenge); mobileMenuId = null"
                 class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 flex items-center space-x-2"
               >
                 <PencilIcon class="w-4 h-4" />
-                <span>Переименовать</span>
+                <span>Редактировать</span>
               </button>
               <button
                 @click.stop="removeMobile(challenge)"
@@ -105,39 +112,65 @@
             class="w-[7px] h-[7px] rounded-full"
             :class="isDayCompleted(challenge, day)
               ? 'bg-emerald-500'
-              : isToday(day)
-                ? 'bg-primary-400 ring-1 ring-primary-300'
-                : day < todayDay
-                  ? 'bg-gray-300 dark:bg-gray-600'
-                  : 'bg-gray-100 dark:bg-gray-800'"
+              : !isAfterStart(challenge, day)
+                ? 'bg-gray-300 dark:bg-gray-600'
+                : isToday(day)
+                  ? 'bg-primary-400 ring-1 ring-primary-300'
+                  : day < todayDay
+                    ? 'bg-red-300 dark:bg-red-600'
+                    : 'bg-gray-100 dark:bg-gray-800'"
           />
         </div>
       </div>
+      </template>
+    </draggable>
 
-      <!-- Add (mobile) -->
-      <div class="flex items-center rounded-xl border border-dashed border-gray-300 dark:border-gray-600 px-4 py-3">
-        <PlusIcon class="w-5 h-5 text-gray-400 mr-3 flex-shrink-0" />
-        <input
-          v-model="newTitle"
-          @keydown.enter="addChallenge"
-          placeholder="Новая привычка..."
-          class="bg-transparent text-sm text-gray-700 dark:text-gray-300 placeholder-gray-400 dark:placeholder-gray-500 outline-none w-full"
-        />
-      </div>
+    <!-- Add button (mobile) -->
+    <div v-if="!store.loading && store.challenges.length > 0" class="block lg:hidden mt-3">
+      <button
+        @click="showCreateModal = true"
+        class="w-full flex items-center justify-center rounded-xl border border-dashed border-gray-300 dark:border-gray-600 px-4 py-3 text-sm text-gray-500 dark:text-gray-400 hover:border-primary-400 hover:text-primary-500 transition-colors"
+      >
+        <PlusIcon class="w-5 h-5 mr-2" />
+        Добавить привычку
+      </button>
     </div>
 
     <!-- ========== DESKTOP: таблица ========== -->
     <div v-if="!store.loading && store.challenges.length > 0" class="hidden lg:block overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
       <table class="min-w-full border-collapse">
         <thead>
+          <!-- Chart row -->
           <tr>
-            <th class="sticky left-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider border-b border-r border-gray-200 dark:border-gray-700 min-w-[180px]">
-              Привычка
+            <th class="sticky left-0 z-10 bg-white dark:bg-gray-900 border-none min-w-[180px]"></th>
+            <th
+              v-for="day in daysInMonth"
+              :key="'chart-'+day"
+              class="px-[2px] py-0 bg-white dark:bg-gray-900 w-9 min-w-[36px] align-bottom border-none"
+            >
+              <div class="flex items-end justify-center h-12 pt-2">
+                <div
+                  v-if="dateStr(day) <= todayStr && dayRate(day) > 0"
+                  class="w-[28px] rounded-t-sm bg-gray-300/40 dark:bg-gray-500/30"
+                  :style="{ height: dayChartHeight(day, 44) }"
+                />
+              </div>
+            </th>
+          </tr>
+          <!-- Day headers -->
+          <tr>
+            <th class="sticky left-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-1 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider border-b border-r border-gray-200 dark:border-gray-700 min-w-[180px]">
+              <div class="flex items-center justify-between">
+                <span>Привычка</span>
+                <button @click="showCreateModal = true" class="p-0.5 text-gray-400 hover:text-primary-500 transition-colors">
+                  <PlusIcon class="w-3.5 h-3.5" />
+                </button>
+              </div>
             </th>
             <th
               v-for="day in daysInMonth"
               :key="day"
-              class="px-0 py-1 text-center text-[10px] font-medium border-b border-gray-200 dark:border-gray-700 w-9 min-w-[36px]"
+              class="px-0 py-0.5 text-center text-[10px] font-medium border-b border-gray-200 dark:border-gray-700 w-9 min-w-[36px]"
               :class="isToday(day)
                 ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'
                 : isWeekend(day)
@@ -147,42 +180,40 @@
               <div>{{ dayOfWeekShort(day) }}</div>
               <div class="text-xs font-semibold">{{ day }}</div>
             </th>
-            <th class="bg-gray-50 dark:bg-gray-800 px-3 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-400 border-b border-l border-gray-200 dark:border-gray-700 w-12">
-              %
-            </th>
           </tr>
         </thead>
-        <tbody>
-          <tr
-            v-for="challenge in store.challenges"
-            :key="challenge.id"
-            class="group"
-          >
+        <draggable
+          v-model="store.challenges"
+          tag="tbody"
+          item-key="id"
+          handle=".drag-handle"
+          @end="onDragEnd"
+        >
+          <template #item="{ element: challenge }">
+          <tr class="group">
             <td class="sticky left-0 z-10 bg-white dark:bg-gray-900 px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 border-b border-r border-gray-200 dark:border-gray-700 group-hover:bg-gray-50 dark:group-hover:bg-gray-800/50">
               <div class="flex items-center justify-between">
-                <span
-                  v-if="editingId !== challenge.id"
-                  @dblclick="startEdit(challenge)"
-                  class="cursor-default truncate"
-                >
-                  {{ challenge.title }}
-                </span>
-                <input
-                  v-else
-                  ref="editInput"
-                  v-model="editTitle"
-                  @keydown.enter="saveEdit(challenge)"
-                  @keydown.escape="cancelEdit"
-                  @blur="saveEdit(challenge)"
-                  class="bg-transparent border-b border-primary-500 outline-none text-sm w-full text-gray-900 dark:text-gray-100"
-                />
-                <button
-                  v-if="editingId !== challenge.id"
-                  @click="removeChallenge(challenge)"
-                  class="opacity-0 group-hover:opacity-100 ml-2 p-0.5 text-gray-400 hover:text-red-500 transition-all"
-                >
-                  <XMarkIcon class="w-3.5 h-3.5" />
-                </button>
+                <div class="flex items-center min-w-0 flex-1">
+                  <Bars3Icon class="drag-handle w-4 h-4 text-gray-300 dark:text-gray-600 cursor-grab mr-2 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <div class="min-w-0 flex-1">
+                    <span class="cursor-default truncate block">{{ challenge.title }}</span>
+                    <span class="text-[10px] text-gray-400 dark:text-gray-500">{{ formatStartDate(challenge) }}</span>
+                  </div>
+                </div>
+                <div class="flex items-center ml-2">
+                  <button
+                    @click="openEditModal(challenge)"
+                    class="opacity-0 group-hover:opacity-100 p-0.5 text-gray-400 hover:text-primary-500 transition-all"
+                  >
+                    <PencilIcon class="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    @click="removeChallenge(challenge)"
+                    class="opacity-0 group-hover:opacity-100 ml-1 p-0.5 text-gray-400 hover:text-red-500 transition-all"
+                  >
+                    <XMarkIcon class="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
             </td>
             <td
@@ -190,40 +221,21 @@
               :key="day"
               class="px-0 py-0 text-center border-b border-gray-200 dark:border-gray-700 transition-colors"
               :class="[cellClass(challenge, day), isToday(day) ? 'cursor-pointer' : 'cursor-default']"
-              @click="isToday(day) && toggleDay(challenge, day)"
+              @click="isToday(day) && handleCellClick(challenge, day)"
             >
               <div class="w-9 h-8 flex items-center justify-center">
                 <CheckIcon v-if="isDayCompleted(challenge, day)" class="w-4 h-4" />
-                <XMarkIcon v-else-if="isMissed(day)" class="w-3 h-3 text-gray-300 dark:text-gray-600" />
-              </div>
-            </td>
-            <td class="bg-white dark:bg-gray-900 px-2 py-1.5 text-center text-xs font-medium border-b border-l border-gray-200 dark:border-gray-700"
-                :class="percentClass(completionPercent(challenge))"
-            >
-              {{ completionPercent(challenge) }}%
-            </td>
-          </tr>
-          <!-- Add row -->
-          <tr>
-            <td :colspan="daysInMonth + 2" class="px-3 py-2 border-b border-gray-200 dark:border-gray-700">
-              <div class="flex items-center">
-                <input
-                  v-model="newTitle"
-                  @keydown.enter="addChallenge"
-                  placeholder="Добавить привычку..."
-                  class="bg-transparent text-sm text-gray-700 dark:text-gray-300 placeholder-gray-400 dark:placeholder-gray-500 outline-none w-full"
-                />
-                <button
-                  v-if="newTitle.trim()"
-                  @click="addChallenge"
-                  class="ml-2 text-primary-500 hover:text-primary-600"
-                >
-                  <PlusIcon class="w-4 h-4" />
-                </button>
+                <template v-else-if="isToday(day) && !isDayCompleted(challenge, day)">
+                  <PlayIcon v-if="challenge.type === 'timer'" class="w-4 h-4 text-primary-500" />
+                  <ListBulletIcon v-else-if="challenge.type === 'composite'" class="w-4 h-4 text-primary-500" />
+                </template>
+                <XMarkIcon v-else-if="isMissed(day) && isAfterStart(challenge, day)" class="w-3 h-3 text-red-400 dark:text-red-500" />
+                <XMarkIcon v-else-if="isMissed(day) && !isAfterStart(challenge, day)" class="w-3 h-3 text-gray-300 dark:text-gray-600" />
               </div>
             </td>
           </tr>
-        </tbody>
+          </template>
+        </draggable>
       </table>
     </div>
 
@@ -234,20 +246,273 @@
     >
       <TableCellsIcon class="w-12 h-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
       <p class="text-sm">Добавь первую привычку для отслеживания</p>
-      <div class="mt-4 flex items-center justify-center">
-        <input
-          v-model="newTitle"
-          @keydown.enter="addChallenge"
-          placeholder="Например: зарядка, 2л воды..."
-          class="bg-transparent border-b border-gray-300 dark:border-gray-600 text-sm text-gray-700 dark:text-gray-300 placeholder-gray-400 outline-none w-64 py-1 text-center"
-        />
-      </div>
+      <button
+        @click="showCreateModal = true"
+        class="mt-4 inline-flex items-center px-4 py-2 rounded-lg bg-primary-500 text-white text-sm font-medium hover:bg-primary-600 transition-colors"
+      >
+        <PlusIcon class="w-4 h-4 mr-2" />
+        Создать привычку
+      </button>
     </div>
+
+    <!-- Create modal -->
+    <Teleport to="body">
+      <div v-if="showCreateModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/50" @click="closeCreateModal" />
+        <div class="relative bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-sm p-6">
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Новая привычка</h3>
+
+          <!-- Type selector -->
+          <div class="flex gap-2 mb-4">
+            <button
+              v-for="t in challengeTypes"
+              :key="t.value"
+              @click="newType = t.value"
+              class="flex-1 px-3 py-2 rounded-lg border text-xs font-medium transition-all text-center"
+              :class="newType === t.value
+                ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'
+                : 'border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:border-gray-300'"
+            >
+              <div class="text-base mb-0.5">{{ t.icon }}</div>
+              {{ t.label }}
+            </button>
+          </div>
+
+          <!-- Title -->
+          <input
+            ref="createInput"
+            v-model="newTitle"
+            @keydown.enter="addChallenge"
+            @keydown.escape="closeCreateModal"
+            placeholder="Название привычки..."
+            class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+          />
+
+          <!-- Timer: minutes -->
+          <div v-if="newType === 'timer'" class="mt-3">
+            <label class="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Длительность (минуты)</label>
+            <input
+              v-model.number="newTimerMinutes"
+              type="number"
+              min="1"
+              max="480"
+              placeholder="25"
+              class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+            />
+          </div>
+
+          <!-- Composite: subtasks -->
+          <div v-if="newType === 'composite'" class="mt-3">
+            <label class="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Подзадачи</label>
+            <div v-for="(st, idx) in newSubtasks" :key="idx" class="flex items-center mb-2">
+              <input
+                v-model="newSubtasks[idx]"
+                :placeholder="`Подзадача ${idx + 1}`"
+                class="flex-1 px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 outline-none focus:border-primary-500"
+              />
+              <button
+                v-if="newSubtasks.length > 1"
+                @click="newSubtasks.splice(idx, 1)"
+                class="ml-2 text-gray-400 hover:text-red-500"
+              >
+                <XMarkIcon class="w-4 h-4" />
+              </button>
+            </div>
+            <button
+              @click="newSubtasks.push('')"
+              class="text-xs text-primary-500 hover:text-primary-600 flex items-center"
+            >
+              <PlusIcon class="w-3 h-3 mr-1" /> Добавить
+            </button>
+          </div>
+
+          <div class="mt-4 flex justify-end space-x-2">
+            <button
+              @click="closeCreateModal"
+              class="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
+            >
+              Отмена
+            </button>
+            <button
+              @click="addChallenge"
+              :disabled="!canCreate || creating"
+              class="px-4 py-2 text-sm font-medium text-white bg-primary-500 rounded-lg hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center"
+            >
+              <div v-if="creating" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+              Создать
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Timer modal -->
+    <Teleport to="body">
+      <div v-if="timerModal.open" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/50" />
+        <div class="relative bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-xs p-6 text-center">
+          <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">{{ timerModal.challenge?.title }}</h3>
+          <div class="text-5xl font-mono font-bold text-gray-900 dark:text-gray-100 my-6">
+            {{ formatTimer(timerModal.remaining) }}
+          </div>
+          <div v-if="!timerModal.finished" class="flex justify-center space-x-3">
+            <button
+              v-if="!timerModal.running"
+              @click="startTimer"
+              class="px-5 py-2.5 rounded-lg bg-primary-500 text-white font-medium hover:bg-primary-600 transition-colors"
+            >
+              Старт
+            </button>
+            <button
+              v-else
+              @click="pauseTimer"
+              class="px-5 py-2.5 rounded-lg bg-amber-500 text-white font-medium hover:bg-amber-600 transition-colors"
+            >
+              Пауза
+            </button>
+            <button
+              @click="cancelTimer"
+              class="px-5 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            >
+              Отмена
+            </button>
+          </div>
+          <div v-else class="space-y-3">
+            <p class="text-emerald-500 font-medium">Время вышло!</p>
+            <button
+              @click="confirmTimer"
+              class="w-full px-5 py-2.5 rounded-lg bg-emerald-500 text-white font-medium hover:bg-emerald-600 transition-colors"
+            >
+              Подтвердить выполнение
+            </button>
+            <button
+              @click="cancelTimer"
+              class="w-full px-5 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            >
+              Не выполнил
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Composite modal -->
+    <Teleport to="body">
+      <div v-if="compositeModal.open" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/50" @click="compositeModal.open = false" />
+        <div class="relative bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-xs p-6">
+          <h3 class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-4">{{ compositeModal.challenge?.title }}</h3>
+          <div class="space-y-2">
+            <button
+              v-for="(st, idx) in compositeModal.challenge?.subtasks"
+              :key="idx"
+              @click="toggleSubtask(idx)"
+              class="w-full flex items-center px-3 py-2 rounded-lg border transition-all text-sm text-left"
+              :class="compositeModal.states[idx]
+                ? 'border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
+                : 'border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-gray-300'"
+            >
+              <CheckIcon v-if="compositeModal.states[idx]" class="w-4 h-4 mr-2 text-emerald-500" />
+              <div v-else class="w-4 h-4 mr-2 rounded border border-gray-300 dark:border-gray-500 flex-shrink-0" />
+              {{ st }}
+            </button>
+          </div>
+          <button
+            @click="compositeModal.open = false"
+            class="mt-4 w-full px-4 py-2 text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+          >
+            Закрыть
+          </button>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Edit modal -->
+    <Teleport to="body">
+      <div v-if="editModal.open" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/50" @click="editModal.open = false" />
+        <div class="relative bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-sm p-6">
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Редактировать привычку</h3>
+
+          <!-- Type badge (read-only) -->
+          <div class="mb-3">
+            <span class="text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
+              {{ challengeTypes.find(t => t.value === editModal.type)?.label || 'Обычная' }}
+            </span>
+          </div>
+
+          <!-- Title -->
+          <input
+            ref="editModalInput"
+            v-model="editModal.title"
+            @keydown.enter="saveEditModal"
+            @keydown.escape="editModal.open = false"
+            placeholder="Название..."
+            class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+          />
+
+          <!-- Timer: minutes -->
+          <div v-if="editModal.type === 'timer'" class="mt-3">
+            <label class="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Длительность (минуты)</label>
+            <input
+              v-model.number="editModal.timerMinutes"
+              type="number"
+              min="1"
+              max="480"
+              class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-sm text-gray-900 dark:text-gray-100 outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+            />
+          </div>
+
+          <!-- Composite: subtasks -->
+          <div v-if="editModal.type === 'composite'" class="mt-3">
+            <label class="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Подзадачи</label>
+            <div v-for="(st, idx) in editModal.subtasks" :key="idx" class="flex items-center mb-2">
+              <input
+                v-model="editModal.subtasks[idx]"
+                :placeholder="`Подзадача ${idx + 1}`"
+                class="flex-1 px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 outline-none focus:border-primary-500"
+              />
+              <button
+                v-if="editModal.subtasks.length > 1"
+                @click="editModal.subtasks.splice(idx, 1)"
+                class="ml-2 text-gray-400 hover:text-red-500"
+              >
+                <XMarkIcon class="w-4 h-4" />
+              </button>
+            </div>
+            <button
+              @click="editModal.subtasks.push('')"
+              class="text-xs text-primary-500 hover:text-primary-600 flex items-center"
+            >
+              <PlusIcon class="w-3 h-3 mr-1" /> Добавить
+            </button>
+          </div>
+
+          <div class="mt-4 flex justify-end space-x-2">
+            <button
+              @click="editModal.open = false"
+              class="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
+            >
+              Отмена
+            </button>
+            <button
+              @click="saveEditModal"
+              :disabled="!editModal.title.trim() || saving"
+              class="px-4 py-2 text-sm font-medium text-white bg-primary-500 rounded-lg hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center"
+            >
+              <div v-if="saving" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+              Сохранить
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted, nextTick, watch } from 'vue'
+import draggable from 'vuedraggable'
 import { useChallengesStore } from '@/stores/challenges'
 import { useConfirmStore } from '@/stores/confirm'
 import {
@@ -260,6 +525,9 @@ import {
   EllipsisVerticalIcon,
   PencilIcon,
   TrashIcon,
+  Bars3Icon,
+  PlayIcon,
+  ListBulletIcon,
 } from '@heroicons/vue/24/outline'
 
 const store = useChallengesStore()
@@ -270,11 +538,37 @@ const year = ref(now.getFullYear())
 const month = ref(now.getMonth())
 
 const newTitle = ref('')
-const editingId = ref(null)
-const editTitle = ref('')
-const editInput = ref(null)
+const editModalInput = ref(null)
+const editModal = ref({ open: false, id: null, title: '', type: 'checkbox', timerMinutes: 25, subtasks: [] })
 
 const mobileMenuId = ref(null)
+const saving = ref(false)
+const showCreateModal = ref(false)
+const creating = ref(false)
+const createInput = ref(null)
+const newType = ref('checkbox')
+const newTimerMinutes = ref(25)
+const newSubtasks = ref(['', ''])
+
+const challengeTypes = [
+  { value: 'checkbox', label: 'Обычная', icon: '✓' },
+  { value: 'timer', label: 'Таймер', icon: '⏱' },
+  { value: 'composite', label: 'Составная', icon: '☰' },
+]
+
+const canCreate = computed(() => {
+  if (!newTitle.value.trim()) return false
+  if (newType.value === 'timer' && (!newTimerMinutes.value || newTimerMinutes.value < 1)) return false
+  if (newType.value === 'composite' && newSubtasks.value.filter(s => s.trim()).length < 1) return false
+  return true
+})
+
+// Timer modal state
+const timerModal = ref({ open: false, challenge: null, remaining: 0, running: false, finished: false })
+let timerInterval = null
+
+// Composite modal state
+const compositeModal = ref({ open: false, challenge: null, states: [] })
 
 const SHORT_DAYS = ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб']
 
@@ -319,6 +613,24 @@ function isMissed(day) {
   return dateStr(day) < todayStr.value
 }
 
+function challengeStartDate(challenge) {
+  if (!challenge.created_at) return null
+  return challenge.created_at.substring(0, 10)
+}
+
+function isAfterStart(challenge, day) {
+  const start = challengeStartDate(challenge)
+  if (!start) return true
+  return dateStr(day) >= start
+}
+
+function formatStartDate(challenge) {
+  const start = challengeStartDate(challenge)
+  if (!start) return ''
+  const [y, m, d] = start.split('-')
+  return `с ${parseInt(d)}.${parseInt(m)}.${y}`
+}
+
 function isWeekend(day) {
   const d = new Date(year.value, month.value, day)
   return d.getDay() === 0 || d.getDay() === 6
@@ -345,12 +657,21 @@ function cellClass(challenge, day) {
   const completed = isDayCompleted(challenge, day)
   const today = isToday(day)
   const weekend = isWeekend(day)
+  const afterStart = isAfterStart(challenge, day)
+  const missed = isMissed(day)
 
+  if (!afterStart) {
+    // До старта челленджа — серый фон как было
+    return 'bg-white dark:bg-gray-900'
+  }
   if (completed) {
     return 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400'
   }
   if (today) {
     return 'bg-primary-50 dark:bg-primary-900/20 hover:bg-primary-100 dark:hover:bg-primary-900/30'
+  }
+  if (missed) {
+    return 'bg-red-50 dark:bg-red-900/20 text-red-400 dark:text-red-500'
   }
   if (weekend) {
     return 'bg-gray-50 dark:bg-gray-800/50'
@@ -359,9 +680,73 @@ function cellClass(challenge, day) {
 }
 
 function completionPercent(challenge) {
-  const total = daysInMonth.value
-  const completed = challenge.entries?.filter(e => e.completed).length || 0
+  const start = challengeStartDate(challenge) || dateStr(1)
+  // Считаем total как количество дней от старта до конца месяца
+  let total = 0
+  let completed = 0
+  for (let d = 1; d <= daysInMonth.value; d++) {
+    const ds = dateStr(d)
+    if (ds >= start) {
+      total++
+      if (isDayCompleted(challenge, d)) completed++
+    }
+  }
+  if (total === 0) return 0
   return Math.round((completed / total) * 100)
+}
+
+function statsBar(challenge) {
+  const start = challengeStartDate(challenge) || dateStr(1)
+  let total = 0, completed = 0, missed = 0
+  for (let d = 1; d <= daysInMonth.value; d++) {
+    const ds = dateStr(d)
+    if (ds < start) continue
+    total++
+    if (isDayCompleted(challenge, d)) completed++
+    else if (ds < todayStr.value) missed++
+  }
+  if (total === 0) return { green: 0, red: 0 }
+  return {
+    green: Math.round((completed / total) * 100),
+    red: Math.round((missed / total) * 100),
+  }
+}
+
+function statsBarBg(challenge) {
+  const s = statsBar(challenge)
+  const g = s.green
+  const r = s.red
+  const mid = 100 - r
+  return {
+    background: `linear-gradient(to right, #10b981 ${Math.max(g - 10, 0)}%, #6b7280 ${g + 10}%, #6b7280 ${mid - 10}%, #f87171 ${Math.min(mid + 10, 100)}%)`,
+  }
+}
+
+const chartMaxRate = computed(() => {
+  let max = 0
+  for (let d = 1; d <= daysInMonth.value; d++) {
+    if (dateStr(d) > todayStr.value) continue
+    const rate = dayRate(d)
+    if (rate > max) max = rate
+  }
+  return max || 1
+})
+
+function dayRate(day) {
+  let count = 0, active = 0
+  for (const ch of store.challenges) {
+    if (!isAfterStart(ch, day)) continue
+    active++
+    if (isDayCompleted(ch, day)) count++
+  }
+  return active === 0 ? 0 : count / active
+}
+
+function dayChartHeight(day, maxPx = 40) {
+  const rate = dayRate(day)
+  if (rate === 0) return '0px'
+  const h = Math.max(Math.round((rate / chartMaxRate.value) * maxPx), 2)
+  return h + 'px'
 }
 
 function percentClass(pct) {
@@ -391,6 +776,17 @@ function nextMonth() {
   store.fetchChallenges(monthKey.value)
 }
 
+function handleCellClick(challenge, day) {
+  if (!isToday(day)) return
+  if (challenge.type === 'timer' && !isDayCompleted(challenge, day)) {
+    openTimer(challenge)
+  } else if (challenge.type === 'composite') {
+    openComposite(challenge)
+  } else {
+    toggleDay(challenge, day)
+  }
+}
+
 async function toggleDay(challenge, day) {
   if (!isToday(day)) return
   await store.toggle(challenge.id, dateStr(day))
@@ -398,44 +794,75 @@ async function toggleDay(challenge, day) {
 
 async function toggleToday(challenge) {
   if (!todayDay.value) return
-  await store.toggle(challenge.id, todayStr.value)
-}
-
-async function addChallenge() {
-  const title = newTitle.value.trim()
-  if (!title) return
-  await store.create(title)
-  newTitle.value = ''
-}
-
-function startEdit(challenge) {
-  editingId.value = challenge.id
-  editTitle.value = challenge.title
-  nextTick(() => {
-    editInput.value?.[0]?.focus?.() || editInput.value?.focus?.()
-  })
-}
-
-async function saveEdit(challenge) {
-  if (editingId.value !== challenge.id) return
-  const title = editTitle.value.trim()
-  editingId.value = null
-  if (title && title !== challenge.title) {
-    await store.update(challenge.id, { title })
+  if (challenge.type === 'timer' && !isTodayCompleted(challenge)) {
+    openTimer(challenge)
+  } else if (challenge.type === 'composite') {
+    openComposite(challenge)
+  } else {
+    await store.toggle(challenge.id, todayStr.value)
   }
 }
 
-function cancelEdit() {
-  editingId.value = null
+async function onDragEnd() {
+  const ids = store.challenges.map(c => c.id)
+  await store.reorder(ids)
+}
+
+function closeCreateModal() {
+  showCreateModal.value = false
+  newTitle.value = ''
+  newType.value = 'checkbox'
+  newTimerMinutes.value = 25
+  newSubtasks.value = ['', '']
+}
+
+async function addChallenge() {
+  if (!canCreate.value) return
+  creating.value = true
+  try {
+    const payload = { title: newTitle.value.trim(), type: newType.value }
+    if (newType.value === 'timer') {
+      payload.timer_minutes = newTimerMinutes.value
+    }
+    if (newType.value === 'composite') {
+      payload.subtasks = newSubtasks.value.filter(s => s.trim())
+    }
+    await store.create(payload)
+    closeCreateModal()
+  } finally {
+    creating.value = false
+  }
+}
+
+function openEditModal(challenge) {
+  editModal.value = {
+    open: true,
+    id: challenge.id,
+    title: challenge.title,
+    type: challenge.type || 'checkbox',
+    timerMinutes: challenge.timer_minutes || 25,
+    subtasks: challenge.subtasks ? [...challenge.subtasks] : [],
+  }
+  nextTick(() => editModalInput.value?.focus())
+}
+
+async function saveEditModal() {
+  const m = editModal.value
+  if (!m.title.trim()) return
+  saving.value = true
+  try {
+    const payload = { title: m.title.trim() }
+    if (m.type === 'timer') payload.timer_minutes = m.timerMinutes
+    if (m.type === 'composite') payload.subtasks = m.subtasks.filter(s => s.trim())
+    await store.update(m.id, payload)
+    editModal.value.open = false
+  } finally {
+    saving.value = false
+  }
 }
 
 function toggleMobileMenu(id) {
   mobileMenuId.value = mobileMenuId.value === id ? null : id
-}
-
-function startEditMobile(challenge) {
-  mobileMenuId.value = null
-  startEdit(challenge)
 }
 
 function removeMobile(challenge) {
@@ -444,12 +871,12 @@ function removeMobile(challenge) {
 }
 
 async function removeChallenge(challenge) {
-  const confirmed = await confirmStore.confirm({
+  const confirmed = await confirmStore.ask({
     title: 'Удалить привычку',
     message: `Удалить "${challenge.title}" и все отметки?`,
     confirmText: 'Удалить',
     cancelText: 'Отмена',
-    isDanger: true,
+    danger: true,
   })
   if (confirmed) {
     await store.remove(challenge.id)
@@ -467,6 +894,103 @@ const vClickOutside = {
     document.removeEventListener('click', el._clickOutside)
   },
 }
+
+// Timer functions
+function openTimer(challenge) {
+  timerModal.value = {
+    open: true,
+    challenge,
+    remaining: challenge.timer_minutes * 60,
+    running: false,
+    finished: false,
+  }
+}
+
+function startTimer() {
+  timerModal.value.running = true
+  timerInterval = setInterval(() => {
+    timerModal.value.remaining--
+    if (timerModal.value.remaining <= 0) {
+      clearInterval(timerInterval)
+      timerInterval = null
+      timerModal.value.running = false
+      timerModal.value.finished = true
+      timerModal.value.remaining = 0
+      // Play sound
+      playTimerSound()
+    }
+  }, 1000)
+}
+
+function pauseTimer() {
+  timerModal.value.running = false
+  clearInterval(timerInterval)
+  timerInterval = null
+}
+
+function cancelTimer() {
+  clearInterval(timerInterval)
+  timerInterval = null
+  timerModal.value.open = false
+}
+
+async function confirmTimer() {
+  const ch = timerModal.value.challenge
+  const elapsed = ch.timer_minutes * 60 - timerModal.value.remaining
+  await store.toggle(ch.id, todayStr.value, { timer_seconds: elapsed })
+  timerModal.value.open = false
+}
+
+function formatTimer(seconds) {
+  const m = Math.floor(seconds / 60)
+  const s = seconds % 60
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+}
+
+function playTimerSound() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)()
+    for (let rep = 0; rep < 5; rep++) {
+      const offset = rep * 1.5 // 1.5 сек между повторами
+      const beep = [880, 1100, 880]
+      beep.forEach((freq, i) => {
+        const osc = ctx.createOscillator()
+        const gain = ctx.createGain()
+        osc.connect(gain)
+        gain.connect(ctx.destination)
+        osc.frequency.value = freq
+        osc.type = 'sine'
+        const t = ctx.currentTime + offset + i * 0.2
+        gain.gain.setValueAtTime(0.3, t)
+        gain.gain.exponentialRampToValueAtTime(0.01, t + 0.18)
+        osc.start(t)
+        osc.stop(t + 0.2)
+      })
+    }
+  } catch {}
+}
+
+// Composite functions
+function openComposite(challenge) {
+  const entry = challenge.entries?.find(e => {
+    const ed = typeof e.date === 'string' ? e.date.substring(0, 10) : ''
+    return ed === todayStr.value
+  })
+  const states = entry?.subtask_states || Array(challenge.subtasks.length).fill(false)
+  compositeModal.value = { open: true, challenge, states: [...states] }
+}
+
+async function toggleSubtask(idx) {
+  const ch = compositeModal.value.challenge
+  const res = await store.toggle(ch.id, todayStr.value, { subtask_index: idx })
+  if (res?.subtask_states) {
+    compositeModal.value.states = res.subtask_states
+  }
+}
+
+watch(showCreateModal, (v) => {
+  if (v) nextTick(() => createInput.value?.focus())
+})
 
 onMounted(() => {
   store.fetchChallenges(monthKey.value)

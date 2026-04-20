@@ -19,8 +19,8 @@ export const useChallengesStore = defineStore('challenges', () => {
     }
   }
 
-  const create = async (title) => {
-    const res = await api.post('/v1/challenges', { title })
+  const create = async (payload) => {
+    const res = await api.post('/v1/challenges', payload)
     const item = res.data
     item.entries = []
     challenges.value.push(item)
@@ -41,26 +41,51 @@ export const useChallengesStore = defineStore('challenges', () => {
     challenges.value = challenges.value.filter(c => c.id !== id)
   }
 
-  const toggle = async (challengeId, date) => {
-    const res = await api.post(`/v1/challenges/${challengeId}/toggle`, { date })
+  const toggle = async (challengeId, date, extra = {}) => {
+    const res = await api.post(`/v1/challenges/${challengeId}/toggle`, { date, ...extra })
     const challenge = challenges.value.find(c => c.id === challengeId)
     if (!challenge) return
 
     const entryIdx = challenge.entries.findIndex(e => e.date === date || e.date?.startsWith(date))
     if (res.data.completed) {
       if (entryIdx === -1) {
-        challenge.entries.push({ challenge_id: challengeId, date: `${date}T00:00:00.000000Z`, completed: true })
+        challenge.entries.push({
+          challenge_id: challengeId,
+          date: `${date}T00:00:00.000000Z`,
+          completed: true,
+          subtask_states: res.data.subtask_states || null,
+        })
       } else {
         challenge.entries[entryIdx].completed = true
+        if (res.data.subtask_states) challenge.entries[entryIdx].subtask_states = res.data.subtask_states
       }
     } else {
-      if (entryIdx !== -1) {
-        challenge.entries.splice(entryIdx, 1)
+      if (res.data.subtask_states) {
+        // Composite: not all done yet but entry exists
+        if (entryIdx === -1) {
+          challenge.entries.push({
+            challenge_id: challengeId,
+            date: `${date}T00:00:00.000000Z`,
+            completed: false,
+            subtask_states: res.data.subtask_states,
+          })
+        } else {
+          challenge.entries[entryIdx].completed = false
+          challenge.entries[entryIdx].subtask_states = res.data.subtask_states
+        }
+      } else {
+        if (entryIdx !== -1) {
+          challenge.entries.splice(entryIdx, 1)
+        }
       }
     }
 
     return res.data
   }
 
-  return { challenges, loading, currentMonth, fetchChallenges, create, update, remove, toggle }
+  const reorder = async (ids) => {
+    await api.post('/v1/challenges/reorder', { ids })
+  }
+
+  return { challenges, loading, currentMonth, fetchChallenges, create, update, remove, toggle, reorder }
 })

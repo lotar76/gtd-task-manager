@@ -13,11 +13,15 @@ class ChallengeEntry extends Model
         'challenge_id',
         'date',
         'completed',
+        'subtask_states',
+        'timer_seconds',
     ];
 
     protected $casts = [
         'date' => 'date',
         'completed' => 'boolean',
+        'subtask_states' => 'array',
+        'timer_seconds' => 'integer',
     ];
 
     public function challenge(): BelongsTo

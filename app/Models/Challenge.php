@@ -13,11 +13,16 @@ class Challenge extends Model
     protected $fillable = [
         'user_id',
         'title',
+        'type',
+        'timer_minutes',
+        'subtasks',
         'position',
     ];
 
     protected $casts = [
         'position' => 'integer',
+        'timer_minutes' => 'integer',
+        'subtasks' => 'array',
     ];
 
     public function user(): BelongsTo
