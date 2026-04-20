@@ -38,78 +38,42 @@
       v-model="store.challenges"
       tag="div"
       item-key="id"
-      handle=".drag-handle-mobile"
-      class="block lg:hidden space-y-3"
+      :delay="500"
+      :delay-on-touch-only="true"
+      class="block lg:hidden grid grid-cols-2 gap-2"
       @end="onDragEnd"
     >
       <template #item="{ element: challenge }">
       <div
-        class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 active:scale-[0.98] transition-transform relative"
+        class="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 active:scale-[0.97] transition-transform relative p-3"
         @click="toggleToday(challenge)"
       >
-        <div class="flex items-center justify-between px-4 py-3">
-          <Bars3Icon class="drag-handle-mobile w-5 h-5 text-gray-300 dark:text-gray-600 cursor-grab flex-shrink-0 mr-2" @click.stop />
-          <div class="flex items-center space-x-3 flex-1 min-w-0">
-            <!-- Status indicator -->
-            <div
-              class="flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center transition-all"
-              :class="isTodayCompleted(challenge)
-                ? 'bg-emerald-500 text-white shadow-sm'
-                : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 border-2 border-gray-200 dark:border-gray-700'"
-            >
-              <CheckIcon v-if="isTodayCompleted(challenge)" class="w-7 h-7 stroke-[3]" />
-              <PlayIcon v-else-if="challenge.type === 'timer'" class="w-7 h-7" />
-              <span v-else-if="challenge.type === 'composite'" class="text-xs font-bold">{{ compositeProgress(challenge) }}</span>
-              <CheckIcon v-else class="w-7 h-7" />
-            </div>
-            <div class="min-w-0 flex-1">
-              <span class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate block">
-                {{ challenge.title }}
-              </span>
-              <span class="text-[10px] text-gray-400 dark:text-gray-500">{{ formatStartDate(challenge) }}</span>
-            </div>
-          </div>
-          <!-- Three-dot menu -->
-          <div class="relative ml-2" @click.stop>
-            <button
-              @click="toggleMobileMenu(challenge.id, $event)"
-              class="p-1.5 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
-            >
-              <EllipsisVerticalIcon class="w-5 h-5" />
-            </button>
-          </div>
+        <!-- Menu -->
+        <button
+          class="absolute top-2 right-2 p-1 text-gray-300 dark:text-gray-600"
+          @click.stop="toggleMobileMenu(challenge.id, $event)"
+        >
+          <EllipsisVerticalIcon class="w-4 h-4" />
+        </button>
+        <!-- Status icon -->
+        <div
+          class="w-12 h-12 rounded-xl flex items-center justify-center transition-all mb-2"
+          :class="isTodayCompleted(challenge)
+            ? 'bg-emerald-500 text-white'
+            : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500'"
+        >
+          <CheckIcon v-if="isTodayCompleted(challenge)" class="w-6 h-6 stroke-[3]" />
+          <PlayIcon v-else-if="challenge.type === 'timer'" class="w-6 h-6" />
+          <span v-else-if="challenge.type === 'composite'" class="text-xs font-bold">{{ compositeProgress(challenge) }}</span>
+          <CheckIcon v-else class="w-6 h-6" />
         </div>
-        <!-- Mini streak dots -->
-        <div class="px-4 pb-3 flex gap-[3px] flex-wrap">
-          <div
-            v-for="day in daysInMonth"
-            :key="day"
-            class="w-[7px] h-[7px] rounded-full"
-            :class="isDayCompleted(challenge, day)
-              ? 'bg-emerald-500'
-              : !isAfterStart(challenge, day)
-                ? 'bg-gray-300 dark:bg-gray-600'
-                : isToday(day)
-                  ? 'bg-primary-400 ring-1 ring-primary-300'
-                  : day < todayDay
-                    ? 'bg-red-300 dark:bg-red-600'
-                    : 'bg-gray-100 dark:bg-gray-800'"
-          />
-        </div>
+        <!-- Title -->
+        <p class="text-sm font-semibold text-gray-900 dark:text-gray-100 leading-tight pr-5 line-clamp-2">
+          {{ challenge.title }}
+        </p>
       </div>
       </template>
     </draggable>
-
-    <!-- Add button (mobile) -->
-    <div v-if="!store.loading && store.challenges.length > 0" class="block lg:hidden mt-3">
-      <button
-        @click="showCreateModal = true"
-        class="w-full flex items-center justify-center rounded-xl border border-dashed border-gray-300 dark:border-gray-600 px-4 py-3 text-sm text-gray-500 dark:text-gray-400 hover:border-primary-400 hover:text-primary-500 transition-colors"
-      >
-        <PlusIcon class="w-5 h-5 mr-2" />
-        Добавить привычку
-      </button>
-    </div>
 
     <!-- ========== DESKTOP: таблица ========== -->
     <div v-if="!store.loading && store.challenges.length > 0" class="hidden lg:block overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
