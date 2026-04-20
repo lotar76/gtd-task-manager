@@ -1,7 +1,7 @@
 <template>
   <div class="p-4 sm:p-6 max-w-full">
     <!-- Header -->
-    <div class="flex items-center justify-between mb-6">
+    <div class="flex items-center justify-center lg:justify-between mb-6 relative">
       <div class="flex items-center space-x-3">
         <button
           @click="prevMonth"
@@ -21,7 +21,7 @@
       </div>
       <button
         @click="showCreateModal = true"
-        class="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 transition-colors"
+        class="absolute right-0 p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 transition-colors lg:static"
       >
         <PlusIcon class="w-5 h-5" />
       </button>
@@ -59,49 +59,24 @@
             >
               <CheckIcon v-if="isTodayCompleted(challenge)" class="w-7 h-7 stroke-[3]" />
               <PlayIcon v-else-if="challenge.type === 'timer'" class="w-7 h-7" />
-              <ListBulletIcon v-else-if="challenge.type === 'composite'" class="w-7 h-7" />
+              <span v-else-if="challenge.type === 'composite'" class="text-xs font-bold">{{ compositeProgress(challenge) }}</span>
               <CheckIcon v-else class="w-7 h-7" />
             </div>
             <div class="min-w-0 flex-1">
               <span class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate block">
                 {{ challenge.title }}
               </span>
-              <div class="flex items-center space-x-2">
-                <span class="text-xs" :class="percentClass(completionPercent(challenge))">
-                  {{ completionPercent(challenge) }}%
-                </span>
-                <span class="text-[10px] text-gray-400 dark:text-gray-500">{{ formatStartDate(challenge) }}</span>
-              </div>
+              <span class="text-[10px] text-gray-400 dark:text-gray-500">{{ formatStartDate(challenge) }}</span>
             </div>
           </div>
           <!-- Three-dot menu -->
-          <div class="relative ml-2 z-50">
+          <div class="relative ml-2" @click.stop>
             <button
-              @click.stop="toggleMobileMenu(challenge.id)"
+              @click="toggleMobileMenu(challenge.id, $event)"
               class="p-1.5 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
             >
               <EllipsisVerticalIcon class="w-5 h-5" />
             </button>
-            <div
-              v-if="mobileMenuId === challenge.id"
-              v-click-outside="() => mobileMenuId = null"
-              class="absolute right-0 top-full mt-1 w-40 bg-white dark:bg-gray-700 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 py-1 z-50"
-            >
-              <button
-                @click.stop="openEditModal(challenge); mobileMenuId = null"
-                class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 flex items-center space-x-2"
-              >
-                <PencilIcon class="w-4 h-4" />
-                <span>Редактировать</span>
-              </button>
-              <button
-                @click.stop="removeMobile(challenge)"
-                class="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center space-x-2"
-              >
-                <TrashIcon class="w-4 h-4" />
-                <span>Удалить</span>
-              </button>
-            </div>
           </div>
         </div>
         <!-- Mini streak dots -->
@@ -227,7 +202,9 @@
                 <CheckIcon v-if="isDayCompleted(challenge, day)" class="w-4 h-4" />
                 <template v-else-if="isToday(day) && !isDayCompleted(challenge, day)">
                   <PlayIcon v-if="challenge.type === 'timer'" class="w-4 h-4 text-primary-500" />
-                  <ListBulletIcon v-else-if="challenge.type === 'composite'" class="w-4 h-4 text-primary-500" />
+                  <span v-else-if="challenge.type === 'composite'" class="text-[9px] font-medium text-primary-500">
+                    {{ compositeProgress(challenge) }}
+                  </span>
                 </template>
                 <XMarkIcon v-else-if="isMissed(day) && isAfterStart(challenge, day)" class="w-3 h-3 text-red-400 dark:text-red-500" />
                 <XMarkIcon v-else-if="isMissed(day) && !isAfterStart(challenge, day)" class="w-3 h-3 text-gray-300 dark:text-gray-600" />
@@ -422,6 +399,32 @@
             class="mt-4 w-full px-4 py-2 text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
           >
             Закрыть
+          </button>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Mobile context menu -->
+    <Teleport to="body">
+      <div v-if="mobileMenuId !== null" class="fixed inset-0 z-50" @click="mobileMenuId = null">
+        <div
+          class="absolute bg-white dark:bg-gray-700 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 py-1 w-48"
+          :style="mobileMenuPos"
+          @click.stop
+        >
+          <button
+            @click="openEditModal(mobileMenuChallenge); mobileMenuId = null"
+            class="w-full px-4 py-3 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 flex items-center space-x-2"
+          >
+            <PencilIcon class="w-4 h-4" />
+            <span>Редактировать</span>
+          </button>
+          <button
+            @click="removeMobile(mobileMenuChallenge)"
+            class="w-full px-4 py-3 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center space-x-2"
+          >
+            <TrashIcon class="w-4 h-4" />
+            <span>Удалить</span>
           </button>
         </div>
       </div>
@@ -732,6 +735,16 @@ const chartMaxRate = computed(() => {
   return max || 1
 })
 
+function compositeProgress(challenge) {
+  const entry = challenge.entries?.find(e => {
+    const ed = typeof e.date === 'string' ? e.date.substring(0, 10) : ''
+    return ed === todayStr.value
+  })
+  const total = challenge.subtasks?.length || 0
+  const done = entry?.subtask_states?.filter(Boolean).length || 0
+  return `${done}/${total}`
+}
+
 function dayRate(day) {
   let count = 0, active = 0
   for (const ch of store.challenges) {
@@ -794,6 +807,7 @@ async function toggleDay(challenge, day) {
 
 async function toggleToday(challenge) {
   if (!todayDay.value) return
+  if (mobileMenuId.value || confirmStore.state.open) return
   if (challenge.type === 'timer' && !isTodayCompleted(challenge)) {
     openTimer(challenge)
   } else if (challenge.type === 'composite') {
@@ -861,13 +875,31 @@ async function saveEditModal() {
   }
 }
 
-function toggleMobileMenu(id) {
-  mobileMenuId.value = mobileMenuId.value === id ? null : id
+const mobileMenuPos = ref({})
+const mobileMenuChallenge = ref(null)
+
+function toggleMobileMenu(id, event) {
+  if (mobileMenuId.value === id) {
+    mobileMenuId.value = null
+    return
+  }
+  mobileMenuId.value = id
+  mobileMenuChallenge.value = store.challenges.find(c => c.id === id)
+  // Позиционируем меню рядом с кнопкой
+  if (event) {
+    const rect = event.currentTarget.getBoundingClientRect()
+    mobileMenuPos.value = {
+      top: rect.bottom + 4 + 'px',
+      right: (window.innerWidth - rect.right) + 'px',
+    }
+  }
 }
 
-function removeMobile(challenge) {
+async function removeMobile(challenge) {
   mobileMenuId.value = null
-  removeChallenge(challenge)
+  // nextTick чтобы меню закрылось до показа confirm
+  await nextTick()
+  await removeChallenge(challenge)
 }
 
 async function removeChallenge(challenge) {
