@@ -248,6 +248,11 @@
             </button>
           </div>
 
+          <!-- Type hint -->
+          <p class="text-xs text-gray-400 dark:text-gray-500 mb-3 -mt-2">
+            {{ challengeTypes.find(t => t.value === newType)?.hint }}
+          </p>
+
           <!-- Title -->
           <input
             ref="createInput"
@@ -668,11 +673,11 @@ const newTimerMinutes = ref(25)
 const newSubtasks = ref(['', ''])
 
 const challengeTypes = [
-  { value: 'checkbox', label: 'Обычная', icon: '✓', component: null },
-  { value: 'timer', label: 'Таймер', icon: null, component: ClockIcon },
-  { value: 'composite', label: 'Составная', icon: '☰', component: null },
-  { value: 'report', label: 'Отчёт', icon: null, component: DocumentTextIcon },
-  { value: 'progressive', label: 'Прогресс', icon: null, component: ArrowTrendingUpIcon },
+  { value: 'checkbox', label: 'Обычная', icon: '✓', component: null, hint: 'Простая ежедневная привычка. Нажми — выполнено.' },
+  { value: 'timer', label: 'Таймер', icon: null, component: ClockIcon, hint: 'Привычка с таймером. Запускаешь обратный отсчёт или отмечаешь сразу.' },
+  { value: 'composite', label: 'Составная', icon: '☰', component: null, hint: 'Привычка из нескольких шагов. Все шаги выполнены — день засчитан.' },
+  { value: 'report', label: 'Отчёт', icon: null, component: DocumentTextIcon, hint: 'Привычка с текстовым отчётом. Напиши что сделал — и день засчитан.' },
+  { value: 'progressive', label: 'Прогресс', icon: null, component: ArrowTrendingUpIcon, hint: 'Нагрузка растёт каждый день. Задай начало, шаг и цель. Можно разбить на подходы.' },
 ]
 
 const typeIcons = {
