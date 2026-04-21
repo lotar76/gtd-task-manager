@@ -66,6 +66,7 @@ Route::prefix('v1')->group(function () {
         // === ЗАДАЧИ (без workspace) ===
         Route::get('/tasks', [TaskController::class, 'all']);
         Route::post('/tasks', [TaskController::class, 'store']);
+        Route::post('/tasks/parse', [TaskController::class, 'parseAndCreate']);
         Route::post('/tasks/cleanup-empty', [TaskController::class, 'cleanupEmpty']);
         Route::get('/tasks/{task}', [TaskController::class, 'show']);
         Route::put('/tasks/{task}', [TaskController::class, 'update']);

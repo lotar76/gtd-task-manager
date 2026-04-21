@@ -6,7 +6,11 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Responses\ApiResponse;
+use App\Models\Contact;
+use App\Models\LifeSphere;
 use App\Models\Task;
+use App\Models\TaskChecklistItem;
+use App\Services\TaskParserService;
 use App\Services\TaskService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -385,5 +389,44 @@ class TaskController extends Controller
 
         $task = $this->taskService->assignTask($task, $validated['user_id'] ?? null, auth()->id());
         return ApiResponse::success($task, 'Задача назначена');
+    }
+
+    public function parseAndCreate(Request $request, TaskParserService $parser): JsonResponse
+    {
+        $validated = $request->validate([
+            'text' => 'required|string|max:2000',
+        ]);
+
+        $user = Auth::user();
+        $contacts = Contact::where('owner_id', $user->id)
+            ->get(['id', 'name'])
+            ->toArray();
+
+        $defaultWorkspace = $user->workspaces()->first();
+        $lifeSpheres = $defaultWorkspace
+            ? LifeSphere::where('workspace_id', $defaultWorkspace->id)->where('is_hidden', false)->get(['id', 'name'])->toArray()
+            : [];
+
+        $parsed = $parser->parse($validated['text'], $contacts, $lifeSpheres);
+
+        $checklist = $parsed['checklist'] ?? [];
+        unset($parsed['checklist']);
+
+        $task = $this->taskService->createTask($user, $parsed, $user->id);
+
+        foreach ($checklist as $position => $text) {
+            TaskChecklistItem::create([
+                'task_id' => $task->id,
+                'text' => $text,
+                'is_done' => false,
+                'position' => $position,
+            ]);
+        }
+
+        if ($checklist) {
+            $task->load('checklistItems');
+        }
+
+        return ApiResponse::success($task, 'Задача создана из текста');
     }
 }

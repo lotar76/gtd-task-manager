@@ -389,6 +389,7 @@
           :user="user"
           :inbox-count="taskCounts.inbox"
           @quick-add-task="handleQuickAddTask"
+          @quick-ai-task="showQuickAiInput = true"
           @quick-add-project="handleQuickAddProject"
           @quick-add-goal="handleQuickAddGoal"
           @search="handleSearch"
@@ -413,6 +414,49 @@
       @saved="onDraftSaved"
     />
 
+    <!-- Quick AI Task Input -->
+    <Teleport to="body">
+      <div v-if="showQuickAiInput" class="fixed inset-0 z-50 flex items-start justify-center pt-[15vh] p-4">
+        <div class="absolute inset-0 bg-black/50" @click="closeQuickAi" />
+        <div class="relative bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md p-6">
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">Быстрая задача</h3>
+          <p class="text-xs text-gray-400 dark:text-gray-500 mb-3">Опиши задачу своими словами — ИИ разберёт</p>
+          <textarea
+            ref="quickAiTextarea"
+            v-model="quickAiText"
+            rows="3"
+            placeholder="Завтра позвонить Ивану по поводу проекта..."
+            class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 resize-none"
+            @keydown.meta.enter="submitQuickAi"
+            @keydown.ctrl.enter="submitQuickAi"
+          />
+          <div class="mt-3 flex justify-between items-center">
+            <span v-if="quickAiError" class="text-xs text-red-500">{{ quickAiError }}</span>
+            <span v-else class="text-[10px] text-gray-400">Ctrl+Enter для отправки</span>
+            <div class="flex space-x-2">
+              <button
+                @click="closeQuickAi"
+                class="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
+              >
+                Отмена
+              </button>
+              <button
+                @click="submitQuickAi"
+                :disabled="!quickAiText.trim() || quickAiLoading"
+                class="px-4 py-2 text-sm font-medium text-white bg-primary-500 rounded-lg hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center"
+              >
+                <div v-if="quickAiLoading" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                <svg v-else class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+                </svg>
+                Анализ
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
     <!-- Project Modal -->
     <ProjectModal
       :show="showProjectModal"
@@ -436,7 +480,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useTasksStore } from '@/stores/tasks'
@@ -597,6 +641,40 @@ const { draftTask, showDraft: showDraftTask, startDraft, closeDraft } = useTaskD
 const handleQuickAddTask = () => startDraft()
 const onDraftSaved = () => {}
 const handleCloseDraft = () => closeDraft()
+
+// Quick AI Task
+const showQuickAiInput = ref(false)
+const quickAiText = ref('')
+const quickAiLoading = ref(false)
+const quickAiError = ref('')
+const quickAiTextarea = ref(null)
+
+watch(showQuickAiInput, (v) => {
+  if (v) nextTick(() => quickAiTextarea.value?.focus())
+})
+
+function closeQuickAi() {
+  showQuickAiInput.value = false
+  quickAiText.value = ''
+  quickAiError.value = ''
+}
+
+async function submitQuickAi() {
+  const text = quickAiText.value.trim()
+  if (!text) return
+  quickAiLoading.value = true
+  quickAiError.value = ''
+  try {
+    const res = await api.post('/v1/tasks/parse', { text })
+    const task = res.data
+    closeQuickAi()
+    router.push({ name: 'TaskPage', params: { taskId: task.id } })
+  } catch (e) {
+    quickAiError.value = 'Не удалось создать задачу'
+  } finally {
+    quickAiLoading.value = false
+  }
+}
 
 const handleQuickAddProject = () => {
   selectedProject.value = null
