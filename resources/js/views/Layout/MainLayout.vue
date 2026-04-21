@@ -428,6 +428,11 @@
       <div v-if="showQuickAiInput" class="fixed inset-0 z-50 flex items-start justify-center pt-[15vh] p-4">
         <div class="absolute inset-0 bg-black/50" @click="closeQuickAi" />
         <div class="relative bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md p-6">
+          <button @click="closeQuickAi" class="absolute top-3 right-3 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors z-10">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
 
           <!-- State: initial — mic idle -->
           <template v-if="!quickAiText.trim() && !quickAiTextMode && !isRecording && !isTranscribing && !quickAiError && !quickAiLoading">
@@ -475,9 +480,20 @@
 
           <!-- State: transcribing -->
           <template v-else-if="isTranscribing">
-            <div class="flex flex-col items-center py-8">
-              <div class="w-10 h-10 border-3 border-primary-500 border-t-transparent rounded-full animate-spin" />
-              <p class="text-sm text-gray-400 dark:text-gray-500 mt-4">Распознаю речь...</p>
+            <div class="relative flex items-center justify-center py-12 overflow-hidden">
+              <!-- Equalizer background -->
+              <div class="absolute inset-0 flex items-end justify-center gap-[3px] opacity-10 px-4 pb-2">
+                <div
+                  v-for="i in eqBars"
+                  :key="'t'+i.id"
+                  class="w-1 rounded-full bg-primary-400"
+                  :style="{ height: i.h + 'px', transition: 'height 0.3s ease' }"
+                />
+              </div>
+              <div class="relative flex flex-col items-center">
+                <div class="w-10 h-10 border-[3px] border-primary-500 border-t-transparent rounded-full animate-spin" />
+                <p class="text-sm text-gray-400 dark:text-gray-500 mt-4">Распознаю речь...</p>
+              </div>
             </div>
           </template>
 
@@ -509,7 +525,7 @@
               <textarea
                 ref="quickAiTextarea"
                 v-model="quickAiText"
-                rows="3"
+                rows="6"
                 placeholder="Опиши задачу..."
                 class="w-full px-3 py-2 pr-12 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 resize-none"
                 @keydown.meta.enter="submitQuickAi"
@@ -789,6 +805,7 @@ async function startRecording() {
       const blob = new Blob(audioChunks, { type: mediaRecorder.mimeType })
       if (blob.size < 1000) {
         quickAiError.value = 'Слишком короткая запись'
+        stopEq()
         return
       }
       await transcribeAudio(blob, mediaRecorder.mimeType)
@@ -806,7 +823,6 @@ function stopRecording() {
     mediaRecorder.stop()
   }
   isRecording.value = false
-  stopEq()
 }
 
 function startEq() {
@@ -841,6 +857,7 @@ async function transcribeAudio(blob, mimeType) {
     quickAiError.value = 'Ошибка распознавания'
   } finally {
     isTranscribing.value = false
+    stopEq()
   }
 }
 
