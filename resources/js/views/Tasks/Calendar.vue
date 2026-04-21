@@ -811,6 +811,7 @@
         @complete-task="handleCompleteTask"
         @uncomplete-task="handleUncompleteTask"
       />
+      <TaskView :show="showDraft" :task="draftTask" @close="closeDraft" />
 
       <!-- Task Modal -->
       <!-- Confirm Dialog -->
