@@ -19,6 +19,11 @@ const route = useRoute()
 const router = useRouter()
 const task = ref(null)
 
+// Use prefetched task from router state if available
+if (history.state?.task) {
+  task.value = history.state.task
+}
+
 const goBack = () => {
   if (window.history.length > 2) {
     router.back()

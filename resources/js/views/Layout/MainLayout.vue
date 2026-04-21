@@ -512,9 +512,17 @@
 
           <!-- State: creating task (loading after submit) -->
           <template v-else-if="quickAiLoading">
-            <div class="flex flex-col items-center py-8">
-              <div class="w-10 h-10 border-3 border-primary-500 border-t-transparent rounded-full animate-spin" />
-              <p class="text-sm text-gray-400 dark:text-gray-500 mt-4">Создаю задачу...</p>
+            <div class="relative flex items-center justify-center py-12 overflow-hidden">
+              <!-- Animated dots background -->
+              <div class="absolute inset-0 flex items-center justify-center">
+                <div class="flex space-x-2">
+                  <div v-for="i in 3" :key="i" class="w-2 h-2 rounded-full bg-primary-400/30 animate-bounce" :style="{ animationDelay: (i * 0.15) + 's' }" />
+                </div>
+              </div>
+              <div class="relative flex flex-col items-center">
+                <div class="w-12 h-12 border-[3px] border-primary-500 border-t-transparent rounded-full animate-spin" />
+                <p class="text-sm text-gray-400 dark:text-gray-500 mt-4">Создаю задачу...</p>
+              </div>
             </div>
           </template>
 
@@ -870,7 +878,7 @@ async function submitQuickAi() {
     const res = await api.post('/v1/tasks/parse', { text })
     const task = res.data
     closeQuickAi()
-    router.push({ name: 'TaskPage', params: { taskId: task.id } })
+    router.push({ name: 'TaskPage', params: { taskId: task.id }, state: { task } })
   } catch (e) {
     quickAiError.value = 'Не удалось создать задачу'
   } finally {
