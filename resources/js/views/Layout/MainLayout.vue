@@ -429,16 +429,32 @@
         <div class="absolute inset-0 bg-black/50" @click="closeQuickAi" />
         <div class="relative bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md p-6">
           <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">Быстрая задача</h3>
-          <p class="text-xs text-gray-400 dark:text-gray-500 mb-3">Опиши задачу своими словами — ИИ разберёт</p>
-          <textarea
-            ref="quickAiTextarea"
-            v-model="quickAiText"
-            rows="3"
-            placeholder="Завтра позвонить Ивану по поводу проекта..."
-            class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 resize-none"
-            @keydown.meta.enter="submitQuickAi"
-            @keydown.ctrl.enter="submitQuickAi"
-          />
+          <p class="text-xs text-gray-400 dark:text-gray-500 mb-3">Опиши задачу своими словами или надиктуй</p>
+          <div class="relative">
+            <textarea
+              ref="quickAiTextarea"
+              v-model="quickAiText"
+              rows="3"
+              placeholder="Завтра позвонить Ивану по поводу проекта..."
+              class="w-full px-3 py-2 pr-12 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 resize-none"
+              @keydown.meta.enter="submitQuickAi"
+              @keydown.ctrl.enter="submitQuickAi"
+            />
+            <button
+              @click="toggleRecording"
+              :disabled="quickAiLoading"
+              class="absolute right-3 bottom-3 w-8 h-8 rounded-full flex items-center justify-center transition-all"
+              :class="isRecording
+                ? 'bg-red-500 text-white animate-pulse'
+                : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'"
+            >
+              <div v-if="isTranscribing" class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+              <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                <path v-if="isRecording" stroke-linecap="round" stroke-linejoin="round" d="M5.25 7.5A2.25 2.25 0 017.5 5.25h9a2.25 2.25 0 012.25 2.25v9a2.25 2.25 0 01-2.25 2.25h-9a2.25 2.25 0 01-2.25-2.25v-9z" />
+                <path v-else stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z" />
+              </svg>
+            </button>
+          </div>
           <div class="mt-3 flex justify-between items-center">
             <span v-if="quickAiError" class="text-xs text-red-500">{{ quickAiError }}</span>
             <span v-else class="text-[10px] text-gray-400">Ctrl+Enter для отправки</span>
@@ -662,10 +678,73 @@ watch(showQuickAiInput, (v) => {
   if (v) nextTick(() => quickAiTextarea.value?.focus())
 })
 
+const isRecording = ref(false)
+const isTranscribing = ref(false)
+let mediaRecorder = null
+let audioChunks = []
+
 function closeQuickAi() {
   showQuickAiInput.value = false
   quickAiText.value = ''
   quickAiError.value = ''
+  stopRecording()
+}
+
+async function toggleRecording() {
+  if (isRecording.value) {
+    stopRecording()
+  } else {
+    await startRecording()
+  }
+}
+
+async function startRecording() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+    audioChunks = []
+    mediaRecorder = new MediaRecorder(stream, { mimeType: MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4' })
+    mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) audioChunks.push(e.data) }
+    mediaRecorder.onstop = async () => {
+      stream.getTracks().forEach(t => t.stop())
+      if (audioChunks.length === 0) return
+      const blob = new Blob(audioChunks, { type: mediaRecorder.mimeType })
+      await transcribeAudio(blob, mediaRecorder.mimeType)
+    }
+    mediaRecorder.start()
+    isRecording.value = true
+  } catch (e) {
+    quickAiError.value = 'Нет доступа к микрофону'
+  }
+}
+
+function stopRecording() {
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+    mediaRecorder.stop()
+  }
+  isRecording.value = false
+}
+
+async function transcribeAudio(blob, mimeType) {
+  isTranscribing.value = true
+  quickAiError.value = ''
+  try {
+    const reader = new FileReader()
+    const base64 = await new Promise((resolve) => {
+      reader.onloadend = () => resolve(reader.result.split(',')[1])
+      reader.readAsDataURL(blob)
+    })
+    const res = await api.post('/v1/tasks/transcribe', { audio: base64, mime_type: mimeType })
+    const text = res.data?.text
+    if (text) {
+      quickAiText.value = quickAiText.value ? quickAiText.value + ' ' + text : text
+    } else {
+      quickAiError.value = 'Не удалось распознать речь'
+    }
+  } catch (e) {
+    quickAiError.value = 'Ошибка распознавания'
+  } finally {
+    isTranscribing.value = false
+  }
 }
 
 async function submitQuickAi() {

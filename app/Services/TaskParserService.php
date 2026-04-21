@@ -145,4 +145,70 @@ PROMPT;
             return ['title' => $text];
         }
     }
+
+    public function transcribe(string $audioBase64, string $mimeType = 'audio/webm'): ?string
+    {
+        $apiKey = config('openrouter.api_key');
+        $baseUrl = config('openrouter.base_url', 'https://openrouter.ai/api/v1');
+
+        if (!$apiKey) {
+            return null;
+        }
+
+        try {
+            $response = Http::timeout(60)
+                ->withHeaders([
+                    'Authorization' => "Bearer {$apiKey}",
+                    'Content-Type' => 'application/json',
+                ])
+                ->post("{$baseUrl}/chat/completions", [
+                    'model' => 'google/gemini-2.0-flash-001',
+                    'messages' => [
+                        [
+                            'role' => 'user',
+                            'content' => [
+                                [
+                                    'type' => 'text',
+                                    'text' => 'Транскрибируй это аудио. Верни ТОЛЬКО текст того что сказано, без пояснений, кавычек и форматирования. Если речь на русском — пиши на русском.',
+                                ],
+                                [
+                                    'type' => 'input_audio',
+                                    'input_audio' => [
+                                        'data' => $audioBase64,
+                                        'format' => $this->audioFormat($mimeType),
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                    'temperature' => 0.1,
+                    'max_tokens' => 1024,
+                ]);
+
+            if (!$response->successful()) {
+                Log::warning('TaskParserService: Transcription error', [
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                ]);
+                return null;
+            }
+
+            $content = $response->json('choices.0.message.content');
+            return $content ? trim($content) : null;
+        } catch (\Exception $e) {
+            Log::error('TaskParserService: Transcription exception', ['message' => $e->getMessage()]);
+            return null;
+        }
+    }
+
+    private function audioFormat(string $mimeType): string
+    {
+        return match (true) {
+            str_contains($mimeType, 'wav') => 'wav',
+            str_contains($mimeType, 'mp3') || str_contains($mimeType, 'mpeg') => 'mp3',
+            str_contains($mimeType, 'ogg') => 'ogg',
+            str_contains($mimeType, 'mp4') || str_contains($mimeType, 'm4a') => 'mp3',
+            default => 'wav',
+        };
+    }
 }

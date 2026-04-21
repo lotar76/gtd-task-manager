@@ -444,4 +444,20 @@ class TaskController extends Controller
 
         return ApiResponse::success($task, 'Задача создана из текста');
     }
+
+    public function transcribe(Request $request, TaskParserService $parser): JsonResponse
+    {
+        $validated = $request->validate([
+            'audio' => 'required|string',
+            'mime_type' => 'sometimes|string|max:50',
+        ]);
+
+        $text = $parser->transcribe($validated['audio'], $validated['mime_type'] ?? 'audio/webm');
+
+        if (!$text) {
+            return ApiResponse::error('Не удалось распознать речь', 422);
+        }
+
+        return ApiResponse::success(['text' => $text], 'Речь распознана');
+    }
 }
