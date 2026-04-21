@@ -410,10 +410,13 @@ class TaskController extends Controller
         $parsed = $parser->parse($validated['text'], $contacts, $lifeSpheres);
 
         $checklist = $parsed['checklist'] ?? [];
-        unset($parsed['checklist']);
+        $assigneeIds = $parsed['assignee_ids'] ?? [];
+        $watcherIds = $parsed['watcher_ids'] ?? [];
+        unset($parsed['checklist'], $parsed['assignee_ids'], $parsed['watcher_ids']);
 
         $task = $this->taskService->createTask($user, $parsed, $user->id);
 
+        // Checklist
         foreach ($checklist as $position => $text) {
             TaskChecklistItem::create([
                 'task_id' => $task->id,
@@ -423,9 +426,21 @@ class TaskController extends Controller
             ]);
         }
 
-        if ($checklist) {
-            $task->load('checklistItems');
+        // Contacts with roles
+        $contactSync = [];
+        foreach ($assigneeIds as $id) {
+            $contactSync[$id] = ['role' => 'assignee'];
         }
+        foreach ($watcherIds as $id) {
+            if (!isset($contactSync[$id])) {
+                $contactSync[$id] = ['role' => 'watcher'];
+            }
+        }
+        if ($contactSync) {
+            $task->contacts()->syncWithoutDetaching($contactSync);
+        }
+
+        $task->load(['checklistItems', 'contacts', 'assignees', 'watchers']);
 
         return ApiResponse::success($task, 'Задача создана из текста');
     }

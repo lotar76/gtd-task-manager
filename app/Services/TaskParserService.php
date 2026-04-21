@@ -41,7 +41,8 @@ class TaskParserService
 - due_date (string|null) — дата в формате YYYY-MM-DD. "сегодня" = {$today}, "завтра" = {$tomorrow}. Для относительных дат ("через 3 дня", "в пятницу") вычисли от {$today}
 - priority (string|null) — low/medium/high/urgent. Проставляй ТОЛЬКО если пользователь явно говорит о срочности/важности. Если не упомянуто — ставь null, не угадывай
 - status (string|null) — определи по контексту: если дата сегодня → "today", завтра → "tomorrow", есть дата в будущем → "scheduled", иначе → "inbox"
-- contact_ids (array) — массив ID контактов из списка ниже, если упоминаются по имени. Если не упоминаются — пустой массив
+- assignee_ids (array) — массив ID контактов-исполнителей. Если в тексте кто-то должен что-то сделать ("пусть Настя", "поручить Ивану", "Петя сделает") — это исполнитель
+- watcher_ids (array) — массив ID контактов-наблюдателей. Если кого-то просто упоминают в контексте, но задача не на них
 - life_sphere_id (int|null) — ID сферы жизни из списка ниже, если задача явно относится к одной из них. Если не можешь уверенно определить — ставь null, не угадывай
 - checklist (array|null) — если задача содержит несколько шагов/пунктов/перечислений, разбей в массив строк. Если задача простая и без перечислений — не создавай чеклист
 
@@ -122,9 +123,14 @@ PROMPT;
                 }
             }
 
-            if (!empty($parsed['contact_ids']) && is_array($parsed['contact_ids'])) {
-                $validIds = collect($contacts)->pluck('id')->all();
-                $result['contact_ids'] = array_values(array_intersect($parsed['contact_ids'], $validIds));
+            $validIds = collect($contacts)->pluck('id')->all();
+
+            if (!empty($parsed['assignee_ids']) && is_array($parsed['assignee_ids'])) {
+                $result['assignee_ids'] = array_values(array_intersect($parsed['assignee_ids'], $validIds));
+            }
+
+            if (!empty($parsed['watcher_ids']) && is_array($parsed['watcher_ids'])) {
+                $result['watcher_ids'] = array_values(array_intersect($parsed['watcher_ids'], $validIds));
             }
 
             if (!empty($parsed['checklist']) && is_array($parsed['checklist'])) {
