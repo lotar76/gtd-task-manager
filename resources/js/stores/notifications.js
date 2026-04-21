@@ -40,6 +40,7 @@ export const useNotificationsStore = defineStore('notifications', () => {
   }
 
   const startPolling = () => {
+    if (pollInterval) clearInterval(pollInterval)
     fetchUnreadCount()
     pollInterval = setInterval(fetchUnreadCount, 30000)
   }
