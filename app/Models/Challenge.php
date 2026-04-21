@@ -16,6 +16,10 @@ class Challenge extends Model
         'type',
         'timer_minutes',
         'subtasks',
+        'progress_start',
+        'progress_step',
+        'progress_end',
+        'progress_sets',
         'position',
     ];
 
@@ -23,6 +27,10 @@ class Challenge extends Model
         'position' => 'integer',
         'timer_minutes' => 'integer',
         'subtasks' => 'array',
+        'progress_start' => 'integer',
+        'progress_step' => 'integer',
+        'progress_end' => 'integer',
+        'progress_sets' => 'integer',
     ];
 
     public function user(): BelongsTo

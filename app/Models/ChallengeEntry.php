@@ -15,6 +15,7 @@ class ChallengeEntry extends Model
         'completed',
         'subtask_states',
         'timer_seconds',
+        'report_text',
     ];
 
     protected $casts = [

@@ -37,10 +37,14 @@ class ChallengeController extends Controller
     {
         $validated = $request->validate([
             'title' => 'required|string|max:255',
-            'type' => 'sometimes|in:checkbox,timer,composite',
+            'type' => 'sometimes|in:checkbox,timer,composite,report,progressive',
             'timer_minutes' => 'required_if:type,timer|nullable|integer|min:1|max:480',
             'subtasks' => 'required_if:type,composite|nullable|array|min:1|max:20',
             'subtasks.*' => 'string|max:255',
+            'progress_start' => 'required_if:type,progressive|nullable|integer|min:1',
+            'progress_step' => 'required_if:type,progressive|nullable|integer|min:1',
+            'progress_end' => 'required_if:type,progressive|nullable|integer|min:1',
+            'progress_sets' => 'nullable|integer|min:2|max:10',
         ]);
 
         $maxPosition = Challenge::where('user_id', Auth::id())->max('position') ?? -1;
@@ -51,6 +55,10 @@ class ChallengeController extends Controller
             'type' => $validated['type'] ?? 'checkbox',
             'timer_minutes' => $validated['timer_minutes'] ?? null,
             'subtasks' => $validated['subtasks'] ?? null,
+            'progress_start' => $validated['progress_start'] ?? null,
+            'progress_step' => $validated['progress_step'] ?? null,
+            'progress_end' => $validated['progress_end'] ?? null,
+            'progress_sets' => $validated['progress_sets'] ?? null,
             'position' => $maxPosition + 1,
         ]);
 
@@ -69,6 +77,10 @@ class ChallengeController extends Controller
             'timer_minutes' => 'sometimes|nullable|integer|min:1|max:480',
             'subtasks' => 'sometimes|nullable|array|min:1|max:20',
             'subtasks.*' => 'string|max:255',
+            'progress_start' => 'sometimes|nullable|integer|min:1',
+            'progress_step' => 'sometimes|nullable|integer|min:1',
+            'progress_end' => 'sometimes|nullable|integer|min:1',
+            'progress_sets' => 'sometimes|nullable|integer|min:2|max:10',
         ]);
 
         $challenge->update($validated);
@@ -113,6 +125,7 @@ class ChallengeController extends Controller
             'date' => 'required|date_format:Y-m-d',
             'subtask_index' => 'sometimes|integer|min:0',
             'timer_seconds' => 'sometimes|integer|min:0',
+            'report_text' => 'sometimes|nullable|string|max:5000',
         ]);
 
         if ($validated['date'] !== now()->toDateString()) {
@@ -172,6 +185,62 @@ class ChallengeController extends Controller
                 ]);
             }
             return ApiResponse::success(['completed' => true], 'Таймер завершён');
+        }
+
+        // Progressive with sets: toggle individual set (like composite)
+        if ($challenge->type === 'progressive' && $challenge->progress_sets) {
+            $setsCount = $challenge->progress_sets;
+            $states = $entry?->subtask_states ?? array_fill(0, $setsCount, false);
+
+            if (isset($validated['subtask_index'])) {
+                $idx = $validated['subtask_index'];
+                $states[$idx] = !$states[$idx];
+            }
+
+            $allDone = !in_array(false, $states, true);
+
+            if ($entry) {
+                $entry->update(['subtask_states' => $states, 'completed' => $allDone]);
+            } else {
+                $entry = ChallengeEntry::create([
+                    'challenge_id' => $challenge->id,
+                    'date' => $validated['date'],
+                    'completed' => $allDone,
+                    'subtask_states' => $states,
+                ]);
+            }
+
+            return ApiResponse::success([
+                'completed' => $allDone,
+                'subtask_states' => $states,
+            ], 'Подход обновлён');
+        }
+
+        // Progressive without sets: works like checkbox (falls through to checkbox block)
+
+        // Report: save text, completed when text is present
+        if ($challenge->type === 'report') {
+            $text = $validated['report_text'] ?? null;
+
+            if (!$text) {
+                if ($entry) {
+                    $entry->delete();
+                }
+                return ApiResponse::success(['completed' => false, 'report_text' => null], 'Отметка снята');
+            }
+
+            if ($entry) {
+                $entry->update(['report_text' => $text, 'completed' => true]);
+            } else {
+                $entry = ChallengeEntry::create([
+                    'challenge_id' => $challenge->id,
+                    'date' => $validated['date'],
+                    'completed' => true,
+                    'report_text' => $text,
+                ]);
+            }
+
+            return ApiResponse::success(['completed' => true, 'report_text' => $text], 'Отчёт сохранён');
         }
 
         // Checkbox (default)

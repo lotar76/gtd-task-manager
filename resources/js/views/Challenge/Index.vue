@@ -65,6 +65,9 @@
           <CheckIcon v-if="isTodayCompleted(challenge)" class="w-6 h-6 stroke-[3]" />
           <PlayIcon v-else-if="challenge.type === 'timer'" class="w-6 h-6" />
           <span v-else-if="challenge.type === 'composite'" class="text-xs font-bold">{{ compositeProgress(challenge) }}</span>
+          <DocumentTextIcon v-else-if="challenge.type === 'report'" class="w-6 h-6" />
+          <span v-else-if="challenge.type === 'progressive' && challenge.progress_sets" class="text-xs font-bold">{{ progressSetsProgress(challenge) }}</span>
+          <span v-else-if="challenge.type === 'progressive'" class="text-xs font-bold">{{ progressTarget(challenge, todayDay.value) }}</span>
           <CheckIcon v-else class="w-6 h-6" />
         </div>
         <!-- Title -->
@@ -76,7 +79,7 @@
     </draggable>
 
     <!-- ========== DESKTOP: таблица ========== -->
-    <div v-if="!store.loading && store.challenges.length > 0" class="hidden lg:block overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
+    <div v-if="!store.loading && store.challenges.length > 0" class="hidden lg:block overflow-x-auto rounded-lg border border-gray-100 dark:border-gray-800/50">
       <table class="min-w-full border-collapse">
         <thead>
           <!-- Chart row -->
@@ -89,16 +92,20 @@
             >
               <div class="flex items-end justify-center h-12 pt-2">
                 <div
-                  v-if="dateStr(day) <= todayStr && dayRate(day) > 0"
-                  class="w-[28px] rounded-t-sm bg-gray-300/40 dark:bg-gray-500/30"
-                  :style="{ height: dayChartHeight(day, 44) }"
-                />
+                  v-if="dateStr(day) <= todayStr && dayStats(day).active > 0"
+                  class="w-[28px] h-[44px] rounded-t-sm bg-gray-200/50 dark:bg-gray-700/30 relative overflow-hidden"
+                >
+                  <div
+                    class="absolute bottom-0 left-0 right-0 rounded-t-sm bg-emerald-400/60 dark:bg-emerald-500/40"
+                    :style="{ height: dayChartFillPercent(day) + '%' }"
+                  />
+                </div>
               </div>
             </th>
           </tr>
           <!-- Day headers -->
           <tr>
-            <th class="sticky left-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-1 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider border-b border-r border-gray-200 dark:border-gray-700 min-w-[180px]">
+            <th class="sticky left-0 z-10 bg-white dark:bg-gray-900 px-3 py-1 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider border-b border-r border-gray-100 dark:border-gray-800/50 min-w-[180px]">
               <div class="flex items-center justify-between">
                 <span>Привычка</span>
                 <button @click="showCreateModal = true" class="p-0.5 text-gray-400 hover:text-primary-500 transition-colors">
@@ -109,15 +116,17 @@
             <th
               v-for="day in daysInMonth"
               :key="day"
-              class="px-0 py-0.5 text-center text-[10px] font-medium border-b border-gray-200 dark:border-gray-700 w-9 min-w-[36px]"
-              :class="isToday(day)
-                ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'
-                : isWeekend(day)
-                  ? 'bg-gray-100 dark:bg-gray-750 text-gray-400 dark:text-gray-500'
-                  : 'bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400'"
+              class="px-0 py-0.5 text-center text-[10px] font-medium border-b border-gray-100 dark:border-gray-800 w-9 min-w-[36px] bg-white dark:bg-gray-900"
             >
-              <div>{{ dayOfWeekShort(day) }}</div>
-              <div class="text-xs font-semibold">{{ day }}</div>
+              <div class="text-gray-400 dark:text-gray-500">{{ dayOfWeekShort(day) }}</div>
+              <div
+                class="w-7 h-7 flex items-center justify-center rounded-full mx-auto text-xs font-semibold"
+                :class="isToday(day)
+                  ? 'bg-primary-500 text-white'
+                  : isWeekend(day)
+                    ? 'text-gray-400 dark:text-gray-500'
+                    : 'text-gray-500 dark:text-gray-400'"
+              >{{ day }}</div>
             </th>
           </tr>
         </thead>
@@ -130,13 +139,17 @@
         >
           <template #item="{ element: challenge }">
           <tr class="group">
-            <td class="sticky left-0 z-10 bg-white dark:bg-gray-900 px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 border-b border-r border-gray-200 dark:border-gray-700 group-hover:bg-gray-50 dark:group-hover:bg-gray-800/50">
+            <td class="sticky left-0 z-10 bg-white dark:bg-gray-900 px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 border-b border-r border-gray-100 dark:border-gray-800/50 group-hover:bg-gray-50 dark:group-hover:bg-gray-800/50">
               <div class="flex items-center justify-between">
                 <div class="flex items-center min-w-0 flex-1">
                   <Bars3Icon class="drag-handle w-4 h-4 text-gray-300 dark:text-gray-600 cursor-grab mr-2 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <component
+                    :is="typeIcon(challenge.type)"
+                    v-if="typeIcon(challenge.type)"
+                    class="w-3.5 h-3.5 text-gray-400 dark:text-gray-500 mr-1.5 flex-shrink-0"
+                  />
                   <div class="min-w-0 flex-1">
                     <span class="cursor-default truncate block">{{ challenge.title }}</span>
-                    <span class="text-[10px] text-gray-400 dark:text-gray-500">{{ formatStartDate(challenge) }}</span>
                   </div>
                 </div>
                 <div class="flex items-center ml-2">
@@ -158,16 +171,26 @@
             <td
               v-for="day in daysInMonth"
               :key="day"
-              class="px-0 py-0 text-center border-b border-gray-200 dark:border-gray-700 transition-colors"
-              :class="[cellClass(challenge, day), isToday(day) ? 'cursor-pointer' : 'cursor-default']"
+              class="px-0 py-0 text-center border-b border-gray-100 dark:border-gray-800/50 bg-white dark:bg-gray-900 group-hover:bg-gray-50 dark:group-hover:bg-gray-800/50"
+              :class="isToday(day) ? 'cursor-pointer' : 'cursor-default'"
               @click="isToday(day) && handleCellClick(challenge, day)"
             >
-              <div class="w-9 h-8 flex items-center justify-center">
+              <div
+                class="w-8 h-8 flex items-center justify-center rounded-full mx-auto my-1"
+                :class="cellClass(challenge, day)"
+              >
                 <CheckIcon v-if="isDayCompleted(challenge, day)" class="w-4 h-4" />
                 <template v-else-if="isToday(day) && !isDayCompleted(challenge, day)">
                   <PlayIcon v-if="challenge.type === 'timer'" class="w-4 h-4 text-primary-500" />
                   <span v-else-if="challenge.type === 'composite'" class="text-[9px] font-medium text-primary-500">
                     {{ compositeProgress(challenge) }}
+                  </span>
+                  <DocumentTextIcon v-else-if="challenge.type === 'report'" class="w-4 h-4 text-primary-500" />
+                  <span v-else-if="challenge.type === 'progressive' && challenge.progress_sets" class="text-[9px] font-medium text-primary-500">
+                    {{ progressSetsProgress(challenge) }}
+                  </span>
+                  <span v-else-if="challenge.type === 'progressive'" class="text-[9px] font-medium text-primary-500">
+                    {{ progressTarget(challenge, day) }}
                   </span>
                 </template>
                 <XMarkIcon v-else-if="isMissed(day) && isAfterStart(challenge, day)" class="w-3 h-3 text-red-400 dark:text-red-500" />
@@ -204,17 +227,23 @@
           <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Новая привычка</h3>
 
           <!-- Type selector -->
-          <div class="flex gap-2 mb-4">
+          <div class="grid grid-cols-6 gap-2 mb-4">
             <button
-              v-for="t in challengeTypes"
+              v-for="(t, idx) in challengeTypes"
               :key="t.value"
               @click="newType = t.value"
-              class="flex-1 px-3 py-2 rounded-lg border text-xs font-medium transition-all text-center"
-              :class="newType === t.value
-                ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'
-                : 'border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:border-gray-300'"
+              class="px-3 py-2 rounded-lg border text-xs font-medium transition-all text-center"
+              :class="[
+                newType === t.value
+                  ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'
+                  : 'border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:border-gray-300',
+                idx < 3 ? 'col-span-2' : 'col-span-3',
+              ]"
             >
-              <div class="text-base mb-0.5">{{ t.icon }}</div>
+              <div class="h-6 flex items-center justify-center mb-0.5">
+                <component v-if="t.component" :is="t.component" class="w-5 h-5" />
+                <span v-else class="text-base">{{ t.icon }}</span>
+              </div>
               {{ t.label }}
             </button>
           </div>
@@ -265,6 +294,53 @@
             >
               <PlusIcon class="w-3 h-3 mr-1" /> Добавить
             </button>
+          </div>
+
+          <!-- Progressive: start, step, end, sets -->
+          <div v-if="newType === 'progressive'" class="mt-3 space-y-3">
+            <div class="grid grid-cols-3 gap-2">
+              <div>
+                <label class="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Начало</label>
+                <input
+                  v-model.number="newProgressStart"
+                  type="number"
+                  min="1"
+                  placeholder="10"
+                  class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+                />
+              </div>
+              <div>
+                <label class="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Шаг</label>
+                <input
+                  v-model.number="newProgressStep"
+                  type="number"
+                  min="1"
+                  placeholder="5"
+                  class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+                />
+              </div>
+              <div>
+                <label class="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Цель</label>
+                <input
+                  v-model.number="newProgressEnd"
+                  type="number"
+                  min="1"
+                  placeholder="50"
+                  class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+                />
+              </div>
+            </div>
+            <div>
+              <label class="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Подходы (необязательно)</label>
+              <input
+                v-model.number="newProgressSets"
+                type="number"
+                min="2"
+                max="10"
+                placeholder="без разбивки"
+                class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+              />
+            </div>
           </div>
 
           <div class="mt-4 flex justify-end space-x-2">
@@ -318,6 +394,13 @@
               Отмена
             </button>
           </div>
+          <button
+            v-if="!timerModal.finished"
+            @click="confirmTimer"
+            class="mt-3 text-sm text-gray-400 dark:text-gray-500 hover:text-emerald-500 dark:hover:text-emerald-400 transition-colors"
+          >
+            Отметить выполненным
+          </button>
           <div v-else class="space-y-3">
             <p class="text-emerald-500 font-medium">Время вышло!</p>
             <button
@@ -364,6 +447,48 @@
           >
             Закрыть
           </button>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Report modal -->
+    <Teleport to="body">
+      <div v-if="reportModal.open" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/50" @click="reportModal.open = false" />
+        <div class="relative bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-sm p-6">
+          <h3 class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-4">{{ reportModal.challenge?.title }}</h3>
+          <textarea
+            v-model="reportModal.text"
+            rows="4"
+            placeholder="Напиши свой отчёт..."
+            class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 resize-none"
+          />
+          <div class="mt-4 flex justify-between">
+            <button
+              v-if="reportModal.text.trim()"
+              @click="reportModal.text = ''"
+              class="px-4 py-2 text-sm text-red-500 hover:text-red-600 transition-colors"
+            >
+              Очистить
+            </button>
+            <div v-else />
+            <div class="flex space-x-2">
+              <button
+                @click="reportModal.open = false"
+                class="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
+              >
+                Отмена
+              </button>
+              <button
+                @click="saveReport"
+                :disabled="reportModal.saving"
+                class="px-4 py-2 text-sm font-medium text-white bg-primary-500 rounded-lg hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center"
+              >
+                <div v-if="reportModal.saving" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                Сохранить
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </Teleport>
@@ -455,6 +580,28 @@
             </button>
           </div>
 
+          <!-- Progressive: edit fields -->
+          <div v-if="editModal.type === 'progressive'" class="mt-3 space-y-3">
+            <div class="grid grid-cols-3 gap-2">
+              <div>
+                <label class="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Начало</label>
+                <input v-model.number="editModal.progressStart" type="number" min="1" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-sm text-gray-900 dark:text-gray-100 outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500" />
+              </div>
+              <div>
+                <label class="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Шаг</label>
+                <input v-model.number="editModal.progressStep" type="number" min="1" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-sm text-gray-900 dark:text-gray-100 outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500" />
+              </div>
+              <div>
+                <label class="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Цель</label>
+                <input v-model.number="editModal.progressEnd" type="number" min="1" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-sm text-gray-900 dark:text-gray-100 outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500" />
+              </div>
+            </div>
+            <div>
+              <label class="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Подходы (необязательно)</label>
+              <input v-model.number="editModal.progressSets" type="number" min="2" max="10" placeholder="без разбивки" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500" />
+            </div>
+          </div>
+
           <div class="mt-4 flex justify-end space-x-2">
             <button
               @click="editModal.open = false"
@@ -495,6 +642,9 @@ import {
   Bars3Icon,
   PlayIcon,
   ListBulletIcon,
+  DocumentTextIcon,
+  ClockIcon,
+  ArrowTrendingUpIcon,
 } from '@heroicons/vue/24/outline'
 
 const store = useChallengesStore()
@@ -518,15 +668,35 @@ const newTimerMinutes = ref(25)
 const newSubtasks = ref(['', ''])
 
 const challengeTypes = [
-  { value: 'checkbox', label: 'Обычная', icon: '✓' },
-  { value: 'timer', label: 'Таймер', icon: '⏱' },
-  { value: 'composite', label: 'Составная', icon: '☰' },
+  { value: 'checkbox', label: 'Обычная', icon: '✓', component: null },
+  { value: 'timer', label: 'Таймер', icon: null, component: ClockIcon },
+  { value: 'composite', label: 'Составная', icon: '☰', component: null },
+  { value: 'report', label: 'Отчёт', icon: null, component: DocumentTextIcon },
+  { value: 'progressive', label: 'Прогресс', icon: null, component: ArrowTrendingUpIcon },
 ]
+
+const typeIcons = {
+  checkbox: CheckIcon,
+  timer: ClockIcon,
+  composite: ListBulletIcon,
+  report: DocumentTextIcon,
+  progressive: ArrowTrendingUpIcon,
+}
+
+function typeIcon(type) {
+  return typeIcons[type] || null
+}
+
+const newProgressStart = ref(10)
+const newProgressStep = ref(5)
+const newProgressEnd = ref(50)
+const newProgressSets = ref(null)
 
 const canCreate = computed(() => {
   if (!newTitle.value.trim()) return false
   if (newType.value === 'timer' && (!newTimerMinutes.value || newTimerMinutes.value < 1)) return false
   if (newType.value === 'composite' && newSubtasks.value.filter(s => s.trim()).length < 1) return false
+  if (newType.value === 'progressive' && (!newProgressStart.value || !newProgressStep.value || !newProgressEnd.value)) return false
   return true
 })
 
@@ -536,6 +706,9 @@ let timerInterval = null
 
 // Composite modal state
 const compositeModal = ref({ open: false, challenge: null, states: [] })
+
+// Report modal state
+const reportModal = ref({ open: false, challenge: null, text: '', saving: false })
 
 const SHORT_DAYS = ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб']
 
@@ -591,13 +764,6 @@ function isAfterStart(challenge, day) {
   return dateStr(day) >= start
 }
 
-function formatStartDate(challenge) {
-  const start = challengeStartDate(challenge)
-  if (!start) return ''
-  const [y, m, d] = start.split('-')
-  return `с ${parseInt(d)}.${parseInt(m)}.${y}`
-}
-
 function isWeekend(day) {
   const d = new Date(year.value, month.value, day)
   return d.getDay() === 0 || d.getDay() === 6
@@ -623,13 +789,11 @@ function isTodayCompleted(challenge) {
 function cellClass(challenge, day) {
   const completed = isDayCompleted(challenge, day)
   const today = isToday(day)
-  const weekend = isWeekend(day)
   const afterStart = isAfterStart(challenge, day)
   const missed = isMissed(day)
 
   if (!afterStart) {
-    // До старта челленджа — серый фон как было
-    return 'bg-white dark:bg-gray-900'
+    return 'bg-gray-50 dark:bg-gray-800/30 text-gray-300 dark:text-gray-700'
   }
   if (completed) {
     return 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400'
@@ -640,10 +804,7 @@ function cellClass(challenge, day) {
   if (missed) {
     return 'bg-red-50 dark:bg-red-900/20 text-red-400 dark:text-red-500'
   }
-  if (weekend) {
-    return 'bg-gray-50 dark:bg-gray-800/50'
-  }
-  return 'bg-white dark:bg-gray-900'
+  return 'bg-gray-50 dark:bg-gray-800/30 text-gray-300 dark:text-gray-600'
 }
 
 function completionPercent(challenge) {
@@ -689,15 +850,37 @@ function statsBarBg(challenge) {
   }
 }
 
-const chartMaxRate = computed(() => {
-  let max = 0
-  for (let d = 1; d <= daysInMonth.value; d++) {
-    if (dateStr(d) > todayStr.value) continue
-    const rate = dayRate(d)
-    if (rate > max) max = rate
-  }
-  return max || 1
-})
+
+function progressTarget(challenge, day) {
+  const start = challenge.progress_start || 0
+  const step = challenge.progress_step || 0
+  const end = challenge.progress_end || start
+  const created = challengeStartDate(challenge)
+  if (!created) return start
+  const dayDate = dateStr(day)
+  const diffMs = new Date(dayDate) - new Date(created)
+  const dayIndex = Math.max(0, Math.floor(diffMs / 86400000))
+  return Math.min(start + dayIndex * step, end)
+}
+
+function progressSetsArray(challenge, day) {
+  const sets = challenge.progress_sets
+  if (!sets) return null
+  const total = progressTarget(challenge, day)
+  const base = Math.floor(total / sets)
+  const remainder = total % sets
+  return Array.from({ length: sets }, (_, i) => i < remainder ? base + 1 : base)
+}
+
+function progressSetsProgress(challenge) {
+  const entry = challenge.entries?.find(e => {
+    const ed = typeof e.date === 'string' ? e.date.substring(0, 10) : ''
+    return ed === todayStr.value
+  })
+  const total = challenge.progress_sets || 0
+  const done = entry?.subtask_states?.filter(Boolean).length || 0
+  return `${done}/${total}`
+}
 
 function compositeProgress(challenge) {
   const entry = challenge.entries?.find(e => {
@@ -709,21 +892,20 @@ function compositeProgress(challenge) {
   return `${done}/${total}`
 }
 
-function dayRate(day) {
-  let count = 0, active = 0
+function dayStats(day) {
+  let active = 0, completed = 0
   for (const ch of store.challenges) {
     if (!isAfterStart(ch, day)) continue
     active++
-    if (isDayCompleted(ch, day)) count++
+    if (isDayCompleted(ch, day)) completed++
   }
-  return active === 0 ? 0 : count / active
+  return { active, completed }
 }
 
-function dayChartHeight(day, maxPx = 40) {
-  const rate = dayRate(day)
-  if (rate === 0) return '0px'
-  const h = Math.max(Math.round((rate / chartMaxRate.value) * maxPx), 2)
-  return h + 'px'
+function dayChartFillPercent(day) {
+  const { active, completed } = dayStats(day)
+  if (active === 0) return 0
+  return Math.round((completed / active) * 100)
 }
 
 function percentClass(pct) {
@@ -759,6 +941,10 @@ function handleCellClick(challenge, day) {
     openTimer(challenge)
   } else if (challenge.type === 'composite') {
     openComposite(challenge)
+  } else if (challenge.type === 'report') {
+    openReport(challenge)
+  } else if (challenge.type === 'progressive' && challenge.progress_sets) {
+    openProgressiveSets(challenge)
   } else {
     toggleDay(challenge, day)
   }
@@ -776,6 +962,10 @@ async function toggleToday(challenge) {
     openTimer(challenge)
   } else if (challenge.type === 'composite') {
     openComposite(challenge)
+  } else if (challenge.type === 'report') {
+    openReport(challenge)
+  } else if (challenge.type === 'progressive' && challenge.progress_sets) {
+    openProgressiveSets(challenge)
   } else {
     await store.toggle(challenge.id, todayStr.value)
   }
@@ -792,6 +982,10 @@ function closeCreateModal() {
   newType.value = 'checkbox'
   newTimerMinutes.value = 25
   newSubtasks.value = ['', '']
+  newProgressStart.value = 10
+  newProgressStep.value = 5
+  newProgressEnd.value = 50
+  newProgressSets.value = null
 }
 
 async function addChallenge() {
@@ -804,6 +998,14 @@ async function addChallenge() {
     }
     if (newType.value === 'composite') {
       payload.subtasks = newSubtasks.value.filter(s => s.trim())
+    }
+    if (newType.value === 'progressive') {
+      payload.progress_start = newProgressStart.value
+      payload.progress_step = newProgressStep.value
+      payload.progress_end = newProgressEnd.value
+      if (newProgressSets.value && newProgressSets.value >= 2) {
+        payload.progress_sets = newProgressSets.value
+      }
     }
     await store.create(payload)
     closeCreateModal()
@@ -820,6 +1022,10 @@ function openEditModal(challenge) {
     type: challenge.type || 'checkbox',
     timerMinutes: challenge.timer_minutes || 25,
     subtasks: challenge.subtasks ? [...challenge.subtasks] : [],
+    progressStart: challenge.progress_start || 10,
+    progressStep: challenge.progress_step || 5,
+    progressEnd: challenge.progress_end || 50,
+    progressSets: challenge.progress_sets || null,
   }
   nextTick(() => editModalInput.value?.focus())
 }
@@ -832,6 +1038,12 @@ async function saveEditModal() {
     const payload = { title: m.title.trim() }
     if (m.type === 'timer') payload.timer_minutes = m.timerMinutes
     if (m.type === 'composite') payload.subtasks = m.subtasks.filter(s => s.trim())
+    if (m.type === 'progressive') {
+      payload.progress_start = m.progressStart
+      payload.progress_step = m.progressStep
+      payload.progress_end = m.progressEnd
+      payload.progress_sets = m.progressSets && m.progressSets >= 2 ? m.progressSets : null
+    }
     await store.update(m.id, payload)
     editModal.value.open = false
   } finally {
@@ -985,6 +1197,50 @@ async function toggleSubtask(idx) {
   const res = await store.toggle(ch.id, todayStr.value, { subtask_index: idx })
   if (res?.subtask_states) {
     compositeModal.value.states = res.subtask_states
+  }
+}
+
+// Progressive sets functions
+function openProgressiveSets(challenge) {
+  const entry = challenge.entries?.find(e => {
+    const ed = typeof e.date === 'string' ? e.date.substring(0, 10) : ''
+    return ed === todayStr.value
+  })
+  const sets = progressSetsArray(challenge, todayDay.value)
+  if (!sets) return
+  const states = entry?.subtask_states || Array(sets.length).fill(false)
+  // Build pseudo-subtasks for composite modal
+  const subtasks = sets.map((val, i) => `Подход ${i + 1}: ${val}`)
+  compositeModal.value = {
+    open: true,
+    challenge: { ...challenge, subtasks },
+    states: [...states],
+  }
+}
+
+// Report functions
+function openReport(challenge) {
+  const entry = challenge.entries?.find(e => {
+    const ed = typeof e.date === 'string' ? e.date.substring(0, 10) : ''
+    return ed === todayStr.value
+  })
+  reportModal.value = {
+    open: true,
+    challenge,
+    text: entry?.report_text || '',
+    saving: false,
+  }
+}
+
+async function saveReport() {
+  const ch = reportModal.value.challenge
+  const text = reportModal.value.text.trim()
+  reportModal.value.saving = true
+  try {
+    await store.toggle(ch.id, todayStr.value, { report_text: text || null })
+    reportModal.value.open = false
+  } finally {
+    reportModal.value.saving = false
   }
 }
 

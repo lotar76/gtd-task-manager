@@ -61,7 +61,23 @@ export const useChallengesStore = defineStore('challenges', () => {
     const hadEntry = entryIdx !== -1
 
     // Optimistic update
-    if (extra.subtask_index !== undefined) {
+    if (extra.report_text !== undefined) {
+      // Report type
+      if (extra.report_text === null) {
+        // Clear report
+        if (hadEntry) challenge.entries.splice(entryIdx, 1)
+      } else if (hadEntry) {
+        challenge.entries[entryIdx].completed = true
+        challenge.entries[entryIdx].report_text = extra.report_text
+      } else {
+        challenge.entries.push({
+          challenge_id: challengeId,
+          date: `${date}T00:00:00.000000Z`,
+          completed: true,
+          report_text: extra.report_text,
+        })
+      }
+    } else if (extra.subtask_index !== undefined) {
       // Composite: toggle subtask optimistically
       const subtaskCount = challenge.subtasks?.length || 0
       let states = hadEntry && challenge.entries[entryIdx].subtask_states
@@ -100,7 +116,15 @@ export const useChallengesStore = defineStore('challenges', () => {
     // Send to server, rollback on error
     try {
       const res = await api.post(`/v1/challenges/${challengeId}/toggle`, { date, ...extra })
-      return res.data
+      // Update entry with server response (e.g. report_text)
+      const serverData = res.data
+      if (serverData) {
+        const updIdx = challenge.entries.findIndex(e => e.date === date || e.date?.startsWith(date))
+        if (updIdx !== -1) {
+          Object.assign(challenge.entries[updIdx], serverData)
+        }
+      }
+      return serverData
     } catch (err) {
       // Rollback
       const nowIdx = challenge.entries.findIndex(e => e.date === date || e.date?.startsWith(date))
