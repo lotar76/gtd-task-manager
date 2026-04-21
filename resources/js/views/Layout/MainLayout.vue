@@ -428,56 +428,126 @@
       <div v-if="showQuickAiInput" class="fixed inset-0 z-50 flex items-start justify-center pt-[15vh] p-4">
         <div class="absolute inset-0 bg-black/50" @click="closeQuickAi" />
         <div class="relative bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md p-6">
-          <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">Быстрая задача</h3>
-          <p class="text-xs text-gray-400 dark:text-gray-500 mb-3">Опиши задачу своими словами или надиктуй</p>
-          <div class="relative">
-            <textarea
-              ref="quickAiTextarea"
-              v-model="quickAiText"
-              rows="3"
-              placeholder="Завтра позвонить Ивану по поводу проекта..."
-              class="w-full px-3 py-2 pr-12 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 resize-none"
-              @keydown.meta.enter="submitQuickAi"
-              @keydown.ctrl.enter="submitQuickAi"
-            />
-            <button
-              @click="toggleRecording"
-              :disabled="quickAiLoading"
-              class="absolute right-3 bottom-3 w-8 h-8 rounded-full flex items-center justify-center transition-all"
-              :class="isRecording
-                ? 'bg-red-500 text-white animate-pulse'
-                : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'"
-            >
-              <div v-if="isTranscribing" class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-              <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                <path v-if="isRecording" stroke-linecap="round" stroke-linejoin="round" d="M5.25 7.5A2.25 2.25 0 017.5 5.25h9a2.25 2.25 0 012.25 2.25v9a2.25 2.25 0 01-2.25 2.25h-9a2.25 2.25 0 01-2.25-2.25v-9z" />
-                <path v-else stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z" />
-              </svg>
-            </button>
-          </div>
-          <div class="mt-3 flex justify-between items-center">
-            <span v-if="quickAiError" class="text-xs text-red-500">{{ quickAiError }}</span>
-            <span v-else class="text-[10px] text-gray-400">Ctrl+Enter для отправки</span>
-            <div class="flex space-x-2">
+
+          <!-- State: initial — mic idle -->
+          <template v-if="!quickAiText.trim() && !quickAiTextMode && !isRecording && !isTranscribing && !quickAiError && !quickAiLoading">
+            <div class="flex flex-col items-center py-6">
               <button
-                @click="closeQuickAi"
-                class="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
+                @click="toggleRecording"
+                class="w-20 h-20 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-600 transition-all active:scale-95"
               >
-                Отмена
-              </button>
-              <button
-                @click="submitQuickAi"
-                :disabled="!quickAiText.trim() || quickAiLoading"
-                class="px-4 py-2 text-sm font-medium text-white bg-primary-500 rounded-lg hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center"
-              >
-                <div v-if="quickAiLoading" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                <svg v-else class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+                <svg class="w-9 h-9" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z" />
                 </svg>
-                Анализ
+              </button>
+              <p class="text-sm text-gray-400 dark:text-gray-500 mt-4">Нажми и говори</p>
+              <button @click="switchToTextMode" class="text-xs text-gray-400 dark:text-gray-600 mt-2 hover:text-gray-500">или введи текстом</button>
+            </div>
+          </template>
+
+          <!-- State: recording -->
+          <template v-else-if="isRecording">
+            <div class="relative flex flex-col items-center py-6 overflow-hidden">
+              <!-- Equalizer background -->
+              <div class="absolute inset-0 flex items-end justify-center gap-[3px] opacity-15 px-4 pb-2">
+                <div
+                  v-for="i in eqBars"
+                  :key="i.id"
+                  class="w-1 rounded-full bg-red-400"
+                  :style="{
+                    height: i.h + 'px',
+                    transition: 'height 0.3s ease',
+                  }"
+                />
+              </div>
+              <!-- Stop button -->
+              <button
+                @click="toggleRecording"
+                class="relative w-20 h-20 rounded-full bg-red-500 text-white flex items-center justify-center shadow-lg shadow-red-500/30"
+              >
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 7.5A2.25 2.25 0 017.5 5.25h9a2.25 2.25 0 012.25 2.25v9a2.25 2.25 0 01-2.25 2.25h-9a2.25 2.25 0 01-2.25-2.25v-9z" />
+                </svg>
+              </button>
+              <p class="relative text-sm text-red-400 mt-4">Слушаю...</p>
+            </div>
+          </template>
+
+          <!-- State: transcribing -->
+          <template v-else-if="isTranscribing">
+            <div class="flex flex-col items-center py-8">
+              <div class="w-10 h-10 border-3 border-primary-500 border-t-transparent rounded-full animate-spin" />
+              <p class="text-sm text-gray-400 dark:text-gray-500 mt-4">Распознаю речь...</p>
+            </div>
+          </template>
+
+          <!-- State: error -->
+          <template v-else-if="quickAiError && !quickAiText.trim() && !quickAiTextMode">
+            <div class="flex flex-col items-center py-6">
+              <div class="w-16 h-16 rounded-full bg-red-50 dark:bg-red-900/20 text-red-400 flex items-center justify-center">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                </svg>
+              </div>
+              <p class="text-sm text-red-400 mt-3">{{ quickAiError }}</p>
+              <button @click="quickAiError = ''" class="text-sm text-primary-500 hover:text-primary-600 mt-2">Попробовать снова</button>
+            </div>
+          </template>
+
+          <!-- State: creating task (loading after submit) -->
+          <template v-else-if="quickAiLoading">
+            <div class="flex flex-col items-center py-8">
+              <div class="w-10 h-10 border-3 border-primary-500 border-t-transparent rounded-full animate-spin" />
+              <p class="text-sm text-gray-400 dark:text-gray-500 mt-4">Создаю задачу...</p>
+            </div>
+          </template>
+
+          <!-- State: text ready — textarea + buttons -->
+          <template v-else>
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">Быстрая задача</h3>
+            <div class="relative">
+              <textarea
+                ref="quickAiTextarea"
+                v-model="quickAiText"
+                rows="3"
+                placeholder="Опиши задачу..."
+                class="w-full px-3 py-2 pr-12 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 resize-none"
+                @keydown.meta.enter="submitQuickAi"
+                @keydown.ctrl.enter="submitQuickAi"
+              />
+              <button
+                @click="toggleRecording"
+                class="absolute right-3 bottom-3 w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z" />
+                </svg>
               </button>
             </div>
-          </div>
+            <div class="mt-3 flex justify-between items-center">
+              <span v-if="quickAiError" class="text-xs text-red-500">{{ quickAiError }}</span>
+              <span v-else class="text-[10px] text-gray-400">Ctrl+Enter для отправки</span>
+              <div class="flex space-x-2">
+                <button
+                  @click="closeQuickAi"
+                  class="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
+                >
+                  Отмена
+                </button>
+                <button
+                  @click="submitQuickAi"
+                  :disabled="!quickAiText.trim()"
+                  class="px-4 py-2 text-sm font-medium text-white bg-primary-500 rounded-lg hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center"
+                >
+                  <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+                  </svg>
+                  Анализ
+                </button>
+              </div>
+            </div>
+          </template>
+
         </div>
       </div>
     </Teleport>
@@ -674,12 +744,15 @@ const quickAiLoading = ref(false)
 const quickAiError = ref('')
 const quickAiTextarea = ref(null)
 
-watch(showQuickAiInput, (v) => {
-  if (v) nextTick(() => quickAiTextarea.value?.focus())
-})
-
 const isRecording = ref(false)
 const isTranscribing = ref(false)
+const quickAiTextMode = ref(false)
+const eqBars = ref(Array.from({ length: 24 }, (_, i) => ({ id: i, h: 4 })))
+let eqInterval = null
+
+watch(quickAiTextMode, (v) => {
+  if (v) nextTick(() => quickAiTextarea.value?.focus())
+})
 let mediaRecorder = null
 let audioChunks = []
 
@@ -687,7 +760,13 @@ function closeQuickAi() {
   showQuickAiInput.value = false
   quickAiText.value = ''
   quickAiError.value = ''
+  quickAiTextMode.value = false
   stopRecording()
+}
+
+function switchToTextMode() {
+  quickAiTextMode.value = true
+  nextTick(() => quickAiTextarea.value?.focus())
 }
 
 async function toggleRecording() {
@@ -708,10 +787,15 @@ async function startRecording() {
       stream.getTracks().forEach(t => t.stop())
       if (audioChunks.length === 0) return
       const blob = new Blob(audioChunks, { type: mediaRecorder.mimeType })
+      if (blob.size < 1000) {
+        quickAiError.value = 'Слишком короткая запись'
+        return
+      }
       await transcribeAudio(blob, mediaRecorder.mimeType)
     }
     mediaRecorder.start()
     isRecording.value = true
+    startEq()
   } catch (e) {
     quickAiError.value = 'Нет доступа к микрофону'
   }
@@ -722,6 +806,19 @@ function stopRecording() {
     mediaRecorder.stop()
   }
   isRecording.value = false
+  stopEq()
+}
+
+function startEq() {
+  eqInterval = setInterval(() => {
+    eqBars.value = eqBars.value.map(b => ({ ...b, h: 4 + Math.random() * 56 }))
+  }, 300)
+}
+
+function stopEq() {
+  clearInterval(eqInterval)
+  eqInterval = null
+  eqBars.value = eqBars.value.map(b => ({ ...b, h: 4 }))
 }
 
 async function transcribeAudio(blob, mimeType) {
@@ -980,5 +1077,6 @@ const isProjectActive = (projectId) => {
   transform: translateX(60px);
   opacity: 0;
 }
+
 </style>
 
