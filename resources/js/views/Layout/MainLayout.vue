@@ -481,7 +481,6 @@
           <!-- State: transcribing -->
           <template v-else-if="isTranscribing">
             <div class="relative flex items-center justify-center py-12 overflow-hidden">
-              <!-- Equalizer background -->
               <div class="absolute inset-0 flex items-end justify-center gap-[3px] opacity-10 px-4 pb-2">
                 <div
                   v-for="i in eqBars"
@@ -490,10 +489,7 @@
                   :style="{ height: i.h + 'px', transition: 'height 0.3s ease' }"
                 />
               </div>
-              <div class="relative flex flex-col items-center">
-                <div class="w-10 h-10 border-[3px] border-primary-500 border-t-transparent rounded-full animate-spin" />
-                <p class="text-sm text-gray-400 dark:text-gray-500 mt-4">Распознаю речь...</p>
-              </div>
+              <p class="relative text-sm text-gray-400 dark:text-gray-500">Распознаю речь...</p>
             </div>
           </template>
 
@@ -513,16 +509,15 @@
           <!-- State: creating task (loading after submit) -->
           <template v-else-if="quickAiLoading">
             <div class="relative flex items-center justify-center py-12 overflow-hidden">
-              <!-- Animated dots background -->
-              <div class="absolute inset-0 flex items-center justify-center">
-                <div class="flex space-x-2">
-                  <div v-for="i in 3" :key="i" class="w-2 h-2 rounded-full bg-primary-400/30 animate-bounce" :style="{ animationDelay: (i * 0.15) + 's' }" />
-                </div>
+              <div class="absolute inset-0 flex items-end justify-center gap-[3px] opacity-10 px-4 pb-2">
+                <div
+                  v-for="i in eqBarsCreate"
+                  :key="'c'+i.id"
+                  class="w-1 rounded-full bg-emerald-400"
+                  :style="{ height: i.h + 'px', transition: 'height 0.3s ease' }"
+                />
               </div>
-              <div class="relative flex flex-col items-center">
-                <div class="w-12 h-12 border-[3px] border-primary-500 border-t-transparent rounded-full animate-spin" />
-                <p class="text-sm text-gray-400 dark:text-gray-500 mt-4">Создаю задачу...</p>
-              </div>
+              <p class="relative text-sm text-gray-400 dark:text-gray-500">Создаю задачу...</p>
             </div>
           </template>
 
@@ -772,7 +767,9 @@ const isRecording = ref(false)
 const isTranscribing = ref(false)
 const quickAiTextMode = ref(false)
 const eqBars = ref(Array.from({ length: 24 }, (_, i) => ({ id: i, h: 4 })))
+const eqBarsCreate = ref(Array.from({ length: 24 }, (_, i) => ({ id: i, h: 4 })))
 let eqInterval = null
+let eqCreateInterval = null
 
 watch(quickAiTextMode, (v) => {
   if (v) nextTick(() => quickAiTextarea.value?.focus())
@@ -845,6 +842,18 @@ function stopEq() {
   eqBars.value = eqBars.value.map(b => ({ ...b, h: 4 }))
 }
 
+function startCreateEq() {
+  eqCreateInterval = setInterval(() => {
+    eqBarsCreate.value = eqBarsCreate.value.map(b => ({ ...b, h: 4 + Math.random() * 56 }))
+  }, 300)
+}
+
+function stopCreateEq() {
+  clearInterval(eqCreateInterval)
+  eqCreateInterval = null
+  eqBarsCreate.value = eqBarsCreate.value.map(b => ({ ...b, h: 4 }))
+}
+
 async function transcribeAudio(blob, mimeType) {
   isTranscribing.value = true
   quickAiError.value = ''
@@ -874,13 +883,16 @@ async function submitQuickAi() {
   if (!text) return
   quickAiLoading.value = true
   quickAiError.value = ''
+  startCreateEq()
   try {
     const res = await api.post('/v1/tasks/parse', { text })
     const task = res.data
+    stopCreateEq()
     closeQuickAi()
     router.push({ name: 'TaskPage', params: { taskId: task.id }, state: { task } })
   } catch (e) {
     quickAiError.value = 'Не удалось создать задачу'
+    stopCreateEq()
   } finally {
     quickAiLoading.value = false
   }
