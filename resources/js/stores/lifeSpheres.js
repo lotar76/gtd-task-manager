@@ -8,6 +8,7 @@ export const useLifeSpheresStore = defineStore('lifeSpheres', () => {
   const loaded = ref(false)
 
   const filteredSpheres = computed(() => allSpheres.value)
+  const visibleSpheres = computed(() => allSpheres.value.filter(s => !s.is_hidden))
 
   const fetchAll = async ({ force = false } = {}) => {
     if (loaded.value && !force) return
@@ -21,15 +22,27 @@ export const useLifeSpheresStore = defineStore('lifeSpheres', () => {
     }
   }
 
+  const fetchOne = async (sphereId) => {
+    const response = await api.get(`/v1/life-spheres/${sphereId}`)
+    return response.data.data || response.data
+  }
+
   const create = async (data) => {
-    const response = await api.post('/v1/life-spheres', data)
+    const formData = buildFormData(data)
+    const response = await api.post('/v1/life-spheres', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
     const sphere = response.data.data || response.data
     allSpheres.value.push(sphere)
     return sphere
   }
 
   const update = async (sphereId, data) => {
-    const response = await api.put(`/v1/life-spheres/${sphereId}`, data)
+    const formData = buildFormData(data)
+    formData.append('_method', 'PUT')
+    const response = await api.post(`/v1/life-spheres/${sphereId}`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
     const updated = response.data.data || response.data
     const index = allSpheres.value.findIndex(s => s.id === sphereId)
     if (index !== -1) {
@@ -50,12 +63,29 @@ export const useLifeSpheresStore = defineStore('lifeSpheres', () => {
     return spheres
   }
 
+  function buildFormData(data) {
+    const fd = new FormData()
+    for (const [key, value] of Object.entries(data)) {
+      if (value === null || value === undefined) continue
+      if (key === 'image' && value instanceof File) {
+        fd.append('image', value)
+      } else if (typeof value === 'boolean') {
+        fd.append(key, value ? '1' : '0')
+      } else {
+        fd.append(key, value)
+      }
+    }
+    return fd
+  }
+
   return {
     allSpheres,
     loading,
     loaded,
     filteredSpheres,
+    visibleSpheres,
     fetchAll,
+    fetchOne,
     create,
     update,
     remove,

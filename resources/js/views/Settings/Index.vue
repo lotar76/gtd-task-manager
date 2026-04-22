@@ -169,15 +169,13 @@
       </div>
 
 
-      <!-- Сферы жизни -->
-      <SpheresTab v-if="activeTab === 'spheres' && workspace" :workspace="workspace" />
 
       <ContextsTab v-if="activeTab === 'contexts'" />
 
       <!-- Telegram -->
       <TelegramTab v-if="activeTab === 'telegram' && workspace" :workspace="workspace" />
 
-      <div v-if="['spheres','telegram'].includes(activeTab) && !workspace" class="text-center text-gray-500 py-10">
+      <div v-if="activeTab === 'telegram' && !workspace" class="text-center text-gray-500 py-10">
         Загрузка пространства...
       </div>
     </div>
@@ -191,7 +189,6 @@ import { useThemeStore } from '@/stores/theme'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { usePushNotifications } from '@/composables/usePushNotifications'
 import api from '@/services/api'
-import SpheresTab from '@/views/Workspaces/tabs/SpheresTab.vue'
 import TelegramTab from '@/views/Workspaces/tabs/TelegramTab.vue'
 import ContextsTab from '@/views/Settings/tabs/ContextsTab.vue'
 
@@ -232,7 +229,6 @@ const sendTestPush = async () => {
 
 const tabs = [
   { key: 'profile', label: 'Профиль' },
-  { key: 'spheres', label: 'Сферы жизни' },
   { key: 'contexts', label: 'Контексты' },
   { key: 'telegram', label: 'Telegram' },
 ]

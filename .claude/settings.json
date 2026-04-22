@@ -10,7 +10,11 @@
       "Bash(find /home/igor/projects/gtd-task-manager -name *.example -o -name example.*)",
       "Bash(find /home/igor/projects/gtd-task-manager/public -name *.json -o -name *.webmanifest)",
       "Bash(find /home/igor/projects/gtd-task-manager -name *.sql -o -name schema.sql)",
-      "Bash(ls -la /home/igor/projects/gtd-task-manager/*.md)"
+      "Bash(ls -la /home/igor/projects/gtd-task-manager/*.md)",
+      "Read(//home/igor/projects/gtd-task-manager/**)",
+      "Bash(xargs rm:*)",
+      "WebSearch",
+      "WebFetch(domain:openrouter.ai)"
     ],
     "additionalDirectories": [
       "/home/igor/projects/gtd-task-manager"

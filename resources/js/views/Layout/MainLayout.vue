@@ -290,6 +290,13 @@
             <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
               <div class="space-y-1">
                 <NavLink
+                  to="/spheres"
+                  icon="globe-alt"
+                  @close-sidebar="sidebarOpen = false"
+                >
+                  Сферы жизни
+                </NavLink>
+                <NavLink
                   to="/documents"
                   icon="document-text"
                   @close-sidebar="sidebarOpen = false"

@@ -7,21 +7,32 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Responses\ApiResponse;
 use App\Models\LifeSphere;
+use App\Services\FileStorageService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class LifeSphereController extends Controller
 {
+    public function __construct(
+        private readonly FileStorageService $fileStorage,
+    ) {}
+
     // Все сферы пользователя
     public function all(Request $request): JsonResponse
     {
         $workspaceId = $request->user()->defaultWorkspace()->id;
 
         $spheres = LifeSphere::where('workspace_id', $workspaceId)
-            ->withCount('tasks')
+            ->withCount(['tasks', 'goals'])
             ->orderBy('position')
-            ->get();
+            ->get()
+            ->map(function ($sphere) {
+                if ($sphere->image) {
+                    $sphere->image_url = $this->fileStorage->getUrl($sphere->image);
+                }
+                return $sphere;
+            });
 
         return ApiResponse::success($spheres, 'Список сфер получен');
     }
@@ -32,8 +43,15 @@ class LifeSphereController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'color' => 'required|string|size:7',
+            'description' => 'nullable|string|max:5000',
+            'image' => 'nullable|image|max:5120',
             'position' => 'nullable|integer|min:0',
         ]);
+
+        if ($request->hasFile('image')) {
+            $result = $this->fileStorage->upload($request->file('image'), 'spheres');
+            $validated['image'] = $result['path'];
+        }
 
         $workspace = $request->user()->defaultWorkspace();
         $validated['workspace_id'] = $workspace->id;
@@ -41,13 +59,23 @@ class LifeSphereController extends Controller
 
         $sphere = LifeSphere::create($validated);
 
+        if ($sphere->image) {
+            $sphere->image_url = $this->fileStorage->getUrl($sphere->image);
+        }
+
         return ApiResponse::success($sphere, 'Сфера создана', 201);
     }
 
     // Получение сферы
     public function show(LifeSphere $lifeSphere): JsonResponse
     {
-        $lifeSphere->load(['tasks.project', 'tasks.context', 'tasks.assignee', 'tasks.tags']);
+        $lifeSphere->load(['tasks.project', 'tasks.context', 'tasks.assignee', 'tasks.tags', 'goals']);
+        $lifeSphere->loadCount(['tasks', 'goals']);
+
+        if ($lifeSphere->image) {
+            $lifeSphere->image_url = $this->fileStorage->getUrl($lifeSphere->image);
+        }
+
         return ApiResponse::success($lifeSphere, 'Сфера получена');
     }
 
@@ -57,13 +85,33 @@ class LifeSphereController extends Controller
         $validated = $request->validate([
             'name' => 'sometimes|string|max:255',
             'color' => 'sometimes|string|size:7',
+            'description' => 'nullable|string|max:5000',
+            'image' => 'nullable|image|max:5120',
+            'remove_image' => 'sometimes|boolean',
             'position' => 'nullable|integer|min:0',
             'is_hidden' => 'sometimes|boolean',
         ]);
 
+        if ($request->hasFile('image')) {
+            if ($lifeSphere->image) {
+                try { $this->fileStorage->delete($lifeSphere->image); } catch (\Throwable) {}
+            }
+            $result = $this->fileStorage->upload($request->file('image'), 'spheres');
+            $validated['image'] = $result['path'];
+        } elseif ($request->boolean('remove_image') && $lifeSphere->image) {
+            try { $this->fileStorage->delete($lifeSphere->image); } catch (\Throwable) {}
+            $validated['image'] = null;
+        }
+
+        unset($validated['remove_image']);
         $lifeSphere->update($validated);
 
-        return ApiResponse::success($lifeSphere->fresh()->loadCount('tasks'), 'Сфера обновлена');
+        $sphere = $lifeSphere->fresh()->loadCount(['tasks', 'goals']);
+        if ($sphere->image) {
+            $sphere->image_url = $this->fileStorage->getUrl($sphere->image);
+        }
+
+        return ApiResponse::success($sphere, 'Сфера обновлена');
     }
 
     // Удаление сферы

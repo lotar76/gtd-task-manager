@@ -17,6 +17,8 @@ class LifeSphere extends Model
         'workspace_id',
         'name',
         'color',
+        'description',
+        'image',
         'position',
         'is_hidden',
         'created_by',
