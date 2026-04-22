@@ -4,6 +4,13 @@
       <div class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6">
         <!-- LEFT: основное содержимое -->
         <div class="min-w-0 space-y-6">
+          <!-- Breadcrumbs -->
+          <nav class="flex items-center gap-1.5 text-sm text-gray-400">
+            <router-link to="/goals" class="hover:text-gray-700 dark:hover:text-gray-200 transition-colors">Цели</router-link>
+            <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+            <span class="text-gray-700 dark:text-gray-200 truncate">{{ goal?.name || '...' }}</span>
+          </nav>
+
           <!-- Actions bar -->
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-2">
@@ -75,8 +82,28 @@
               <!-- Контент таба: прямые задачи -->
               <div v-if="activeTab === 'direct'">
                 <TaskList v-if="activeTasks.length > 0" :tasks="activeTasks" @task-click="handleTaskClick" @toggle-complete="handleToggleComplete" />
-                <div v-if="completedTasks.length > 0" class="mt-3 opacity-60">
-                  <TaskList :tasks="completedTasks" @task-click="handleTaskClick" @toggle-complete="handleToggleComplete" />
+                <div v-else-if="completedTasks.length === 0" class="py-6 text-center">
+                  <p class="text-sm text-gray-400 dark:text-gray-500 mb-2">Пока нет задач</p>
+                  <button @click="openNewTask(null)" class="text-sm text-primary-500 hover:text-primary-600 font-medium">Создать первую задачу</button>
+                </div>
+                <!-- Выполненные (свёрнуты) -->
+                <div v-if="completedTasks.length > 0" class="mt-4 border-t border-gray-100 dark:border-gray-800 pt-3">
+                  <button
+                    @click="showCompletedDirect = !showCompletedDirect"
+                    class="flex items-center gap-2 w-full text-left px-1 py-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                  >
+                    <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8 8-4-4m5.5-7h5.3c1.12 0 1.68 0 2.11.22a2 2 0 01.87.87c.22.43.22.99.22 2.11v9.6c0 1.12 0 1.68-.22 2.11a2 2 0 01-.87.87c-.43.22-.99.22-2.11.22H6.8c-1.12 0-1.68 0-2.11-.22a2 2 0 01-.87-.87C3.6 18.48 3.6 17.92 3.6 16.8V7.2c0-1.12 0-1.68.22-2.11a2 2 0 01.87-.87C5.12 4 5.68 4 6.8 4h2.7" />
+                    </svg>
+                    <span class="text-sm text-gray-500 dark:text-gray-400">Выполненные</span>
+                    <span class="text-xs text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded-full">{{ completedTasks.length }}</span>
+                    <svg class="w-3.5 h-3.5 text-gray-400 ml-auto transition-transform" :class="showCompletedDirect ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  <div v-if="showCompletedDirect" class="mt-2 opacity-60">
+                    <TaskList :tasks="completedTasks" @task-click="handleTaskClick" @toggle-complete="handleToggleComplete" />
+                  </div>
                 </div>
                 <button @click="openNewTask(null)" class="mt-2 text-[12.5px] text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 flex items-center gap-1">
                   <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
@@ -92,12 +119,27 @@
                   @task-click="handleTaskClick"
                   @toggle-complete="handleToggleComplete"
                 />
-                <div v-if="projectCompletedTasks(project).length > 0" class="mt-3 opacity-60">
-                  <TaskList
-                    :tasks="projectCompletedTasks(project)"
-                    @task-click="handleTaskClick"
-                    @toggle-complete="handleToggleComplete"
-                  />
+                <div v-if="projectCompletedTasks(project).length > 0" class="mt-4 border-t border-gray-100 dark:border-gray-800 pt-3">
+                  <button
+                    @click="toggleProjectCompleted(project.id)"
+                    class="flex items-center gap-2 w-full text-left px-1 py-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                  >
+                    <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8 8-4-4m5.5-7h5.3c1.12 0 1.68 0 2.11.22a2 2 0 01.87.87c.22.43.22.99.22 2.11v9.6c0 1.12 0 1.68-.22 2.11a2 2 0 01-.87.87c-.43.22-.99.22-2.11.22H6.8c-1.12 0-1.68 0-2.11-.22a2 2 0 01-.87-.87C3.6 18.48 3.6 17.92 3.6 16.8V7.2c0-1.12 0-1.68.22-2.11a2 2 0 01.87-.87C5.12 4 5.68 4 6.8 4h2.7" />
+                    </svg>
+                    <span class="text-sm text-gray-500 dark:text-gray-400">Выполненные</span>
+                    <span class="text-xs text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded-full">{{ projectCompletedTasks(project).length }}</span>
+                    <svg class="w-3.5 h-3.5 text-gray-400 ml-auto transition-transform" :class="showCompletedProjects[project.id] ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  <div v-if="showCompletedProjects[project.id]" class="mt-2 opacity-60">
+                    <TaskList
+                      :tasks="projectCompletedTasks(project)"
+                      @task-click="handleTaskClick"
+                      @toggle-complete="handleToggleComplete"
+                    />
+                  </div>
                 </div>
                 <div v-if="!project.tasks?.length" class="py-4 text-center text-sm text-gray-400">
                   В потоке пока нет задач
@@ -485,6 +527,9 @@ const notesStore = useNotesStore()
 
 const showTaskView = ref(false)
 const showGoalModal = ref(false)
+const showCompletedDirect = ref(false)
+const showCompletedProjects = ref({})
+const toggleProjectCompleted = (id) => { showCompletedProjects.value[id] = !showCompletedProjects.value[id] }
 const showProjectPicker = ref(false)
 const showTaskModal = ref(false)
 const showProjectModal = ref(false)
@@ -547,11 +592,12 @@ const allGoalNotes = computed(() => {
 
 const tabs = computed(() => {
   const result = []
-  if (directTasks.value.length > 0) {
-    result.push({ key: 'direct', label: 'Задачи', count: directTasks.value.length })
+  const activeDirectCount = activeTasks.value.length
+  if (directTasks.value.length > 0 || activeDirectCount > 0) {
+    result.push({ key: 'direct', label: 'Задачи', count: activeDirectCount })
   }
   for (const p of goalProjects.value) {
-    result.push({ key: 'project-' + p.id, label: p.name, count: p.tasks?.length || 0 })
+    result.push({ key: 'project-' + p.id, label: p.name, count: projectActiveTasks(p).length })
   }
   return result
 })
@@ -616,14 +662,8 @@ const projectProgress = (p) => {
 
 const formatDeadline = (s) => {
   if (!s) return ''
-  const d = new Date(s); const today = new Date()
-  today.setHours(0,0,0,0); d.setHours(0,0,0,0)
-  const days = Math.ceil((d - today) / 86400000)
-  if (days < 0) return `Просрочено на ${Math.abs(days)} дн.`
-  if (days === 0) return 'Сегодня'
-  if (days === 1) return 'Завтра'
-  if (days <= 30) return `${days} дн.`
-  return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' })
+  const d = new Date(s)
+  return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })
 }
 const deadlineClass = computed(() => {
   if (!goal.value?.deadline) return 'text-gray-500 dark:text-gray-400'
