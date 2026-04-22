@@ -44,7 +44,15 @@ class FileStorageService
      */
     public function getUrl(string $path): string
     {
-        return Storage::disk(config('filesystems.default'))->url($path);
+        $disk = config('filesystems.default');
+
+        if ($disk === 's3') {
+            $url = rtrim(config('filesystems.disks.s3.url'), '/');
+            $bucket = config('filesystems.disks.s3.bucket');
+            return "{$url}/{$bucket}/{$path}";
+        }
+
+        return Storage::disk($disk)->url($path);
     }
 
     /**
