@@ -24,59 +24,108 @@
     </div>
 
     <!-- Spheres Grid -->
-    <div v-if="spheres.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div v-if="spheres.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
       <div
         v-for="sphere in spheres"
         :key="sphere.id"
-        class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all cursor-pointer overflow-hidden group"
-        :class="{ 'opacity-50': sphere.is_hidden }"
+        class="relative rounded-2xl overflow-hidden cursor-pointer group transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
+        :class="{ 'grayscale opacity-60': sphere.is_hidden }"
+        :style="{ minHeight: '380px' }"
         @click="openSphere(sphere)"
       >
-        <!-- Картинка -->
-        <div class="h-36 overflow-hidden relative">
-          <img v-if="sphere.image_url" :src="sphere.image_url" class="w-full h-full object-cover" />
-          <div v-else class="w-full h-full flex items-center justify-center" :style="{ background: `linear-gradient(135deg, ${sphere.color}20, ${sphere.color}40)` }">
-            <div class="w-16 h-16 rounded-full flex items-center justify-center" :style="{ backgroundColor: sphere.color + '30' }">
-              <svg class="w-8 h-8" :style="{ color: sphere.color }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4" />
-              </svg>
-            </div>
-          </div>
-          <!-- Hidden badge -->
-          <span
-            v-if="sphere.is_hidden"
-            class="absolute top-2 right-2 text-[10px] text-white bg-black/40 backdrop-blur-sm rounded-md px-2 py-0.5"
-          >Скрыта</span>
+        <!-- Background image or gradient -->
+        <div class="absolute inset-0">
+          <img
+            v-if="sphere.image_url"
+            :src="sphere.image_url"
+            class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+          />
+          <div
+            v-else
+            class="w-full h-full"
+            :style="{ background: `linear-gradient(160deg, ${sphere.color}30 0%, ${sphere.color}15 50%, ${sphere.color}05 100%)` }"
+          ></div>
         </div>
 
-        <div class="p-4">
-          <!-- Название с цветом -->
-          <div class="flex items-center gap-2 mb-1">
-            <div class="w-3 h-3 rounded-full flex-shrink-0" :style="{ backgroundColor: sphere.color }"></div>
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white truncate">{{ sphere.name }}</h3>
+        <!-- Gradient overlay: image fades into solid bottom -->
+        <div
+          class="absolute inset-0"
+          :style="{
+            background: sphere.image_url
+              ? `linear-gradient(to bottom, transparent 15%, rgba(255,255,255,0.4) 40%, rgba(255,255,255,0.92) 60%, rgba(255,255,255,1) 75%)`
+              : 'none'
+          }"
+        ></div>
+        <div
+          class="absolute inset-0 dark:hidden"
+          :style="{ background: !sphere.image_url ? `linear-gradient(to bottom, transparent 30%, white 75%)` : 'none' }"
+        ></div>
+        <div
+          class="absolute inset-0 hidden dark:block"
+          :style="{
+            background: sphere.image_url
+              ? `linear-gradient(to bottom, transparent 15%, rgba(31,41,55,0.4) 40%, rgba(31,41,55,0.92) 60%, rgba(31,41,55,1) 75%)`
+              : `linear-gradient(to bottom, transparent 30%, rgb(31,41,55) 75%)`
+          }"
+        ></div>
+
+        <!-- Content overlay -->
+        <div class="relative h-full flex flex-col justify-between p-5" style="min-height: 380px">
+          <!-- Top: counters -->
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span
+                v-if="sphere.tasks_count > 0"
+                class="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-full backdrop-blur-sm"
+                :style="{
+                  backgroundColor: sphere.image_url ? 'rgba(0,0,0,0.35)' : sphere.color + '20',
+                  color: sphere.image_url ? 'white' : sphere.color
+                }"
+              >
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4" />
+                </svg>
+                {{ sphere.tasks_count }}
+              </span>
+              <span
+                v-if="sphere.goals_count > 0"
+                class="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-full backdrop-blur-sm"
+                :style="{
+                  backgroundColor: sphere.image_url ? 'rgba(0,0,0,0.35)' : sphere.color + '20',
+                  color: sphere.image_url ? 'white' : sphere.color
+                }"
+              >
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                {{ sphere.goals_count }}
+              </span>
+            </div>
+            <span
+              v-if="sphere.is_hidden"
+              class="text-[10px] font-medium px-2 py-0.5 rounded-full backdrop-blur-sm"
+              :style="{
+                backgroundColor: sphere.image_url ? 'rgba(0,0,0,0.35)' : 'rgba(0,0,0,0.08)',
+                color: sphere.image_url ? 'white' : '#9ca3af'
+              }"
+            >Скрыта</span>
           </div>
 
-          <!-- Описание -->
-          <p v-if="sphere.description" class="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 mb-3">
-            {{ sphere.description }}
-          </p>
-          <div v-else class="mb-3"></div>
+          <!-- Bottom: name + vision text -->
+          <div>
+            <!-- Color accent line -->
+            <div class="w-8 h-0.5 rounded-full mb-3" :style="{ backgroundColor: sphere.color }"></div>
 
-          <!-- Счётчики -->
-          <div class="flex items-center gap-4 text-xs text-gray-400 dark:text-gray-500">
-            <span v-if="sphere.tasks_count > 0" class="flex items-center gap-1">
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              {{ sphere.tasks_count }} задач
-            </span>
-            <span v-if="sphere.goals_count > 0" class="flex items-center gap-1">
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-              </svg>
-              {{ sphere.goals_count }} целей
-            </span>
+            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-1.5 leading-tight">
+              {{ sphere.name }}
+            </h3>
+
+            <p
+              v-if="sphere.description"
+              class="text-[13px] text-gray-500 dark:text-gray-400 leading-relaxed line-clamp-3"
+            >
+              {{ sphere.description }}
+            </p>
           </div>
         </div>
       </div>
