@@ -95,6 +95,11 @@ const routes = [
         component: () => import('@/views/Goals/Show.vue'),
       },
       {
+        path: 'principles',
+        name: 'Principles',
+        component: () => import('@/views/Principles/Index.vue'),
+      },
+      {
         path: 'spheres',
         name: 'Spheres',
         component: () => import('@/views/Spheres/Index.vue'),

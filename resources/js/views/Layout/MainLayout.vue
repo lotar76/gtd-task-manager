@@ -51,12 +51,39 @@
 
           <!-- Navigation -->
           <nav class="flex-1 overflow-y-auto px-4 py-3">
+            <!-- Основа -->
             <div class="flex items-center justify-between px-3 mb-2 select-none -mx-1 px-4 py-1">
+              <h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
+                </svg>
+                Основа
+              </h3>
+            </div>
+            <div class="space-y-1 mb-4">
+              <NavLink
+                to="/principles"
+                icon="list-bullet"
+                @close-sidebar="sidebarOpen = false"
+              >
+                Принципы
+              </NavLink>
+              <NavLink
+                to="/spheres"
+                icon="globe-alt"
+                @close-sidebar="sidebarOpen = false"
+              >
+                Сферы жизни
+              </NavLink>
+            </div>
+
+            <!-- Оперативный фокус -->
+            <div class="flex items-center justify-between px-3 mb-2 select-none -mx-1 px-4 py-1 border-t border-gray-200 dark:border-gray-700 pt-4">
               <h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                 </svg>
-                Фокус
+                Оперативный фокус
               </h3>
             </div>
             <div class="space-y-1">
@@ -290,20 +317,13 @@
             <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
               <div class="space-y-1">
                 <NavLink
-                  to="/spheres"
-                  icon="globe-alt"
-                  @close-sidebar="sidebarOpen = false"
-                >
-                  Сферы жизни
-                </NavLink>
-                <NavLink
                   to="/documents"
                   icon="document-text"
                   @close-sidebar="sidebarOpen = false"
                 >
                   Документы
                 </NavLink>
-<NavLink
+                <NavLink
                   to="/archive"
                   icon="archive-box"
                   :count="archivedCount"

@@ -14,7 +14,14 @@
       "Read(//home/igor/projects/gtd-task-manager/**)",
       "Bash(xargs rm:*)",
       "WebSearch",
-      "WebFetch(domain:openrouter.ai)"
+      "WebFetch(domain:openrouter.ai)",
+      "Bash(sudo npm:*)",
+      "Bash(sudo chmod:*)",
+      "Bash(chmod -R 755 /home/igor/projects/gtd-task-manager/storage/app/spheres)",
+      "Bash(while ! grep -q \"Container api_app\" /tmp/claude-1000/-home-igor-projects-gtd-task-manager/5f63bb2c-d50b-44d6-9fd0-767cc1160499/tasks/b9cwur6cg.output)",
+      "Bash(do sleep:*)",
+      "Bash(done)",
+      "Bash(git -C /home/igor/projects/gtd-task-manager status public/ --short)"
     ],
     "additionalDirectories": [
       "/home/igor/projects/gtd-task-manager"

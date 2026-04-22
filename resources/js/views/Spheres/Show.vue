@@ -2,28 +2,29 @@
   <div>
     <div class="p-4 lg:p-8">
       <div class="max-w-4xl mx-auto space-y-6">
-        <!-- Header: image / placeholder with overlay -->
-        <div class="group relative w-full aspect-video max-h-48 overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800">
-          <img v-if="sphere?.image_url" :src="sphere.image_url" class="w-full h-full object-cover" />
-          <div
-            v-else
-            class="w-full h-full flex items-center justify-center"
-            :style="sphere ? { background: `linear-gradient(135deg, ${sphere.color}20, ${sphere.color}50)` } : {}"
-          >
-            <svg class="w-16 h-16" :style="sphere ? { color: sphere.color } : {}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4" />
-            </svg>
-          </div>
+        <!-- Breadcrumbs -->
+        <nav class="flex items-center gap-1.5 text-sm text-gray-400">
+          <router-link to="/spheres" class="hover:text-gray-700 dark:hover:text-gray-200 transition-colors">Сферы жизни</router-link>
+          <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+          <span class="text-gray-700 dark:text-gray-200 truncate">{{ sphere?.name || '...' }}</span>
+        </nav>
 
-          <!-- Top-right: edit / hide / delete -->
-          <div class="absolute top-2 right-2 flex items-center gap-1">
-            <button @click="handleEdit" class="p-1.5 bg-black/50 hover:bg-black/70 text-white rounded-md backdrop-blur-sm" title="Редактировать">
+        <!-- Title + actions -->
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <div v-if="sphere" class="w-3 h-3 rounded-full flex-shrink-0" :style="{ backgroundColor: sphere.color }"></div>
+            <h1 class="text-xl lg:text-2xl font-semibold text-gray-900 dark:text-white">
+              {{ sphere?.name || 'Загрузка...' }}
+            </h1>
+            <span v-if="sphere?.is_hidden" class="text-[10px] font-medium text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-full">Скрыта</span>
+          </div>
+          <div v-if="sphere" class="flex items-center gap-1">
+            <button @click="handleEdit" class="p-1.5 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800" title="Редактировать">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
             </button>
             <button
               @click="handleToggleHidden"
-              class="p-1.5 bg-black/50 hover:bg-black/70 text-white rounded-md backdrop-blur-sm"
+              class="p-1.5 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800"
               :title="sphere?.is_hidden ? 'Показать сферу' : 'Скрыть сферу'"
             >
               <svg v-if="!sphere?.is_hidden" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -35,26 +36,49 @@
               </svg>
             </button>
           </div>
+        </div>
 
-          <!-- Top-left: color dot -->
-          <div v-if="sphere" class="absolute top-2 left-2 inline-flex items-center gap-1.5 text-xs text-white bg-black/40 backdrop-blur-sm rounded-md px-2 py-1">
-            <span class="w-2.5 h-2.5 rounded-full" :style="{ backgroundColor: sphere.color }"></span>
-            <span v-if="sphere.is_hidden" class="opacity-70">Скрыта</span>
+        <!-- Image left + description wraps around -->
+        <div v-if="sphere?.description || (sphere?.images && sphere.images.length > 0)">
+          <div class="text-[10px] uppercase tracking-wider text-gray-300 dark:text-gray-600 mb-2">Видение</div>
+          <div>
+            <img
+              v-if="sphere?.cover_image_url"
+              :src="sphere.cover_image_url"
+              class="float-left w-36 lg:w-48 aspect-[3/4] object-cover rounded-xl mr-5 mb-3"
+            />
+            <p
+              v-if="sphere?.description"
+              class="text-[15px] text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-line"
+            >{{ sphere.description }}</p>
+            <div class="clear-both"></div>
+          </div>
+
+          <!-- Gallery -->
+          <div v-if="sphere?.images && sphere.images.length > 1" class="mt-4">
+            <div class="flex flex-wrap gap-2">
+              <img
+                v-for="img in sphere.images"
+                :key="img.id"
+                :src="img.url"
+                class="w-24 h-32 object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity"
+                @click="openLightbox(img.url)"
+              />
+            </div>
           </div>
         </div>
 
-        <!-- Title -->
-        <h1 class="text-xl lg:text-2xl font-semibold text-gray-900 dark:text-white">
-          {{ sphere?.name || 'Загрузка...' }}
-        </h1>
-
-        <!-- Description (видение) -->
-        <div v-if="sphere?.description">
-          <div class="text-[10px] uppercase tracking-wider text-gray-300 dark:text-gray-600 mb-0.5">Видение</div>
-          <p class="text-[15px] text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-line">
-            {{ sphere.description }}
-          </p>
-        </div>
+        <!-- Lightbox -->
+        <Teleport to="body">
+          <Transition name="fade">
+            <div v-if="lightboxUrl" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm" @click="lightboxUrl = null">
+              <img :src="lightboxUrl" class="max-h-[90vh] max-w-[90vw] object-contain rounded-lg" @click.stop />
+              <button @click="lightboxUrl = null" class="absolute top-4 right-4 p-2 text-white/70 hover:text-white">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+          </Transition>
+        </Teleport>
 
         <!-- Tabs: goals + tasks -->
         <template v-if="sphere">
@@ -128,6 +152,7 @@
       :sphere="sphere"
       @close="showEditModal = false"
       @saved="handleSphereUpdated"
+      @deleted="router.push('/spheres')"
     />
   </div>
 </template>
@@ -150,6 +175,11 @@ const sphere = ref(null)
 const loading = ref(false)
 const activeTab = ref('goals')
 const showTaskView = ref(false)
+const lightboxUrl = ref(null)
+
+const openLightbox = (url) => {
+  lightboxUrl.value = url
+}
 const selectedTask = ref(null)
 const showEditModal = ref(false)
 
@@ -222,3 +252,8 @@ onMounted(() => {
   fetchSphere()
 })
 </script>
+
+<style scoped>
+.fade-enter-active, .fade-leave-active { transition: opacity 0.2s ease; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
+</style>

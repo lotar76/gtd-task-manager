@@ -18,6 +18,7 @@ use App\Http\Controllers\Api\V1\TaskController;
 use App\Http\Controllers\Api\V1\TelegramSubscriptionController;
 use App\Http\Controllers\Api\V1\ChallengeController;
 use App\Http\Controllers\Api\V1\NoteController;
+use App\Http\Controllers\Api\V1\PrincipleController;
 use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\PushSubscriptionController;
 use App\Http\Controllers\Api\V1\WorkspaceController;
@@ -105,6 +106,13 @@ Route::prefix('v1')->group(function () {
         Route::delete('/goals/{goal}/image', [GoalController::class, 'deleteImage']);
         Route::post('/goals/generate-bible-verse', [GoalController::class, 'generateBibleVerse']);
 
+        // === ПРИНЦИПЫ ===
+        Route::get('/principles', [PrincipleController::class, 'all']);
+        Route::post('/principles', [PrincipleController::class, 'store']);
+        Route::put('/principles/{principle}', [PrincipleController::class, 'update']);
+        Route::delete('/principles/{principle}', [PrincipleController::class, 'destroy']);
+        Route::post('/principles/reorder', [PrincipleController::class, 'reorder']);
+
         // === СФЕРЫ ЖИЗНИ ===
         Route::get('/life-spheres', [LifeSphereController::class, 'all']);
         Route::post('/life-spheres', [LifeSphereController::class, 'store']);
@@ -112,6 +120,10 @@ Route::prefix('v1')->group(function () {
         Route::put('/life-spheres/{life_sphere}', [LifeSphereController::class, 'update']);
         Route::delete('/life-spheres/{life_sphere}', [LifeSphereController::class, 'destroy']);
         Route::post('/life-spheres/seed', [LifeSphereController::class, 'seed']);
+        Route::post('/life-spheres/reorder', [LifeSphereController::class, 'reorder']);
+        Route::post('/life-spheres/{life_sphere}/images', [LifeSphereController::class, 'addImage']);
+        Route::delete('/life-spheres/{life_sphere}/images/{image}', [LifeSphereController::class, 'deleteImage']);
+        Route::post('/life-spheres/{life_sphere}/images/reorder', [LifeSphereController::class, 'reorderImages']);
 
         // === КОНТАКТЫ ===
         Route::apiResource('contacts', ContactController::class);

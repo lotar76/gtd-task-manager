@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class LifeSphere extends Model
 {
@@ -18,7 +19,6 @@ class LifeSphere extends Model
         'name',
         'color',
         'description',
-        'image',
         'position',
         'is_hidden',
         'created_by',
@@ -46,5 +46,15 @@ class LifeSphere extends Model
     public function goals(): HasMany
     {
         return $this->hasMany(Goal::class);
+    }
+
+    public function images(): HasMany
+    {
+        return $this->hasMany(LifeSphereImage::class)->orderBy('position');
+    }
+
+    public function coverImage(): HasOne
+    {
+        return $this->hasOne(LifeSphereImage::class)->orderBy('position');
     }
 }

@@ -37,6 +37,7 @@ import {
   TableCellsIcon,
   DocumentTextIcon,
   GlobeAltIcon,
+  ListBulletIcon,
 } from '@heroicons/vue/24/outline'
 
 const props = defineProps({
@@ -81,6 +82,7 @@ const iconMap = {
   'user-group': UserGroupIcon,
   'table-cells': TableCellsIcon,
   'globe-alt': GlobeAltIcon,
+  'list-bullet': ListBulletIcon,
 }
 
 const iconComponent = computed(() => iconMap[props.icon] || FolderIcon)

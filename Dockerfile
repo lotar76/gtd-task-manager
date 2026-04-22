@@ -5,6 +5,8 @@ RUN apt-get update && apt-get install -y \
     git \
     curl \
     libpng-dev \
+    libjpeg62-turbo-dev \
+    libwebp-dev \
     libonig-dev \
     libxml2-dev \
     libzip-dev \
@@ -14,7 +16,8 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Установка PHP расширений
-RUN docker-php-ext-install \
+RUN docker-php-ext-configure gd --with-jpeg --with-webp \
+    && docker-php-ext-install \
     pdo \
     pdo_mysql \
     mbstring \

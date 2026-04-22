@@ -4,6 +4,7 @@
 /.idea
 /.vscode
 /storage/*.key
+/storage/app
 .env
 .env.backup
 .phpunit.result.cache

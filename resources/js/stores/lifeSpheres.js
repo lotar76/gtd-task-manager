@@ -56,6 +56,32 @@ export const useLifeSpheresStore = defineStore('lifeSpheres', () => {
     allSpheres.value = allSpheres.value.filter(s => s.id !== sphereId)
   }
 
+  const reorder = async (ids) => {
+    await api.post('/v1/life-spheres/reorder', { ids })
+    ids.forEach((id, index) => {
+      const s = allSpheres.value.find(s => s.id === id)
+      if (s) s.position = index
+    })
+  }
+
+  // Image management
+  const addImage = async (sphereId, file) => {
+    const fd = new FormData()
+    fd.append('image', file)
+    const response = await api.post(`/v1/life-spheres/${sphereId}/images`, fd, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+    return response.data.data || response.data
+  }
+
+  const deleteImage = async (sphereId, imageId) => {
+    await api.delete(`/v1/life-spheres/${sphereId}/images/${imageId}`)
+  }
+
+  const reorderImages = async (sphereId, ids) => {
+    await api.post(`/v1/life-spheres/${sphereId}/images/reorder`, { ids })
+  }
+
   const seedDefaults = async () => {
     const response = await api.post('/v1/life-spheres/seed')
     const spheres = response.data.data || response.data || []
@@ -89,6 +115,10 @@ export const useLifeSpheresStore = defineStore('lifeSpheres', () => {
     create,
     update,
     remove,
+    reorder,
+    addImage,
+    deleteImage,
+    reorderImages,
     seedDefaults,
   }
 })
