@@ -4,42 +4,29 @@
       <div class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6">
         <!-- LEFT: основное содержимое -->
         <div class="min-w-0 space-y-6">
-          <!-- Картинка / плейсхолдер с overlay -->
-          <div class="group relative w-full aspect-video max-h-48 overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800">
-            <img v-if="goal?.image_url" :src="goal.image_url" class="w-full h-full object-cover" />
-            <div v-else class="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 flex items-center justify-center">
-              <svg class="w-16 h-16 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-              </svg>
+          <!-- Actions bar -->
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span v-if="goal?.deadline" class="inline-flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                Дата реализации: <span class="font-semibold text-gray-700 dark:text-gray-200">{{ formatDeadline(goal.deadline) }}</span>
+                <span v-if="daysLeft !== null" :class="daysLeft < 0 ? 'text-red-500' : daysLeft <= 7 ? 'text-amber-500' : 'text-gray-400'">
+                  · {{ daysLeft < 0 ? `просрочено на ${Math.abs(daysLeft)} дн.` : `осталось ${daysLeft} дн.` }}
+                </span>
+              </span>
+              <span v-if="goal?.status === 'archived'" class="text-xs text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full">Архив</span>
             </div>
-
-            <!-- Overlay: иконки редактирования и архива (top-right) -->
-            <div class="absolute top-2 right-2 flex items-center gap-1">
-              <button @click.stop="handleEditGoal" class="p-1.5 bg-black/50 hover:bg-black/70 text-white rounded-md backdrop-blur-sm" title="Редактировать">
+            <div class="flex items-center gap-1">
+              <button @click.stop="handleEditGoal" class="p-1.5 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800" title="Редактировать">
                 <PencilIcon class="w-4 h-4" />
               </button>
-              <button v-if="goal?.status !== 'archived'" @click.stop="handleArchiveGoal" class="p-1.5 bg-black/50 hover:bg-red-600/80 text-white rounded-md backdrop-blur-sm" title="Архивировать">
+              <button v-if="goal?.status !== 'archived'" @click.stop="handleArchiveGoal" class="p-1.5 text-gray-400 hover:text-red-500 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800" title="Архивировать">
                 <ArchiveBoxArrowDownIcon class="w-4 h-4" />
               </button>
-              <button v-else @click.stop="handleUnarchiveGoal" class="p-1.5 bg-black/50 hover:bg-black/70 text-white rounded-md backdrop-blur-sm" title="Восстановить">
+              <button v-else @click.stop="handleUnarchiveGoal" class="p-1.5 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800" title="Восстановить">
                 <ArrowUturnLeftIcon class="w-4 h-4" />
               </button>
             </div>
-
-            <!-- Overlay: сфера (top-left) -->
-            <span v-if="goalSphere" class="absolute top-2 left-2 inline-flex items-center gap-1.5 text-xs text-white bg-black/40 backdrop-blur-sm rounded-md px-2 py-1">
-              <span class="w-2 h-2 rounded-full flex-shrink-0" :style="{ backgroundColor: goalSphere.color }"></span>
-              {{ goalSphere.name }}
-            </span>
-
-            <!-- Overlay: дедлайн (bottom-left) -->
-            <span v-if="goal?.deadline" class="absolute bottom-2 left-2 inline-flex items-center gap-1.5 text-xs text-white bg-black/40 backdrop-blur-sm rounded-md px-2 py-1">
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-              {{ formatDeadline(goal.deadline) }}
-            </span>
-
-            <!-- Overlay: архив бейдж (bottom-right) -->
-            <span v-if="goal?.status === 'archived'" class="absolute bottom-2 right-2 text-xs text-white bg-black/40 backdrop-blur-sm rounded-md px-2 py-1">Архив</span>
           </div>
 
           <!-- Title -->
@@ -47,21 +34,7 @@
             {{ goal?.name || 'Загрузка...' }}
           </h1>
 
-          <!-- Description -->
-          <div v-if="goal?.description">
-            <div class="text-[10px] uppercase tracking-wider text-gray-300 dark:text-gray-600 mb-0.5">Видение</div>
-            <p class="text-[15px] text-gray-700 dark:text-gray-300 leading-relaxed">
-              {{ goal.description }}
-            </p>
-          </div>
-
-          <!-- Bible verse -->
-          <div v-if="goal?.bible_verse">
-            <div class="text-[10px] uppercase tracking-wider text-gray-300 dark:text-gray-600 mb-0.5">Основание</div>
-            <p class="text-sm italic text-gray-500 dark:text-gray-400 border-l-2 border-gray-300 dark:border-gray-600 pl-3">
-              {{ goal.bible_verse }}
-            </p>
-          </div>
+          <!-- Description (скрыто) -->
 
           <!-- Progress -->
           <div v-if="allTasks.length > 0" class="flex items-center gap-2">
@@ -153,6 +126,32 @@
 
         <!-- RIGHT: sidebar в стиле TaskDetail -->
         <aside class="lg:sticky lg:top-4 self-start space-y-6 bg-gray-50/60 dark:bg-gray-800/30 rounded-lg p-4">
+          <!-- Сфера жизни -->
+          <router-link
+            v-if="goalSphere"
+            :to="`/spheres/${goalSphere.id}`"
+            class="flex items-center gap-3 p-2 -m-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors"
+          >
+            <div class="flex-shrink-0 w-10 h-10 rounded-full overflow-hidden border-2" :style="{ borderColor: goalSphere.color }">
+              <img
+                v-if="sphereImageUrl"
+                :src="sphereImageUrl"
+                class="w-full h-full object-cover"
+              />
+              <div
+                v-else
+                class="w-full h-full flex items-center justify-center text-white text-xs font-bold"
+                :style="{ backgroundColor: goalSphere.color }"
+              >
+                {{ goalSphere.name?.charAt(0) }}
+              </div>
+            </div>
+            <div class="min-w-0">
+              <div class="text-[10px] uppercase tracking-wider text-gray-400 leading-tight">Сфера</div>
+              <div class="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{{ goalSphere.name }}</div>
+            </div>
+          </router-link>
+
           <!-- Участники -->
           <div>
             <div class="flex items-center gap-1.5 mb-2 text-[11px] font-medium uppercase tracking-wider text-gray-400">
@@ -515,6 +514,17 @@ const availableProjects = computed(() =>
 )
 
 const goalSphere = computed(() => goal.value?.life_sphere || null)
+const daysLeft = computed(() => {
+  if (!goal.value?.deadline) return null
+  const d = new Date(goal.value.deadline)
+  const today = new Date()
+  d.setHours(0,0,0,0)
+  today.setHours(0,0,0,0)
+  return Math.ceil((d - today) / 86400000)
+})
+const sphereImageUrl = computed(() => {
+  return goalSphere.value?.cover_image_url || null
+})
 
 const directTasks = computed(() => tasksStore.allTasks.filter(t => t.goal_id === currentGoalId.value && !t.project_id))
 const activeTasks = computed(() => directTasks.value.filter(t => !t.completed_at))
@@ -631,6 +641,11 @@ const loadGoalData = async () => {
   try {
     const res = await api.get(`/v1/goals/${currentGoalId.value}`)
     participants.value = (res.data?.contacts || []).map(c => c.id)
+    // Merge full data (with life_sphere.cover_image_url) into store
+    const idx = goalsStore.allGoals.findIndex(g => g.id === currentGoalId.value)
+    if (idx !== -1) {
+      Object.assign(goalsStore.allGoals[idx], res.data)
+    }
   } catch (e) { console.error(e) }
 }
 const loadContacts = async () => {

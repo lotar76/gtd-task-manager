@@ -75,6 +75,13 @@
               >
                 Сферы жизни
               </NavLink>
+              <NavLink
+                to="/goals"
+                icon="flag"
+                @close-sidebar="sidebarOpen = false"
+              >
+                Цели
+              </NavLink>
             </div>
 
             <!-- Оперативный фокус -->
@@ -248,69 +255,6 @@
                   Нет потоков
                 </div>
               </div>
-              </div>
-            </div>
-
-            <!-- Goals -->
-            <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-              <div
-                @click="toggleGoalsCollapsed"
-                class="flex items-center justify-between px-3 mb-2 cursor-pointer select-none hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-lg transition-colors -mx-1 px-4 py-1"
-              >
-                <h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
-                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                  </svg>
-                  Цели
-                </h3>
-                <button
-                  @click.stop="handleQuickAddGoal"
-                  class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                  title="Создать цель"
-                >
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                  </svg>
-                </button>
-              </div>
-              <div
-                class="overflow-hidden transition-all duration-300 ease-in-out"
-                :style="{ maxHeight: goalsCollapsed ? '0px' : goalsMaxHeight }"
-              >
-                <div class="space-y-1">
-                  <router-link
-                    v-for="goal in activeGoals"
-                    :key="goal.id"
-                    :to="`/goals/${goal.id}`"
-                    @click="handleGoalLinkClick"
-                    :class="[
-                      'flex items-center px-3 py-1.5 rounded-lg transition-colors',
-                      isActiveGoal(goal.id)
-                        ? 'bg-primary-50 dark:bg-primary-900/30'
-                        : 'hover:bg-gray-50 dark:hover:bg-gray-700'
-                    ]"
-                  >
-                    <div class="flex-1 min-w-0">
-                      <span
-                        :class="[
-                          'text-sm truncate block',
-                          isActiveGoal(goal.id)
-                            ? 'text-primary-700 dark:text-primary-400 font-medium'
-                            : 'text-gray-700 dark:text-gray-300'
-                        ]"
-                      >{{ goal.name }}</span>
-                      <div v-if="goal.deadline" class="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">
-                        {{ formatGoalDeadline(goal.deadline) }}
-                      </div>
-                    </div>
-                    <span v-if="goal.progress > 0" class="text-[10px] text-primary-600 dark:text-primary-400 font-medium ml-2">
-                      {{ goal.progress }}%
-                    </span>
-                  </router-link>
-                  <div v-if="activeGoals.length === 0" class="px-3 py-1.5 text-sm text-gray-500 text-center">
-                    Нет целей
-                  </div>
-                </div>
               </div>
             </div>
 

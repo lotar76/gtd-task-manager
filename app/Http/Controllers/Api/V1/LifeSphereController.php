@@ -30,7 +30,10 @@ class LifeSphereController extends Controller
 
         $spheres = LifeSphere::where('workspace_id', $workspaceId)
             ->with(['images'])
-            ->withCount(['tasks', 'goals'])
+            ->withCount([
+                'tasks' => fn ($q) => $q->whereNull('completed_at'),
+                'goals' => fn ($q) => $q->where('status', 'active'),
+            ])
             ->orderBy('position')
             ->get()
             ->map(function ($sphere) {
@@ -75,8 +78,11 @@ class LifeSphereController extends Controller
     // Получение сферы
     public function show(LifeSphere $lifeSphere): JsonResponse
     {
-        $lifeSphere->load(['tasks.project', 'tasks.context', 'tasks.assignee', 'tasks.tags', 'goals', 'images']);
-        $lifeSphere->loadCount(['tasks', 'goals']);
+        $lifeSphere->load(['tasks.project', 'tasks.context', 'tasks.assignee', 'tasks.creator', 'tasks.tags', 'tasks.contacts', 'goals', 'images']);
+        $lifeSphere->loadCount([
+            'tasks' => fn ($q) => $q->whereNull('completed_at'),
+            'goals' => fn ($q) => $q->where('status', 'active'),
+        ]);
 
         $this->appendImagesUrls($lifeSphere);
 

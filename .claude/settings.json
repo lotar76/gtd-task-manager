@@ -24,7 +24,8 @@
       "Bash(git -C /home/igor/projects/gtd-task-manager status public/ --short)"
     ],
     "additionalDirectories": [
-      "/home/igor/projects/gtd-task-manager"
+      "/home/igor/projects/gtd-task-manager",
+      "/home/lara/gtd-task-manager/public/assets"
     ]
   }
 }

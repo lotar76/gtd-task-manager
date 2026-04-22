@@ -22,11 +22,17 @@ class GoalController extends Controller
         $workspaceIds = [$request->user()->defaultWorkspace()->id];
 
         $goals = Goal::whereIn('workspace_id', $workspaceIds)
-            ->with(['creator', 'lifeSphere:id,name,color'])
+            ->with(['creator', 'lifeSphere', 'lifeSphere.images'])
             ->withCount(['projects', 'directTasks'])
             ->get()
             ->each(function ($goal) {
                 $goal->append('progress');
+                if ($goal->lifeSphere) {
+                    $cover = $goal->lifeSphere->images->first();
+                    $goal->lifeSphere->cover_image_url = $cover
+                        ? app(\App\Services\FileStorageService::class)->getUrl($cover->path)
+                        : null;
+                }
             });
 
         return ApiResponse::success($goals, 'Список целей получен');
@@ -71,8 +77,15 @@ class GoalController extends Controller
     {
         $this->authorize('view', $goal);
 
-        $goal->load(['creator', 'lifeSphere:id,name,color', 'projects.tasks', 'directTasks', 'contacts']);
+        $goal->load(['creator', 'lifeSphere', 'lifeSphere.images', 'projects.tasks', 'directTasks', 'contacts']);
         $goal->append('progress');
+
+        if ($goal->lifeSphere) {
+            $cover = $goal->lifeSphere->images->first();
+            $goal->lifeSphere->cover_image_url = $cover
+                ? app(\App\Services\FileStorageService::class)->getUrl($cover->path)
+                : null;
+        }
 
         return ApiResponse::success($goal, 'Цель получена');
     }
