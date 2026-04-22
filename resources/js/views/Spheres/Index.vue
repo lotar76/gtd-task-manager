@@ -36,12 +36,14 @@
       item-key="id"
       ghost-class="opacity-30"
       animation="200"
+      :delay="500"
+      :delay-on-touch-only="true"
       @end="handleReorder"
       class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5"
     >
       <template #item="{ element: sphere }">
       <div
-        class="relative rounded-2xl overflow-hidden cursor-pointer group transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
+        class="relative rounded-2xl overflow-hidden cursor-pointer group transition-all duration-300 sm:hover:shadow-xl sm:hover:-translate-y-1"
         :class="{ 'grayscale opacity-60': sphere.is_hidden }"
         :style="{ minHeight: '500px' }"
         @click="openSphere(sphere)"
