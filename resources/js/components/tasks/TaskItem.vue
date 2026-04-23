@@ -7,7 +7,7 @@
     @click="$emit('task-click', task)"
   >
     <div class="flex items-center gap-1 min-w-0">
-      <component v-if="role === 'watcher'" :is="ROLE_ICONS.watcher.icon" class="w-3 h-3 flex-shrink-0 text-gray-300 dark:text-gray-600" :stroke-width="1.8" />
+      <component v-if="role !== 'owner'" :is="role === 'assignee' ? ROLE_ICONS.assignee.icon : ROLE_ICONS.watcher.icon" class="w-3 h-3 flex-shrink-0 text-gray-300 dark:text-gray-600" :stroke-width="1.8" />
       <span
         v-if="priorityMeta && task.priority !== 'medium'"
         class="w-1 h-1 rounded-full flex-shrink-0"
