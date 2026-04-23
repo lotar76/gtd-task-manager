@@ -113,7 +113,7 @@
         </div>
 
         <!-- YEAR/3YEAR/5YEAR: same matrix as stream but different year count -->
-        <div v-if="(scale === 'year' || scale === '3year' || scale === '5year')" class="overflow-x-auto rounded-lg sm:rounded-lg border border-gray-200 dark:border-gray-700 stream-matrix -mx-4 sm:mx-0 snap-x snap-mandatory sm:snap-none">
+        <div v-if="(scale === 'year' || scale === '3year' || scale === '5year')" class="overflow-x-auto rounded-lg sm:rounded-lg border border-gray-200 dark:border-gray-700 stream-matrix -mx-4 sm:mx-0 snap-x snap-mandatory sm:snap-none scroll-pl-14 sm:scroll-pl-0">
           <table class="border-separate border-spacing-0" style="table-layout: fixed;">
             <thead>
               <tr>
