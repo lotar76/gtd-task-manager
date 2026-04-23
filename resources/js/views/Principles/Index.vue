@@ -155,7 +155,13 @@
               <h3 class="text-sm sm:text-base font-semibold text-gray-900 dark:text-white leading-snug">
                 {{ element.name }}
               </h3>
-              <p v-if="element.description" class="mt-0.5 sm:mt-1 text-xs sm:text-sm text-gray-500 dark:text-gray-400 leading-relaxed whitespace-pre-line">{{ element.description }}</p>
+              <div
+                v-if="element.description"
+                class="overflow-hidden transition-all duration-300 ease-in-out"
+                :class="isMobile && !expandedIds.has(element.id) ? 'max-h-0 opacity-0' : 'max-h-96 opacity-100'"
+              >
+                <p class="mt-0.5 sm:mt-1 text-xs sm:text-sm text-gray-500 dark:text-gray-400 leading-relaxed whitespace-pre-line">{{ element.description }}</p>
+              </div>
             </div>
 
             <!-- Actions: mobile — show on tap, desktop — show on hover -->
@@ -251,9 +257,19 @@ const showInfoModal = ref(false)
 const editingPrinciple = ref(null)
 const deletingId = ref(null)
 const tappedId = ref(null)
+const expandedIds = ref(new Set())
 let tapTimeout = null
 
 const handleMobileTap = (id) => {
+  // Toggle description
+  if (expandedIds.value.has(id)) {
+    expandedIds.value.delete(id)
+  } else {
+    expandedIds.value.add(id)
+  }
+  expandedIds.value = new Set(expandedIds.value) // trigger reactivity
+
+  // Show action buttons briefly
   if (tapTimeout) clearTimeout(tapTimeout)
   tappedId.value = id
   tapTimeout = setTimeout(() => {
