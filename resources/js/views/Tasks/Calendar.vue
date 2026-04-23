@@ -1265,6 +1265,40 @@ const cancelComplete = () => {
 const draggedTask = ref(null)
 const dropTargetDate = ref(null)
 
+// Pending API requests — отмена предыдущего при новом drag
+const pendingAbort = ref(null)
+
+// Optimistic update: сначала UI, потом API
+const optimisticMove = (taskId, changes) => {
+  // Отменяем предыдущий запрос если есть
+  if (pendingAbort.value) {
+    pendingAbort.value.abort()
+  }
+
+  // Мгновенно обновляем store
+  const task = tasksStore.allTasks.find(t => t.id === taskId)
+  if (!task) return
+  const snapshot = { ...task }
+  tasksStore.upsertTask({ ...task, ...changes })
+
+  // Запускаем API в фоне
+  const controller = new AbortController()
+  pendingAbort.value = controller
+
+  tasksStore.updateTask(taskId, changes)
+    .catch((error) => {
+      if (error?.name === 'CanceledError' || error?.name === 'AbortError') return
+      // Revert on error
+      console.error('Drag drop error:', error)
+      tasksStore.upsertTask(snapshot)
+    })
+    .finally(() => {
+      if (pendingAbort.value === controller) {
+        pendingAbort.value = null
+      }
+    })
+}
+
 // Desktop: HTML5 Drag API
 const onDragStart = (e, task) => {
   draggedTask.value = task
@@ -1293,7 +1327,7 @@ const onDragLeave = (_e, dateString) => {
 
 // Вычислить длительность задачи в минутах
 const getTaskDurationMinutes = (task) => {
-  if (!task.estimated_time || !task.end_time) return 60 // default 1 hour
+  if (!task.estimated_time || !task.end_time) return 60
   const st = formatTime(task.estimated_time)
   const et = formatTime(task.end_time)
   const [sh, sm] = st.split(':').map(Number)
@@ -1310,7 +1344,7 @@ const minutesToTimeStr = (totalMinutes) => {
 }
 
 // Desktop week/day: drop на сетку времени — вычисляем час по Y
-const onDropTimeGrid = async (e, dateString, hoursRange) => {
+const onDropTimeGrid = (e, dateString, hoursRange) => {
   e.preventDefault()
   dropTargetDate.value = null
   if (!draggedTask.value) return
@@ -1320,38 +1354,27 @@ const onDropTimeGrid = async (e, dateString, hoursRange) => {
   const hourHeight = 64
   const minHour = hoursRange[0]
   const rawMinutes = (y / hourHeight) * 60 + minHour * 60
-  const snappedMinutes = Math.round(rawMinutes / 15) * 15 // snap to 15min
-  const startStr = minutesToTimeStr(snappedMinutes)
+  const snappedMinutes = Math.round(rawMinutes / 15) * 15
 
-  // Сохраняем оригинальную длительность
+  const startStr = minutesToTimeStr(snappedMinutes)
   const duration = getTaskDurationMinutes(draggedTask.value)
   const endStr = minutesToTimeStr(snappedMinutes + duration)
 
-  try {
-    await tasksStore.updateTask(draggedTask.value.id, {
-      due_date: dateString,
-      estimated_time: startStr,
-      end_time: endStr,
-    })
-  } catch (error) {
-    console.error('Drag drop error:', error)
-  }
+  optimisticMove(draggedTask.value.id, {
+    due_date: dateString,
+    estimated_time: startStr,
+    end_time: endStr,
+  })
   draggedTask.value = null
 }
 
 // Desktop/Mobile: drop без времени — только дата
-const onDropDay = async (e, dateString) => {
+const onDropDay = (e, dateString) => {
   e.preventDefault()
   dropTargetDate.value = null
   if (!draggedTask.value) return
 
-  try {
-    await tasksStore.updateTask(draggedTask.value.id, {
-      due_date: dateString,
-    })
-  } catch (error) {
-    console.error('Drag drop error:', error)
-  }
+  optimisticMove(draggedTask.value.id, { due_date: dateString })
   draggedTask.value = null
 }
 
@@ -1371,7 +1394,6 @@ const onTouchStart = (e, task) => {
       touchState.value.isDragging = true
       draggedTask.value = task
 
-      // Create visual clone
       const el = e.target.closest('[data-task-id]')
       if (el) {
         const clone = el.cloneNode(true)
@@ -1406,43 +1428,33 @@ const onTouchMove = (e) => {
 
   e.preventDefault()
 
-  // Move clone
   if (touchClone.value) {
     touchClone.value.style.left = `${touch.clientX}px`
     touchClone.value.style.top = `${touch.clientY}px`
   }
 
-  // Highlight drop target
   const el = document.elementFromPoint(touch.clientX, touch.clientY)
   const dropZone = el?.closest('[data-drop-date]')
   dropTargetDate.value = dropZone?.dataset.dropDate || null
 }
 
-const onTouchEnd = async () => {
+const onTouchEnd = () => {
   if (!touchState.value) return
   clearTimeout(touchState.value.holdTimer)
 
   const wasDragging = touchState.value.isDragging
   const task = touchState.value.task
 
-  // Cleanup clone
   if (touchClone.value) {
     touchClone.value.remove()
     touchClone.value = null
   }
 
-  // Restore opacity
   const el = document.querySelector(`[data-task-id="${task.id}"]`)
   if (el) el.style.opacity = '1'
 
   if (wasDragging && dropTargetDate.value && draggedTask.value) {
-    try {
-      await tasksStore.updateTask(draggedTask.value.id, {
-        due_date: dropTargetDate.value,
-      })
-    } catch (error) {
-      console.error('Touch drag error:', error)
-    }
+    optimisticMove(draggedTask.value.id, { due_date: dropTargetDate.value })
   }
 
   touchState.value = null

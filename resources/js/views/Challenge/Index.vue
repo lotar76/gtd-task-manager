@@ -1197,12 +1197,26 @@ function openComposite(challenge) {
   compositeModal.value = { open: true, challenge, states: [...states] }
 }
 
-async function toggleSubtask(idx) {
+function toggleSubtask(idx) {
   const ch = compositeModal.value.challenge
-  const res = await store.toggle(ch.id, todayStr.value, { subtask_index: idx })
-  if (res?.subtask_states) {
-    compositeModal.value.states = res.subtask_states
-  }
+  // Optimistic: мгновенно обновляем UI
+  const newStates = [...compositeModal.value.states]
+  newStates[idx] = !newStates[idx]
+  compositeModal.value.states = newStates
+
+  // API в фоне, при ошибке откатываем
+  store.toggle(ch.id, todayStr.value, { subtask_index: idx })
+    .then(res => {
+      if (res?.subtask_states && compositeModal.value?.challenge?.id === ch.id) {
+        compositeModal.value.states = res.subtask_states
+      }
+    })
+    .catch(() => {
+      if (compositeModal.value?.challenge?.id === ch.id) {
+        newStates[idx] = !newStates[idx]
+        compositeModal.value.states = [...newStates]
+      }
+    })
 }
 
 // Progressive sets functions
