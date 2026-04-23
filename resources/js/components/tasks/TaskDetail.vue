@@ -466,38 +466,38 @@
 
           <!-- Footer: status + save button -->
           <div class="flex-shrink-0 px-4 lg:px-5 py-2 border-t border-gray-100 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-800/30 flex items-center justify-between min-h-[44px]">
-            <div class="flex items-center gap-2">
-              <template v-if="!isGuest">
-                <button
-                  v-if="localTask.id && !localTask.completed_at"
-                  @click="handleComplete"
-                  :disabled="completing"
-                  class="px-4 py-1.5 text-sm font-medium rounded-lg transition-all bg-emerald-500 text-white hover:bg-emerald-600 active:scale-95 flex items-center gap-1.5 disabled:opacity-70 disabled:cursor-wait"
-                >
-                  <svg v-if="completing" class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke-width="3" stroke-dasharray="30 60" /></svg>
-                  <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
-                  {{ completing ? 'Завершаю…' : 'Выполнено' }}
-                </button>
-                <button
-                  v-else-if="localTask.id && localTask.completed_at"
-                  @click="handleUncomplete"
-                  class="px-4 py-1.5 text-sm font-medium rounded-lg transition-all bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 active:scale-95"
-                >
-                  Вернуть в работу
-                </button>
-              </template>
-              <span v-if="localTask.completed_at" class="text-[11px] text-emerald-500">✓ завершена</span>
-              <span v-if="saveState === 'saving'" class="text-[11px] text-gray-400 flex items-center gap-1">
+            <div class="flex items-center gap-1.5 text-[11px] text-gray-400">
+              <template v-if="completing">
                 <svg class="w-3 h-3 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke-width="3" stroke-dasharray="30 60" /></svg>
-                сохраняю…
-              </span>
-              <span v-else-if="saveState === 'saved'" class="text-[11px] text-emerald-500 flex items-center gap-1">
-                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>
-                сохранено
-              </span>
-              <span v-else-if="saveState === 'error'" class="text-[11px] text-red-500">ошибка</span>
+                <span>завершаю…</span>
+              </template>
+              <template v-else-if="saveState === 'saving'">
+                <svg class="w-3 h-3 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke-width="3" stroke-dasharray="30 60" /></svg>
+                <span>сохраняю…</span>
+              </template>
+              <template v-else-if="saveState === 'saved'">
+                <svg class="w-3 h-3 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>
+                <span class="text-emerald-500">сохранено</span>
+              </template>
+              <span v-else-if="saveState === 'error'" class="text-red-500">ошибка</span>
+              <span v-if="localTask.completed_at && !completing" class="text-emerald-500">✓ завершена</span>
             </div>
-            <div v-if="!isGuest">
+            <div v-if="!isGuest" class="flex items-center gap-2">
+              <button
+                v-if="localTask.id && !localTask.completed_at"
+                @click="handleComplete"
+                :disabled="completing"
+                class="px-4 py-1.5 text-sm font-medium rounded-lg transition-all bg-emerald-500 text-white hover:bg-emerald-600 active:scale-95 disabled:opacity-70 disabled:cursor-wait"
+              >
+                Выполнено
+              </button>
+              <button
+                v-else-if="localTask.id && localTask.completed_at"
+                @click="handleUncomplete"
+                class="px-4 py-1.5 text-sm font-medium rounded-lg transition-all bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 active:scale-95"
+              >
+                Вернуть в работу
+              </button>
               <button
                 @click="handleSave"
                 :disabled="!isDirty || saveState === 'saving'"
