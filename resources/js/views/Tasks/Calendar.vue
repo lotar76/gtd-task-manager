@@ -10,21 +10,21 @@
         <div class="flex items-center space-x-1 sm:space-x-2 mt-3 lg:mt-0 overflow-x-auto pb-2 lg:pb-0">
           <!-- View Mode Switcher -->
           <button
-            @click="viewMode = 'day'"
+            @click="setView('day')"
             class="px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-lg transition-colors whitespace-nowrap touch-manipulation"
             :class="viewMode === 'day' ? 'bg-primary-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 active:bg-gray-200 dark:active:bg-gray-600'"
           >
             День
           </button>
           <button
-            @click="viewMode = 'week'"
+            @click="setView('week')"
             class="px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-lg transition-colors whitespace-nowrap touch-manipulation"
             :class="viewMode === 'week' ? 'bg-primary-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 active:bg-gray-200 dark:active:bg-gray-600'"
           >
             Неделя
           </button>
           <button
-            @click="viewMode = 'month'"
+            @click="setView('month')"
             class="px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-lg transition-colors whitespace-nowrap touch-manipulation"
             :class="viewMode === 'month' ? 'bg-primary-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 active:bg-gray-200 dark:active:bg-gray-600'"
           >
@@ -404,7 +404,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useTasksStore } from '@/stores/tasks'
 import { useAuthStore } from '@/stores/auth'
 import { useWorkspaceStore } from '@/stores/workspace'
@@ -423,6 +423,7 @@ dayjs.extend(isSameOrBefore)
 dayjs.locale('ru')
 
 const route = useRoute()
+const router = useRouter()
 const tasksStore = useTasksStore()
 const authStore = useAuthStore()
 const workspaceStore = useWorkspaceStore()
@@ -458,6 +459,11 @@ const isOwnTask = (task) => {
 const currentDate = ref(dayjs())
 const loading = computed(() => tasksStore.loading)
 const viewMode = ref('month')
+
+const setView = (view) => {
+  viewMode.value = view
+  router.replace({ query: { ...route.query, view } })
+}
 
 // Следим за изменениями query параметра view
 watch(() => route.query.view, (newView) => {
@@ -958,7 +964,7 @@ const handleAddTaskForDay = (dateString) => startDraft({ status: 'scheduled', du
 
 const handleDayClick = (dateString) => {
   currentDate.value = dayjs(dateString)
-  viewMode.value = 'day'
+  setView('day')
 }
 
 const handleSaveTask = async (taskData) => {

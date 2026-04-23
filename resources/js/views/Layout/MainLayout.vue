@@ -310,46 +310,15 @@
           </svg>
         </button>
 
-        <!-- Calendar button (with optional day/week buttons) -->
-        <div class="relative">
-          <!-- Calendar view options (показываются только на странице календаря) -->
-          <!-- Кнопки появляются слева от основной кнопки календаря -->
-          <Transition name="slide-fade-day">
-            <button
-              v-if="isCalendarPage"
-              @click="changeCalendarView('day')"
-              class="absolute right-full mr-2 top-0 w-10 h-10 bg-purple-500 hover:bg-purple-600 text-white rounded-full shadow-lg inline-flex items-center justify-center active:scale-95 transition-all"
-              title="Сегодня"
-            >
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
-              </svg>
-            </button>
-          </Transition>
-
-          <Transition name="slide-fade-week">
-            <button
-              v-if="isCalendarPage"
-              @click="changeCalendarView('week')"
-              class="absolute right-full mr-14 top-0 w-10 h-10 bg-purple-500 hover:bg-purple-600 text-white rounded-full shadow-lg inline-flex items-center justify-center active:scale-95 transition-all"
-              title="Неделя"
-            >
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-              </svg>
-            </button>
-          </Transition>
-
-          <!-- Calendar main button -->
-          <button
-            @click="handleCalendarClick"
-            class="w-10 h-10 bg-purple-600 hover:bg-purple-700 text-white rounded-full shadow-lg inline-flex items-center justify-center active:scale-95 transition-transform"
-          >
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-          </button>
-        </div>
+        <!-- Calendar button -->
+        <button
+          @click="handleCalendarClick"
+          class="w-10 h-10 bg-purple-600 hover:bg-purple-700 text-white rounded-full shadow-lg inline-flex items-center justify-center active:scale-95 transition-transform"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+        </button>
 
         <!-- Open sidebar -->
         <button
@@ -698,22 +667,8 @@ const userInitials = computed(() => {
     .slice(0, 2)
 })
 
-const isCalendarPage = computed(() => {
-  return route.path.includes('/calendar')
-})
-
-const changeCalendarView = (view) => {
-  router.push({ query: { view } })
-}
-
 const handleCalendarClick = () => {
-  if (isCalendarPage.value) {
-    // Если уже на странице календаря - переключаем вид на месяц
-    changeCalendarView('month')
-  } else {
-    // Если не на странице календаря - переходим на календарь
-    router.push('/calendar')
-  }
+  router.push({ path: '/calendar', query: { view: 'month' } })
 }
 
 const handleLogout = async () => {
@@ -1046,45 +1001,6 @@ const isProjectActive = (projectId) => {
   }
 }
 
-/* Calendar Speed Dial animations */
-.slide-fade-day-enter-active {
-  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-  transition-delay: 0.2s;
-}
-
-.slide-fade-day-leave-active {
-  transition: all 0.2s ease-in;
-  transition-delay: 0.05s;
-}
-
-.slide-fade-day-enter-from {
-  transform: translateX(60px);
-  opacity: 0;
-}
-
-.slide-fade-day-leave-to {
-  transform: translateX(60px);
-  opacity: 0;
-}
-
-.slide-fade-week-enter-active {
-  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-  transition-delay: 0.1s;
-}
-
-.slide-fade-week-leave-active {
-  transition: all 0.2s ease-in;
-}
-
-.slide-fade-week-enter-from {
-  transform: translateX(60px);
-  opacity: 0;
-}
-
-.slide-fade-week-leave-to {
-  transform: translateX(60px);
-  opacity: 0;
-}
 
 </style>
 

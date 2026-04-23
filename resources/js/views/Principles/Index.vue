@@ -120,6 +120,7 @@
     </Teleport>
 
     <!-- Principles List -->
+    <!-- Desktop: drag & drop -->
     <draggable
       v-if="principles.length > 0"
       v-model="principles"
@@ -127,53 +128,57 @@
       handle=".drag-handle"
       ghost-class="opacity-30"
       animation="200"
+      :disabled="isMobile"
       @end="handleReorder"
-      class="space-y-2"
+      class="space-y-1.5 sm:space-y-2"
     >
       <template #item="{ element, index }">
         <div
-          class="group bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-md transition-all duration-200"
+          class="group bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 sm:hover:border-gray-300 sm:dark:hover:border-gray-600 sm:hover:shadow-md transition-all duration-200"
+          @click="isMobile && handleMobileTap(element.id)"
         >
-          <div class="flex items-start gap-3 p-4">
-            <!-- Drag handle -->
-            <div class="drag-handle cursor-grab active:cursor-grabbing mt-1 text-gray-300 dark:text-gray-600 hover:text-gray-500 dark:hover:text-gray-400 transition-colors">
+          <div class="flex items-start gap-2 sm:gap-3 px-3 py-2.5 sm:p-4">
+            <!-- Drag handle (only desktop) -->
+            <div v-if="!isMobile" class="drag-handle cursor-grab active:cursor-grabbing mt-1 text-gray-300 dark:text-gray-600 hover:text-gray-500 dark:hover:text-gray-400 transition-colors">
               <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M7 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM13 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM7 8a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM13 8a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM7 14a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM13 14a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"/>
               </svg>
             </div>
 
             <!-- Number -->
-            <span class="text-sm font-bold text-gray-300 dark:text-gray-600 mt-0.5 select-none w-6 text-right flex-shrink-0">
+            <span class="text-xs sm:text-sm font-bold text-gray-300 dark:text-gray-600 mt-0.5 select-none w-4 sm:w-6 text-right flex-shrink-0">
               {{ index + 1 }}
             </span>
 
             <!-- Content -->
             <div class="flex-1 min-w-0">
-              <h3 class="text-base font-semibold text-gray-900 dark:text-white leading-snug">
+              <h3 class="text-sm sm:text-base font-semibold text-gray-900 dark:text-white leading-snug">
                 {{ element.name }}
               </h3>
-              <p v-if="element.description" class="mt-1 text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
-                {{ element.description }}
-              </p>
+              <p v-if="element.description" class="mt-0.5 sm:mt-1 text-xs sm:text-sm text-gray-500 dark:text-gray-400 leading-relaxed whitespace-pre-line">{{ element.description }}</p>
             </div>
 
-            <!-- Actions -->
-            <div class="flex items-center gap-1 flex-shrink-0" :class="deletingId === element.id ? '' : 'opacity-0 group-hover:opacity-100 transition-opacity'">
+            <!-- Actions: mobile — show on tap, desktop — show on hover -->
+            <div class="flex items-center gap-1 flex-shrink-0 transition-opacity duration-300"
+              :class="[
+                deletingId === element.id ? 'opacity-100' :
+                isMobile ? (tappedId === element.id ? 'opacity-100' : 'opacity-0 pointer-events-none') :
+                'opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto'
+              ]"
+            >
               <template v-if="deletingId === element.id">
                 <span class="text-xs text-red-500 mr-1">Удалить?</span>
                 <button
-                  @click="doDelete(element)"
+                  @click.stop="doDelete(element)"
                   class="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                  title="Да"
                 >
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                   </svg>
                 </button>
                 <button
-                  @click="deletingId = null"
+                  @click.stop="deletingId = null"
                   class="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                  title="Отмена"
                 >
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -182,18 +187,16 @@
               </template>
               <template v-else>
                 <button
-                  @click="openEditModal(element)"
+                  @click.stop="openEditModal(element)"
                   class="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                  title="Редактировать"
                 >
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                   </svg>
                 </button>
                 <button
-                  @click="handleDelete(element)"
+                  @click.stop="handleDelete(element)"
                   class="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                  title="Удалить"
                 >
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -241,10 +244,22 @@ import PrincipleModal from '@/components/principles/PrincipleModal.vue'
 
 const store = usePrinciplesStore()
 
+const isMobile = ref(window.innerWidth < 1024)
+
 const showModal = ref(false)
 const showInfoModal = ref(false)
 const editingPrinciple = ref(null)
 const deletingId = ref(null)
+const tappedId = ref(null)
+let tapTimeout = null
+
+const handleMobileTap = (id) => {
+  if (tapTimeout) clearTimeout(tapTimeout)
+  tappedId.value = id
+  tapTimeout = setTimeout(() => {
+    tappedId.value = null
+  }, 2000)
+}
 
 const principles = computed({
   get: () => [...store.allPrinciples].sort((a, b) => a.position - b.position),
