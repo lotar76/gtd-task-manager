@@ -869,13 +869,6 @@ const mobileFieldsSummary = computed(() => {
   return names.length ? '— ' + names.join(', ') : ''
 })
 
-// Задача «чужая» (я только наблюдатель): workspace_id задачи != моему дефолтному.
-// В таком режиме — почти всё read-only, доступны только комментирование и выход из наблюдателей.
-const isGuest = computed(() => {
-  const tWs = localTask.value?.workspace_id
-  return tWs != null && props.myWorkspaceId != null && tWs !== props.myWorkspaceId
-})
-
 // Я создатель задачи — полный доступ
 const isOwner = computed(() => {
   if (!props.currentUserId || !localTask.value?.created_by) return false
@@ -886,8 +879,15 @@ const isOwner = computed(() => {
 // могу: завершить, чек-лист, комменты, файлы
 // не могу: название, описание, дату, статус, приоритет, категории, назначать людей
 const isExecutor = computed(() => {
-  if (isOwner.value || isGuest.value || !props.currentUserId) return false
+  if (isOwner.value || !props.currentUserId) return false
   return (localTask.value?.assignees || []).some(c => c.contact_user_id === props.currentUserId)
+})
+
+// Задача «чужая» (я только наблюдатель): workspace чужой И я не исполнитель.
+const isGuest = computed(() => {
+  if (isOwner.value || isExecutor.value) return false
+  const tWs = localTask.value?.workspace_id
+  return tWs != null && props.myWorkspaceId != null && tWs !== props.myWorkspaceId
 })
 
 // Можно редактировать основные поля задачи (название, описание, дату, статус и т.д.)
