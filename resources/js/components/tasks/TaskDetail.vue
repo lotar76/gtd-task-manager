@@ -57,23 +57,6 @@
             </div>
 
             <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-              <button
-                v-if="!isGuest && localTask.id && !localTask.completed_at"
-                @click="handleComplete"
-                class="px-2.5 py-1 text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-md flex items-center gap-1"
-              >
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                Завершить
-              </button>
-              <button
-                v-else-if="!isGuest && localTask.id && localTask.completed_at"
-                @click="handleUncomplete"
-                class="px-2.5 py-1 text-xs font-medium text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md"
-              >
-                <span class="sm:hidden">Вернуть</span>
-                <span class="hidden sm:inline">Вернуть в работу</span>
-              </button>
-              <span class="h-5 w-px bg-gray-200 dark:bg-gray-700"></span>
               <button @click="handleClose" class="p-1.5 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800" title="Закрыть">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
@@ -495,18 +478,34 @@
               <span v-else-if="isExecutor" class="text-indigo-500">режим исполнителя</span>
               <span v-else-if="localTask.completed_at" class="text-emerald-500">✓ задача завершена</span>
             </div>
-            <button
-              v-if="!isGuest"
-              @click="handleSave"
-              :disabled="!isDirty || saveState === 'saving'"
-              class="relative px-4 py-1.5 text-sm font-medium rounded-lg transition-all"
-              :class="isDirty
-                ? 'bg-primary-600 text-white hover:bg-primary-700 active:scale-95'
-                : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-default'"
-            >
-              <span v-if="isDirty" class="absolute -top-0.5 -right-0.5 w-2 h-2 bg-amber-400 rounded-full"></span>
-              {{ saveState === 'saving' ? 'Сохраняю…' : 'Сохранить' }}
-            </button>
+            <div v-if="!isGuest" class="flex items-center gap-2">
+              <button
+                v-if="localTask.id && !localTask.completed_at"
+                @click="handleComplete"
+                class="px-4 py-1.5 text-sm font-medium rounded-lg transition-all bg-emerald-500 text-white hover:bg-emerald-600 active:scale-95 flex items-center gap-1.5"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                Выполнено
+              </button>
+              <button
+                v-else-if="localTask.id && localTask.completed_at"
+                @click="handleUncomplete"
+                class="px-4 py-1.5 text-sm font-medium rounded-lg transition-all bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 active:scale-95"
+              >
+                Вернуть в работу
+              </button>
+              <button
+                @click="handleSave"
+                :disabled="!isDirty || saveState === 'saving'"
+                class="relative px-4 py-1.5 text-sm font-medium rounded-lg transition-all"
+                :class="isDirty
+                  ? 'bg-primary-600 text-white hover:bg-primary-700 active:scale-95'
+                  : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-default'"
+              >
+                <span v-if="isDirty" class="absolute -top-0.5 -right-0.5 w-2 h-2 bg-amber-400 rounded-full"></span>
+                {{ saveState === 'saving' ? 'Сохраняю…' : 'Сохранить' }}
+              </button>
+            </div>
           </div>
 
           <!-- Save overlay -->
