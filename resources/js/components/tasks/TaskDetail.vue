@@ -1207,6 +1207,7 @@ const handleSave = async () => {
   saveState.value = 'saving'
   await save()
   isDirty.value = false
+  emit('close')
 }
 
 const handleClose = async () => {
