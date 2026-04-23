@@ -57,8 +57,8 @@
             </div>
 
             <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-              <span v-if="isGuest" class="text-xs text-gray-400 italic">наблюдатель</span>
-              <span v-else-if="isExecutor" class="text-xs text-indigo-500 italic">исполнитель</span>
+              <span v-if="isGuest" class="text-[11px] text-gray-400 dark:text-gray-500">режим наблюдателя</span>
+              <span v-else-if="isExecutor" class="text-[11px] text-gray-400 dark:text-gray-500">режим исполнителя</span>
               <button @click="handleClose" class="p-1.5 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800" title="Закрыть">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
