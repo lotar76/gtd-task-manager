@@ -39,7 +39,7 @@
       <!-- Checkbox (скрыт для наблюдателя и в compact режиме) -->
       <template v-if="!compact">
         <button
-          v-if="role !== 'watcher'"
+          v-if="role === 'owner'"
           @click.stop="$emit('toggle-complete', task)"
           class="flex-shrink-0 mt-0.5 w-4 h-4 rounded border flex items-center justify-center transition-colors"
           :class="[
@@ -50,8 +50,8 @@
         >
           <svg v-if="task.completed_at" class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>
         </button>
-        <div v-else class="flex-shrink-0 mt-0.5 w-4 h-4 flex items-center justify-center text-gray-300 dark:text-gray-600" title="Только наблюдение">
-          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.46 12C3.73 7.94 7.52 5 12 5s8.27 2.94 9.54 7c-1.27 4.06-5.06 7-9.54 7S3.73 16.06 2.46 12z" /></svg>
+        <div v-else class="flex-shrink-0 mt-0.5 w-4 h-4 flex items-center justify-center text-gray-300 dark:text-gray-600" :title="role === 'assignee' ? 'Исполнитель' : 'Наблюдатель'">
+          <component :is="role === 'assignee' ? ROLE_ICONS.assignee.icon : ROLE_ICONS.watcher.icon" class="w-3.5 h-3.5" :stroke-width="1.8" />
         </div>
       </template>
 
