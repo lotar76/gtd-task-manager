@@ -883,11 +883,9 @@ const isExecutor = computed(() => {
   return (localTask.value?.assignees || []).some(c => c.contact_user_id === props.currentUserId)
 })
 
-// Задача «чужая» (я только наблюдатель): workspace чужой И я не исполнитель.
+// Наблюдатель или посторонний — read-only (комменты доступны)
 const isGuest = computed(() => {
-  if (isOwner.value || isExecutor.value) return false
-  const tWs = localTask.value?.workspace_id
-  return tWs != null && props.myWorkspaceId != null && tWs !== props.myWorkspaceId
+  return !isOwner.value && !isExecutor.value
 })
 
 // Можно редактировать основные поля задачи (название, описание, дату, статус и т.д.)
