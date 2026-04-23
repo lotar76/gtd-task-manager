@@ -199,9 +199,10 @@ const roleRowClass = computed(() => {
   return 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50'
 })
 
-const participants = (role) => {
+const participants = (r) => {
+  const uid = authStore.user?.id
   return (props.task.contacts || [])
-    .filter(c => c.pivot?.role === role)
+    .filter(c => c.pivot?.role === r && c.contact_user_id !== uid)
     .map(c => c.name)
 }
 const assigneeNames = computed(() => participants('assignee'))
