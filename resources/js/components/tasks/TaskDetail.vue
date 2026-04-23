@@ -482,14 +482,14 @@
               <span v-else-if="saveState === 'error'" class="text-red-500">ошибка</span>
               <span v-if="localTask.completed_at && !completing" class="text-emerald-500">✓ завершена</span>
             </div>
-            <div v-if="!isGuest" class="flex items-center gap-2">
+            <div v-if="!isGuest" class="flex items-center gap-2 max-sm:flex-1 max-sm:justify-between">
               <button
                 v-if="localTask.id && !localTask.completed_at"
                 @click="handleComplete"
                 :disabled="completing"
                 class="px-4 py-1.5 text-sm font-medium rounded-lg transition-all bg-emerald-500 text-white hover:bg-emerald-600 active:scale-95 disabled:opacity-70 disabled:cursor-wait"
               >
-                Выполнено
+                Завершить
               </button>
               <button
                 v-else-if="localTask.id && localTask.completed_at"
@@ -512,21 +512,21 @@
             </div>
           </div>
 
-          <!-- Save overlay -->
+          <!-- Save / Complete overlay -->
           <Transition name="save-overlay">
             <div
-              v-if="saveState === 'saving' || saveState === 'saved'"
+              v-if="saveState === 'saving' || saveState === 'saved' || completing"
               class="absolute inset-0 z-10 flex items-center justify-center bg-white/60 dark:bg-gray-900/60 backdrop-blur-[2px] pointer-events-none rounded-xl"
             >
               <div class="flex flex-col items-center gap-2">
-                <div v-if="saveState === 'saving'" class="w-10 h-10 text-primary-500 animate-spin">
+                <div v-if="saveState === 'saving' || completing" class="w-10 h-10 text-primary-500 animate-spin">
                   <svg fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" class="opacity-20" /><path d="M12 2a10 10 0 019.95 9" stroke="currentColor" stroke-width="3" stroke-linecap="round" /></svg>
                 </div>
                 <div v-else class="w-12 h-12 text-emerald-500 animate-bounce-once">
                   <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                 </div>
-                <span class="text-sm font-medium" :class="saveState === 'saving' ? 'text-gray-500 dark:text-gray-400' : 'text-emerald-600 dark:text-emerald-400'">
-                  {{ saveState === 'saving' ? 'Сохраняю…' : 'Сохранено' }}
+                <span class="text-sm font-medium" :class="(saveState === 'saving' || completing) ? 'text-gray-500 dark:text-gray-400' : 'text-emerald-600 dark:text-emerald-400'">
+                  {{ completing ? 'Завершаю…' : (saveState === 'saving' ? 'Сохраняю…' : 'Сохранено') }}
                 </span>
               </div>
             </div>
