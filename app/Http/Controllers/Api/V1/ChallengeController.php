@@ -38,6 +38,7 @@ class ChallengeController extends Controller
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'type' => 'sometimes|in:checkbox,timer,composite,report,progressive',
+            'life_sphere_id' => 'nullable|integer|exists:life_spheres,id',
             'timer_minutes' => 'required_if:type,timer|nullable|integer|min:1|max:480',
             'subtasks' => 'required_if:type,composite|nullable|array|min:1|max:20',
             'subtasks.*' => 'string|max:255',
@@ -51,6 +52,7 @@ class ChallengeController extends Controller
 
         $challenge = Challenge::create([
             'user_id' => Auth::id(),
+            'life_sphere_id' => $validated['life_sphere_id'] ?? null,
             'title' => $validated['title'],
             'type' => $validated['type'] ?? 'checkbox',
             'timer_minutes' => $validated['timer_minutes'] ?? null,
@@ -74,6 +76,7 @@ class ChallengeController extends Controller
         $validated = $request->validate([
             'title' => 'sometimes|required|string|max:255',
             'position' => 'sometimes|integer|min:0',
+            'life_sphere_id' => 'nullable|integer|exists:life_spheres,id',
             'timer_minutes' => 'sometimes|nullable|integer|min:1|max:480',
             'subtasks' => 'sometimes|nullable|array|min:1|max:20',
             'subtasks.*' => 'string|max:255',

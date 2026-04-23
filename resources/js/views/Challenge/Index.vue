@@ -74,6 +74,7 @@
         <p class="text-sm font-semibold text-gray-900 dark:text-gray-100 leading-tight pr-5 line-clamp-2">
           {{ challenge.title }}
         </p>
+        <p v-if="getSphereName(challenge)" class="text-[10px] text-gray-400 dark:text-gray-600 mt-0.5 truncate">{{ getSphereName(challenge) }}</p>
       </div>
       </template>
     </draggable>
@@ -150,6 +151,7 @@
                   />
                   <div class="min-w-0 flex-1">
                     <span class="cursor-default truncate block">{{ challenge.title }}</span>
+                    <span v-if="getSphereName(challenge)" class="text-[10px] text-gray-400 dark:text-gray-600 truncate block">{{ getSphereName(challenge) }}</span>
                   </div>
                 </div>
                 <div class="flex items-center ml-2">
@@ -262,6 +264,17 @@
             placeholder="Название привычки..."
             class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
           />
+
+          <!-- Sphere -->
+          <div class="mt-3">
+            <InlineSelect
+              v-model="newSphereId"
+              icon="sparkles"
+              label="Сфера"
+              placeholder="Не выбрано"
+              :items="availableSpheres"
+            />
+          </div>
 
           <!-- Timer: minutes -->
           <div v-if="newType === 'timer'" class="mt-3">
@@ -548,6 +561,17 @@
             class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
           />
 
+          <!-- Sphere -->
+          <div class="mt-3">
+            <InlineSelect
+              v-model="editModal.sphereId"
+              icon="sparkles"
+              label="Сфера"
+              placeholder="Не выбрано"
+              :items="availableSpheres"
+            />
+          </div>
+
           <!-- Timer: minutes -->
           <div v-if="editModal.type === 'timer'" class="mt-3">
             <label class="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Длительность (минуты)</label>
@@ -634,6 +658,8 @@ import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import draggable from 'vuedraggable'
 import { useChallengesStore } from '@/stores/challenges'
 import { useConfirmStore } from '@/stores/confirm'
+import { useLifeSpheresStore } from '@/stores/lifeSpheres'
+import InlineSelect from '@/components/common/InlineSelect.vue'
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -653,6 +679,13 @@ import {
 } from '@heroicons/vue/24/outline'
 
 const store = useChallengesStore()
+const lifeSpheresStore = useLifeSpheresStore()
+const availableSpheres = computed(() => lifeSpheresStore.allSpheres)
+const getSphereName = (challenge) => {
+  if (!challenge.life_sphere_id) return null
+  const s = lifeSpheresStore.allSpheres.find(s => s.id === challenge.life_sphere_id)
+  return s?.name || null
+}
 const confirmStore = useConfirmStore()
 
 const now = new Date()
@@ -669,6 +702,7 @@ const showCreateModal = ref(false)
 const creating = ref(false)
 const createInput = ref(null)
 const newType = ref('checkbox')
+const newSphereId = ref(null)
 const newTimerMinutes = ref(25)
 const newSubtasks = ref(['', ''])
 
@@ -985,6 +1019,7 @@ function closeCreateModal() {
   showCreateModal.value = false
   newTitle.value = ''
   newType.value = 'checkbox'
+  newSphereId.value = null
   newTimerMinutes.value = 25
   newSubtasks.value = ['', '']
   newProgressStart.value = 10
@@ -997,7 +1032,7 @@ async function addChallenge() {
   if (!canCreate.value) return
   creating.value = true
   try {
-    const payload = { title: newTitle.value.trim(), type: newType.value }
+    const payload = { title: newTitle.value.trim(), type: newType.value, life_sphere_id: newSphereId.value || null }
     if (newType.value === 'timer') {
       payload.timer_minutes = newTimerMinutes.value
     }
@@ -1025,6 +1060,7 @@ function openEditModal(challenge) {
     id: challenge.id,
     title: challenge.title,
     type: challenge.type || 'checkbox',
+    sphereId: challenge.life_sphere_id || null,
     timerMinutes: challenge.timer_minutes || 25,
     subtasks: challenge.subtasks ? [...challenge.subtasks] : [],
     progressStart: challenge.progress_start || 10,
@@ -1040,7 +1076,7 @@ async function saveEditModal() {
   if (!m.title.trim()) return
   saving.value = true
   try {
-    const payload = { title: m.title.trim() }
+    const payload = { title: m.title.trim(), life_sphere_id: m.sphereId || null }
     if (m.type === 'timer') payload.timer_minutes = m.timerMinutes
     if (m.type === 'composite') payload.subtasks = m.subtasks.filter(s => s.trim())
     if (m.type === 'progressive') {

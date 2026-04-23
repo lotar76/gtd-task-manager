@@ -12,6 +12,7 @@ class Challenge extends Model
 {
     protected $fillable = [
         'user_id',
+        'life_sphere_id',
         'title',
         'type',
         'timer_minutes',
@@ -36,6 +37,11 @@ class Challenge extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function lifeSphere(): BelongsTo
+    {
+        return $this->belongsTo(LifeSphere::class);
     }
 
     public function entries(): HasMany
