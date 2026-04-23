@@ -113,7 +113,7 @@
         </div>
 
         <!-- YEAR/3YEAR/5YEAR: same matrix as stream but different year count -->
-        <div v-if="(scale === 'year' || scale === '3year' || scale === '5year')" class="overflow-x-auto rounded-lg sm:rounded-lg border border-gray-200 dark:border-gray-700 stream-matrix -mx-4 sm:mx-0">
+        <div v-if="(scale === 'year' || scale === '3year' || scale === '5year')" class="overflow-x-auto rounded-lg sm:rounded-lg border border-gray-200 dark:border-gray-700 stream-matrix -mx-4 sm:mx-0 snap-x snap-mandatory sm:snap-none">
           <table class="border-separate border-spacing-0" style="table-layout: fixed;">
             <thead>
               <tr>
@@ -122,7 +122,7 @@
                 <th
                   v-for="(sphere, si) in matrixSpheres"
                   :key="sphere.id"
-                  class="px-2 py-2 text-center border-b border-l border-gray-100 dark:border-gray-800/50 bg-gray-50 dark:bg-gray-800 min-w-[280px] sm:min-w-[140px]"
+                  class="px-2 py-2 text-center border-b border-l border-gray-100 dark:border-gray-800/50 bg-gray-50 dark:bg-gray-800 min-w-[280px] sm:min-w-[140px] snap-start"
                   @mouseenter="hoverCol = si"
                   @mouseleave="hoverCol = -1"
                 >
