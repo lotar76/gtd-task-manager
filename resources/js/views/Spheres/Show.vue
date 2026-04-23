@@ -58,24 +58,65 @@
           <div v-if="sphere?.images && sphere.images.length > 1" class="mt-4">
             <div class="flex flex-wrap gap-2">
               <img
-                v-for="img in sphere.images"
+                v-for="(img, idx) in sphere.images"
                 :key="img.id"
                 :src="img.url"
                 class="w-24 h-32 object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity"
-                @click="openLightbox(img.url)"
+                @click="openLightbox(idx)"
               />
             </div>
           </div>
         </div>
 
-        <!-- Lightbox -->
+        <!-- Lightbox Gallery -->
         <Teleport to="body">
           <Transition name="fade">
-            <div v-if="lightboxUrl" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm" @click="lightboxUrl = null">
-              <img :src="lightboxUrl" class="max-h-[90vh] max-w-[90vw] object-contain rounded-lg" @click.stop />
-              <button @click="lightboxUrl = null" class="absolute top-4 right-4 p-2 text-white/70 hover:text-white">
+            <div
+              v-if="lightboxIndex !== null"
+              class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
+              @click="lightboxIndex = null"
+            >
+              <!-- Image container with swipe -->
+              <div
+                class="relative w-full h-full flex items-center justify-center select-none"
+                @touchstart="onTouchStart"
+                @touchmove="onTouchMove"
+                @touchend="onTouchEnd"
+                @click.stop
+              >
+                <img
+                  :src="galleryImages[lightboxIndex]?.url"
+                  class="max-h-[85vh] max-w-[90vw] object-contain rounded-lg transition-transform duration-200"
+                  :style="{ transform: `translateX(${swipeOffset}px)` }"
+                  draggable="false"
+                />
+              </div>
+
+              <!-- Close -->
+              <button @click="lightboxIndex = null" class="absolute top-4 right-4 p-2 text-white/70 hover:text-white z-10">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
+
+              <!-- Prev / Next arrows (desktop) -->
+              <button
+                v-if="lightboxIndex > 0"
+                @click.stop="lightboxIndex--"
+                class="absolute left-3 top-1/2 -translate-y-1/2 p-2 text-white/50 hover:text-white z-10"
+              >
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+              </button>
+              <button
+                v-if="lightboxIndex < galleryImages.length - 1"
+                @click.stop="lightboxIndex++"
+                class="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-white/50 hover:text-white z-10"
+              >
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+              </button>
+
+              <!-- Counter -->
+              <div v-if="galleryImages.length > 1" class="absolute bottom-6 left-1/2 -translate-x-1/2 text-white/60 text-xs z-10">
+                {{ lightboxIndex + 1 }} / {{ galleryImages.length }}
+              </div>
             </div>
           </Transition>
         </Teleport>
@@ -111,7 +152,7 @@
                 </svg>
                 <div class="flex-1 min-w-0">
                   <div class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ goal.name }}</div>
-                  <div v-if="goal.deadline" class="text-[10px] text-gray-400 mt-0.5">{{ goal.deadline }}</div>
+                  <div v-if="goal.deadline" class="text-[10px] text-gray-400 mt-0.5">{{ formatDate(goal.deadline) }}</div>
                 </div>
                 <span v-if="goal.progress > 0" class="text-[10px] text-primary-600 dark:text-primary-400 font-medium">
                   {{ goal.progress }}%
@@ -200,13 +241,46 @@ const loading = ref(false)
 const activeTab = ref('goals')
 const showTaskView = ref(false)
 const showCompleted = ref(false)
-const lightboxUrl = ref(null)
+const lightboxIndex = ref(null)
+const swipeOffset = ref(0)
+let touchStartX = 0
+let touchCurrentX = 0
 
-const openLightbox = (url) => {
-  lightboxUrl.value = url
+const galleryImages = computed(() => sphere.value?.images || [])
+
+const openLightbox = (index) => {
+  lightboxIndex.value = index
+  swipeOffset.value = 0
+}
+
+const onTouchStart = (e) => {
+  touchStartX = e.touches[0].clientX
+  touchCurrentX = touchStartX
+}
+
+const onTouchMove = (e) => {
+  touchCurrentX = e.touches[0].clientX
+  swipeOffset.value = touchCurrentX - touchStartX
+}
+
+const onTouchEnd = () => {
+  const delta = touchCurrentX - touchStartX
+  const threshold = 60
+
+  if (delta < -threshold && lightboxIndex.value < galleryImages.value.length - 1) {
+    lightboxIndex.value++
+  } else if (delta > threshold && lightboxIndex.value > 0) {
+    lightboxIndex.value--
+  }
+  swipeOffset.value = 0
 }
 const selectedTask = ref(null)
 const showEditModal = ref(false)
+
+const formatDate = (dateStr) => {
+  const d = new Date(dateStr)
+  return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })
+}
 
 const goals = computed(() => sphere.value?.goals || [])
 const tasks = computed(() => sphere.value?.tasks || [])

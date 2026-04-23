@@ -35,6 +35,44 @@
             <span class="ml-1.5 opacity-75">{{ overdueCount }}</span>
           </button>
 
+          <!-- Фильтр по роли -->
+          <button
+            v-if="myRoleCounts.delegated > 0"
+            @click="filterRole = filterRole === 'delegated' ? null : 'delegated'"
+            class="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-full border transition-colors"
+            :class="filterRole === 'delegated'
+              ? 'border-transparent bg-emerald-500 text-white'
+              : 'border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950'"
+          >
+            <component :is="ROLE_ICONS.creator.icon" class="w-3.5 h-3.5 mr-1.5" :stroke-width="2" />
+            Назначил
+            <span class="ml-1.5 opacity-75">{{ myRoleCounts.delegated }}</span>
+          </button>
+          <button
+            v-if="myRoleCounts.assignee > 0"
+            @click="filterRole = filterRole === 'assignee' ? null : 'assignee'"
+            class="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-full border transition-colors"
+            :class="filterRole === 'assignee'
+              ? 'border-transparent bg-indigo-500 text-white'
+              : 'border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950'"
+          >
+            <component :is="ROLE_ICONS.assignee.icon" class="w-3.5 h-3.5 mr-1.5" :stroke-width="2" />
+            Исполняю
+            <span class="ml-1.5 opacity-75">{{ myRoleCounts.assignee }}</span>
+          </button>
+          <button
+            v-if="myRoleCounts.watcher > 0"
+            @click="filterRole = filterRole === 'watcher' ? null : 'watcher'"
+            class="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-full border transition-colors"
+            :class="filterRole === 'watcher'
+              ? 'border-transparent bg-amber-500 text-white'
+              : 'border-amber-200 dark:border-amber-800 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950'"
+          >
+            <component :is="ROLE_ICONS.watcher.icon" class="w-3.5 h-3.5 mr-1.5" :stroke-width="2" />
+            Слежу
+            <span class="ml-1.5 opacity-75">{{ myRoleCounts.watcher }}</span>
+          </button>
+
           <!-- Разделитель -->
           <div class="w-px bg-gray-200 dark:bg-gray-600 mx-1 self-stretch"></div>
 
@@ -72,7 +110,7 @@
 
       <template v-else>
         <!-- Счётчик результатов -->
-        <div v-if="allTasks.length > 0 && (filterSection || filterWorkspaceId || filterOverdue)" class="mb-3 flex items-center justify-between">
+        <div v-if="allTasks.length > 0 && (filterSection || filterWorkspaceId || filterOverdue || filterRole)" class="mb-3 flex items-center justify-between">
           <span class="text-sm text-gray-500 dark:text-gray-400">
             Показано {{ filteredTasks.length }} из {{ allTasks.length }}
           </span>
@@ -154,8 +192,11 @@ import {
   ArchiveBoxIcon,
   ExclamationTriangleIcon,
 } from '@heroicons/vue/24/outline'
+import { useAuthStore } from '@/stores/auth'
+import { ROLE_ICONS } from '@/config/roleIcons'
 
 const tasksStore = useTasksStore()
+const authStore = useAuthStore()
 
 const allTasks = computed(() => tasksStore.filteredTasks)
 const loading = computed(() => tasksStore.loading)
@@ -165,6 +206,23 @@ const selectedTask = ref(null)
 const filterSection = ref(null)
 const filterWorkspaceId = ref(null)
 const filterOverdue = ref(false)
+const filterRole = ref(null) // 'assignee' | 'watcher' | null
+
+const uid = computed(() => authStore.user?.id)
+
+const myRoleCounts = computed(() => {
+  let assignee = 0, watcher = 0, delegated = 0
+  for (const t of allTasks.value) {
+    const hasOtherAssignee = (t.contacts || []).some(c => c.pivot?.role === 'assignee' && c.contact_user_id !== uid.value)
+    if (t.created_by === uid.value && hasOtherAssignee) delegated++
+    for (const c of t.contacts || []) {
+      if (c.contact_user_id !== uid.value) continue
+      if (c.pivot?.role === 'assignee') assignee++
+      else if (c.pivot?.role === 'watcher') watcher++
+    }
+  }
+  return { assignee, watcher, delegated }
+})
 
 // Конфигурация секций
 const sectionConfig = {
@@ -225,6 +283,16 @@ const filteredTasks = computed(() => {
       return dueDate < now
     })
   }
+  if (filterRole.value === 'delegated') {
+    result = result.filter(t =>
+      t.created_by === uid.value &&
+      (t.contacts || []).some(c => c.pivot?.role === 'assignee' && c.contact_user_id !== uid.value)
+    )
+  } else if (filterRole.value) {
+    result = result.filter(t =>
+      (t.contacts || []).some(c => c.contact_user_id === uid.value && c.pivot?.role === filterRole.value)
+    )
+  }
   return result
 })
 
@@ -236,6 +304,7 @@ const clearFilters = () => {
   filterSection.value = null
   filterWorkspaceId.value = null
   filterOverdue.value = false
+  filterRole.value = null
 }
 
 const handleTaskClick = (task) => {

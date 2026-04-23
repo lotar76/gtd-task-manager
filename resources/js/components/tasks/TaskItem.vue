@@ -7,7 +7,7 @@
     @click="$emit('task-click', task)"
   >
     <div class="flex items-center gap-1 min-w-0">
-      <svg v-if="role === 'watcher'" class="w-3 h-3 flex-shrink-0 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.46 12C3.73 7.94 7.52 5 12 5s8.27 2.94 9.54 7c-1.27 4.06-5.06 7-9.54 7S3.73 16.06 2.46 12z" /></svg>
+      <component v-if="role === 'watcher'" :is="ROLE_ICONS.watcher.icon" class="w-3 h-3 flex-shrink-0 text-gray-300 dark:text-gray-600" :stroke-width="1.8" />
       <span
         v-if="priorityMeta && task.priority !== 'medium'"
         class="w-1 h-1 rounded-full flex-shrink-0"
@@ -76,7 +76,7 @@
             </h3>
           </div>
           <span v-if="!compact && task.creator?.name" class="inline-flex items-center gap-1 text-gray-400 flex-shrink-0 truncate text-[11px] max-w-[160px]">
-            <svg class="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+            <component :is="ROLE_ICONS.creator.icon" class="w-3 h-3 flex-shrink-0" :stroke-width="1.8" />
             {{ task.creator.name }}
           </span>
         </div>
@@ -96,7 +96,7 @@
             <template v-else>до {{ formatTime(task.end_time) }}</template>
           </span>
           <span v-if="task.project" class="inline-block px-0.5 rounded text-[8px] font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">{{ task.project.name }}</span>
-          <span v-for="name in assigneeNames" :key="name" class="inline-block px-0.5 rounded text-[8px] font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300">{{ name }}</span>
+          <span v-for="name in assigneeNames" :key="name" class="inline-flex items-center gap-0.5 px-0.5 rounded text-[8px] font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300"><component :is="ROLE_ICONS.assignee.icon" class="w-2 h-2 flex-shrink-0" :stroke-width="2" />{{ name }}</span>
           <span v-if="task.context" class="inline-block px-0.5 rounded text-[8px] font-medium" :style="{ backgroundColor: task.context.color + '20', color: task.context.color }">{{ task.context.name }}</span>
           <span v-for="tag in task.tags" :key="tag.id" class="inline-block px-0.5 rounded text-[8px] font-medium" :style="{ backgroundColor: tag.color + '20', color: tag.color }">{{ tag.name }}</span>
         </div>
@@ -122,12 +122,12 @@
           </span>
 
           <span v-if="assigneeNames.length" class="inline-flex items-center gap-1 text-indigo-600 dark:text-indigo-300" title="Исполнители">
-            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+            <component :is="ROLE_ICONS.assignee.icon" class="w-3 h-3" :stroke-width="1.8" />
             {{ assigneeNames.join(', ') }}
           </span>
 
           <span v-if="watcherNames.length" class="inline-flex items-center gap-1" title="Наблюдатели">
-            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.46 12C3.73 7.94 7.52 5 12 5s8.27 2.94 9.54 7c-1.27 4.06-5.06 7-9.54 7S3.73 16.06 2.46 12z" /></svg>
+            <component :is="ROLE_ICONS.watcher.icon" class="w-3 h-3" :stroke-width="1.8" />
             {{ watcherNames.join(', ') }}
           </span>
 
@@ -157,6 +157,7 @@ import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import { useAuthStore } from '@/stores/auth'
+import { ROLE_ICONS } from '@/config/roleIcons'
 
 dayjs.extend(relativeTime)
 dayjs.locale('ru')

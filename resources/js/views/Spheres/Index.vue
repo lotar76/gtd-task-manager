@@ -39,13 +39,13 @@
       :delay="500"
       :delay-on-touch-only="true"
       @end="handleReorder"
-      class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5"
+      class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3"
     >
       <template #item="{ element: sphere }">
       <div
         class="relative rounded-2xl overflow-hidden cursor-pointer group transition-all duration-300 sm:hover:shadow-xl sm:hover:-translate-y-1"
         :class="{ 'grayscale opacity-60': sphere.is_hidden }"
-        :style="{ minHeight: '500px' }"
+        style="aspect-ratio: 3/5"
         @click="openSphere(sphere)"
       >
         <!-- Background image carousel or gradient -->
@@ -85,10 +85,10 @@
         ></div>
 
         <!-- Content overlay -->
-        <div class="relative h-full flex flex-col justify-between p-5" style="min-height: 500px">
+        <div class="relative h-full flex flex-col justify-between p-5">
           <!-- Top: counters -->
           <div class="flex items-center justify-between">
-            <div class="flex items-center gap-2">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-2">
               <span
                 v-if="sphere.tasks_count > 0"
                 class="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-full backdrop-blur-sm"
@@ -131,7 +131,7 @@
 
             <p
               v-if="sphere.description"
-              class="text-[13px] text-gray-500 dark:text-gray-400 leading-relaxed line-clamp-3"
+              class="text-[13px] text-gray-500 dark:text-gray-400 leading-relaxed line-clamp-3 hidden sm:block"
             >
               {{ sphere.description }}
             </p>

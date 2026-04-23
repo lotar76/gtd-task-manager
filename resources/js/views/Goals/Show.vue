@@ -15,12 +15,17 @@
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-2">
               <span v-if="goal?.deadline" class="inline-flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                Дата реализации: <span class="font-semibold text-gray-700 dark:text-gray-200">{{ formatDeadline(goal.deadline) }}</span>
+                <svg class="w-3.5 h-3.5 hidden sm:inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                <span class="hidden sm:inline">Дата реализации: </span><span class="font-semibold text-gray-700 dark:text-gray-200">{{ formatDeadline(goal.deadline) }}</span>
                 <span v-if="daysLeft !== null" :class="daysLeft < 0 ? 'text-red-500' : daysLeft <= 7 ? 'text-amber-500' : 'text-gray-400'">
-                  · {{ daysLeft < 0 ? `просрочено на ${Math.abs(daysLeft)} дн.` : `осталось ${daysLeft} дн.` }}
+                  · {{ daysLeft < 0 ? `${Math.abs(daysLeft)} дн.` : `осталось ${daysLeft} дн.` }}
                 </span>
               </span>
+              <router-link
+                v-if="goalSphere"
+                :to="`/spheres/${goalSphere.id}`"
+                class="lg:hidden text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              >· {{ goalSphere.name }}</router-link>
               <span v-if="goal?.status === 'archived'" class="text-xs text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full">Архив</span>
             </div>
             <div class="flex items-center gap-1">
@@ -43,13 +48,6 @@
 
           <!-- Description (скрыто) -->
 
-          <!-- Progress -->
-          <div v-if="allTasks.length > 0" class="flex items-center gap-2">
-            <div class="flex-1 h-1 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-              <div class="h-full bg-emerald-500 transition-all" :style="{ width: progressPct + '%' }"></div>
-            </div>
-            <span class="text-[11px] text-gray-400">{{ allCompletedCount }}/{{ allTasks.length }}</span>
-          </div>
 
           <template v-if="goal">
             <!-- Табы: Задачи + Потоки -->
@@ -86,6 +84,10 @@
                   <p class="text-sm text-gray-400 dark:text-gray-500 mb-2">Пока нет задач</p>
                   <button @click="openNewTask(null)" class="text-sm text-primary-500 hover:text-primary-600 font-medium">Создать первую задачу</button>
                 </div>
+                <button @click="openNewTask(null)" class="lg:hidden mt-2 text-[12.5px] text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 flex items-center gap-1">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                  Создать задачу
+                </button>
                 <!-- Выполненные (свёрнуты) -->
                 <div v-if="completedTasks.length > 0" class="mt-4 border-t border-gray-100 dark:border-gray-800 pt-3">
                   <button
@@ -105,7 +107,7 @@
                     <TaskList :tasks="completedTasks" @task-click="handleTaskClick" @toggle-complete="handleToggleComplete" />
                   </div>
                 </div>
-                <button @click="openNewTask(null)" class="mt-2 text-[12.5px] text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 flex items-center gap-1">
+                <button @click="openNewTask(null)" class="hidden lg:flex mt-2 text-[12.5px] text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 items-center gap-1">
                   <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
                   Создать задачу
                 </button>
@@ -167,12 +169,12 @@
         </div>
 
         <!-- RIGHT: sidebar в стиле TaskDetail -->
-        <aside class="lg:sticky lg:top-4 self-start space-y-6 bg-gray-50/60 dark:bg-gray-800/30 rounded-lg p-4">
-          <!-- Сфера жизни -->
+        <aside class="hidden lg:block lg:sticky lg:top-4 self-start space-y-6 bg-gray-50/60 dark:bg-gray-800/30 rounded-lg p-4">
+          <!-- Сфера жизни (desktop only, mobile version is above the title) -->
           <router-link
             v-if="goalSphere"
             :to="`/spheres/${goalSphere.id}`"
-            class="flex items-center gap-3 p-2 -m-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors"
+            class="hidden lg:flex items-center gap-3 p-2 -m-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors"
           >
             <div class="flex-shrink-0 w-10 h-10 rounded-full overflow-hidden border-2" :style="{ borderColor: goalSphere.color }">
               <img
@@ -271,7 +273,8 @@
                   {{ task.title }}
                 </div>
                 <div class="flex items-center gap-2 mt-0.5">
-                  <span v-if="taskAssignees(task).length" class="text-[10px] text-gray-400 truncate">
+                  <span v-if="taskAssignees(task).length" class="inline-flex items-center gap-0.5 text-[10px] text-gray-400 truncate">
+                    <component :is="ROLE_ICONS.assignee.icon" class="w-2.5 h-2.5 flex-shrink-0" :stroke-width="1.8" />
                     {{ taskAssignees(task).join(', ') }}
                   </span>
                   <span v-if="task.estimated_time" class="text-[10px] text-gray-400">
@@ -300,7 +303,8 @@
                   {{ task.title }}
                 </div>
                 <div class="flex items-center gap-2 mt-0.5">
-                  <span v-if="taskAssignees(task).length" class="text-[10px] text-gray-400 truncate">
+                  <span v-if="taskAssignees(task).length" class="inline-flex items-center gap-0.5 text-[10px] text-gray-400 truncate">
+                    <component :is="ROLE_ICONS.assignee.icon" class="w-2.5 h-2.5 flex-shrink-0" :stroke-width="1.8" />
                     {{ taskAssignees(task).join(', ') }}
                   </span>
                   <span v-if="task.due_date" class="text-[10px] text-gray-400">
@@ -515,6 +519,7 @@ import ProjectModal from '@/components/projects/ProjectModal.vue'
 import NoteModal from '@/components/notes/NoteModal.vue'
 import { useNotesStore } from '@/stores/notes'
 import api from '@/services/api'
+import { ROLE_ICONS } from '@/config/roleIcons'
 
 const route = useRoute()
 const router = useRouter()

@@ -19,9 +19,9 @@
             <!-- Desktop: chips inline -->
             <div v-if="!isMobile" class="flex items-center gap-1.5 flex-1 min-w-0 overflow-visible" data-picker-popover>
               <div class="relative">
-                <Chip v-if="localTask.due_date" icon="calendar" :label="formattedDateTime" @click="isGuest || togglePicker('date')" :active="picker === 'date'" />
-                <AddInline v-else-if="!isGuest" icon="calendar" label="Дата" @click="togglePicker('date')" />
-                <div v-if="picker === 'date' && !isGuest" class="absolute top-full left-0 mt-1 z-20 p-3 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 flex items-center gap-2 whitespace-nowrap" data-picker-popover>
+                <Chip v-if="localTask.due_date" icon="calendar" :label="formattedDateTime" @click="canEditFields || togglePicker('date')" :active="picker === 'date'" />
+                <AddInline v-else-if="canEditFields" icon="calendar" label="Дата" @click="togglePicker('date')" />
+                <div v-if="picker === 'date' && canEditFields" class="absolute top-full left-0 mt-1 z-20 p-3 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 flex items-center gap-2 whitespace-nowrap" data-picker-popover>
                   <input v-model="localTask.due_date" @change="onDueDateChange" type="date" class="px-2 py-1 text-sm bg-gray-50 dark:bg-gray-900 rounded border border-gray-200 dark:border-gray-700" />
                   <input v-model="localTask.estimated_time" @change="scheduleSave" type="time" class="px-2 py-1 text-sm bg-gray-50 dark:bg-gray-900 rounded border border-gray-200 dark:border-gray-700" title="Начало" />
                   <span class="text-gray-400 text-xs">—</span>
@@ -30,8 +30,8 @@
                 </div>
               </div>
               <div class="relative">
-                <Chip icon="flag" :label="statusLabel" @click="isGuest || togglePicker('status')" :active="picker === 'status'" />
-                <div v-if="picker === 'status' && !isGuest" class="absolute top-full left-0 mt-1 z-20 p-1 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 min-w-[160px]" data-picker-popover>
+                <Chip icon="flag" :label="statusLabel" @click="canEditFields || togglePicker('status')" :active="picker === 'status'" />
+                <div v-if="picker === 'status' && canEditFields" class="absolute top-full left-0 mt-1 z-20 p-1 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 min-w-[160px]" data-picker-popover>
                   <button
                     v-for="s in statusOptions" :key="s.value"
                     @click="setField('status', s.value); picker = null"
@@ -41,8 +41,8 @@
                 </div>
               </div>
               <div class="relative">
-                <Chip :dot-class="priorityDot" :label="priorityLabel" @click="isGuest || togglePicker('priority')" :active="picker === 'priority'" :label-class="priorityLabelClass" />
-                <div v-if="picker === 'priority' && !isGuest" class="absolute top-full left-0 mt-1 z-20 p-1 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 min-w-[140px]" data-picker-popover>
+                <Chip :dot-class="priorityDot" :label="priorityLabel" @click="canEditFields || togglePicker('priority')" :active="picker === 'priority'" :label-class="priorityLabelClass" />
+                <div v-if="picker === 'priority' && canEditFields" class="absolute top-full left-0 mt-1 z-20 p-1 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 min-w-[140px]" data-picker-popover>
                   <button
                     v-for="p in priorityOptions" :key="p.value"
                     @click="setField('priority', p.value); picker = null"
@@ -87,7 +87,7 @@
                 <div class="fixed inset-0 bg-black/30" @click="picker = null"></div>
                 <div class="fixed top-16 left-4 right-4 z-10 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 p-4 max-h-[70vh] overflow-y-auto">
                   <!-- Date -->
-                  <template v-if="picker === 'date' && !isGuest">
+                  <template v-if="picker === 'date' && canEditFields">
                     <div class="text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">Дата и время</div>
                     <div class="space-y-3">
                       <input v-model="localTask.due_date" @change="onDueDateChange" type="date" class="w-full px-3 py-2.5 text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 appearance-none" />
@@ -103,7 +103,7 @@
                     </div>
                   </template>
                   <!-- Status -->
-                  <template v-if="picker === 'status' && !isGuest">
+                  <template v-if="picker === 'status' && canEditFields">
                     <div class="text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">Статус</div>
                     <div class="space-y-1">
                       <button v-for="s in statusOptions" :key="s.value" @click="setField('status', s.value); picker = null"
@@ -113,7 +113,7 @@
                     </div>
                   </template>
                   <!-- Priority -->
-                  <template v-if="picker === 'priority' && !isGuest">
+                  <template v-if="picker === 'priority' && canEditFields">
                     <div class="text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">Приоритет</div>
                     <div class="space-y-1">
                       <button v-for="p in priorityOptions" :key="p.value" @click="setField('priority', p.value); picker = null"
@@ -126,7 +126,7 @@
                     </div>
                   </template>
                   <!-- Goal/Project/Sphere/Context -->
-                  <template v-if="['goal','project','sphere','context'].includes(picker) && !isGuest">
+                  <template v-if="['goal','project','sphere','context'].includes(picker) && canEditFields">
                     <div class="text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">{{ mobilePickerTitle }}</div>
                     <div class="space-y-1">
                       <button @click="mobileSelectField(null)" class="w-full text-left px-3 py-2.5 text-sm rounded-lg transition-colors"
@@ -139,7 +139,7 @@
                     </div>
                   </template>
                   <!-- Assignees/Watchers -->
-                  <template v-if="['assignees','watchers'].includes(picker) && !isGuest">
+                  <template v-if="['assignees','watchers'].includes(picker) && canEditFields">
                     <div class="text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">{{ picker === 'assignees' ? 'Исполнители' : 'Наблюдатели' }}</div>
                     <div class="space-y-1">
                       <button v-for="c in knownContacts" :key="c.id" @click="toggleContactInPicker(c.id)"
@@ -187,21 +187,21 @@
                   <!-- Chips: date, status, priority -->
                   <div class="flex items-center gap-1.5 overflow-x-auto pb-1">
                     <div class="flex-shrink-0">
-                      <Chip v-if="localTask.due_date" icon="calendar" :label="formattedDateTime" @click="isGuest || togglePicker('date')" :active="picker === 'date'" />
-                      <AddInline v-else-if="!isGuest" icon="calendar" label="Дата" @click="togglePicker('date')" />
+                      <Chip v-if="localTask.due_date" icon="calendar" :label="formattedDateTime" @click="canEditFields || togglePicker('date')" :active="picker === 'date'" />
+                      <AddInline v-else-if="canEditFields" icon="calendar" label="Дата" @click="togglePicker('date')" />
                     </div>
                     <div class="flex-shrink-0">
-                      <Chip icon="flag" :label="statusLabel" @click="isGuest || togglePicker('status')" :active="picker === 'status'" />
+                      <Chip icon="flag" :label="statusLabel" @click="canEditFields || togglePicker('status')" :active="picker === 'status'" />
                     </div>
                     <div class="flex-shrink-0">
-                      <Chip :dot-class="priorityDot" :label="priorityLabel" @click="isGuest || togglePicker('priority')" :active="picker === 'priority'" :label-class="priorityLabelClass" />
+                      <Chip :dot-class="priorityDot" :label="priorityLabel" @click="canEditFields || togglePicker('priority')" :active="picker === 'priority'" :label-class="priorityLabelClass" />
                     </div>
                   </div>
 
                   <!-- Sidebar fields -->
                   <div class="space-y-1 text-[13px]">
                     <!-- Collapsible: Цель/Поток/Сфера/Контекст -->
-                    <template v-if="!isGuest">
+                    <template v-if="canEditFields">
                       <button @click="mobileFieldsExpanded = !mobileFieldsExpanded" class="flex items-center gap-1.5 w-full py-1.5 px-1 -mx-1 text-gray-500 dark:text-gray-400 text-[12px] uppercase tracking-wider font-medium">
                         <svg class="w-3 h-3 transition-transform" :class="mobileFieldsExpanded ? 'rotate-90' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
                         <span>Категории</span>
@@ -215,23 +215,23 @@
                       </template>
                     </template>
                     <PeopleRow
-                      v-if="!isGuest"
-                      icon="user" label="Исполнители" :contacts="knownContacts" :selected="assigneeIds"
+                      v-if="canEditFields"
+                      icon="assignee" label="Исполнители" :contacts="knownContacts" :selected="assigneeIds"
                       badge-class="bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300"
                       :open="false" @toggle="togglePicker('assignees')" @update:selected="updateAssignees"
                     />
                     <PeopleRow
-                      icon="eye" label="Наблюдатели" :contacts="knownContacts" :selected="watcherIds"
+                      icon="watcher" label="Наблюдатели" :contacts="knownContacts" :selected="watcherIds"
                       badge-class="bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
-                      :open="false" :no-add="isGuest"
-                      :removable-ids="isGuest ? (myWatcherContactId ? [myWatcherContactId] : []) : null"
-                      @toggle="isGuest ? null : togglePicker('watchers')" @update:selected="onWatchersChanged"
+                      :open="false" :no-add="!canEditFields"
+                      :removable-ids="!canEditFields ? (myWatcherContactId ? [myWatcherContactId] : []) : null"
+                      @toggle="canEditFields ? togglePicker('watchers') : null" @update:selected="onWatchersChanged"
                     />
                   </div>
 
                   <!-- Title -->
                   <input
-                    v-model="localTask.title" @input="scheduleSave" type="text" placeholder="Название задачи" :readonly="isGuest"
+                    v-model="localTask.title" @input="scheduleSave" type="text" placeholder="Название задачи" :readonly="!canEditFields"
                     :class="[localTask.completed_at ? 'line-through text-gray-400' : 'text-gray-900 dark:text-white']"
                     class="w-full bg-transparent border-0 outline-none text-xl font-semibold placeholder-gray-400 dark:placeholder-gray-600 px-0 leading-tight"
                   />
@@ -240,7 +240,7 @@
                 <!-- === DESKTOP LAYOUT: Title first === -->
                 <input
                   v-if="!isMobile"
-                  v-model="localTask.title" @input="scheduleSave" type="text" placeholder="Название задачи" :readonly="isGuest"
+                  v-model="localTask.title" @input="scheduleSave" type="text" placeholder="Название задачи" :readonly="!canEditFields"
                   :class="[localTask.completed_at ? 'line-through text-gray-400' : 'text-gray-900 dark:text-white']"
                   class="w-full bg-transparent border-0 outline-none text-2xl font-semibold placeholder-gray-400 dark:placeholder-gray-600 px-0 leading-tight"
                 />
@@ -251,7 +251,7 @@
                   <textarea
                     v-model="localTask.description"
                     @input="scheduleSave"
-                    :readonly="isGuest"
+                    :readonly="!canEditFields"
                     placeholder="Добавьте описание…"
                     class="w-full bg-transparent border-0 outline-none text-[15px] text-gray-800 dark:text-gray-300 placeholder-gray-400 dark:placeholder-gray-600 leading-relaxed thin-scroll resize-none"
                     style="min-height: 72px; max-height: 240px;"
@@ -354,7 +354,7 @@
 
               <!-- Side panel (desktop only, on mobile fields are inline above) -->
               <div v-if="!isMobile" class="hidden lg:block px-5 py-5 space-y-1 bg-gray-50/60 dark:bg-gray-800/30 text-[13px]">
-                <template v-if="!isGuest">
+                <template v-if="canEditFields">
                   <SelectRow
                     icon="target"
                     placeholder="Цель"
@@ -393,10 +393,10 @@
                   />
                 </template>
 
-                <div class="space-y-1" :class="isGuest ? '' : 'pt-3 mt-2 border-t border-gray-200 dark:border-gray-700'">
+                <div class="space-y-1" :class="canEditFields ? 'pt-3 mt-2 border-t border-gray-200 dark:border-gray-700' : ''">
                   <PeopleRow
-                    v-if="!isGuest"
-                    icon="user"
+                    v-if="canEditFields"
+                    icon="assignee"
                     label="Исполнители"
                     :contacts="knownContacts"
                     :selected="assigneeIds"
@@ -406,15 +406,15 @@
                     @update:selected="updateAssignees"
                   />
                   <PeopleRow
-                    icon="eye"
+                    icon="watcher"
                     label="Наблюдатели"
                     :contacts="knownContacts"
                     :selected="watcherIds"
                     badge-class="bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
-                    :open="picker === 'watchers' && !isGuest"
-                    :no-add="isGuest"
-                    :removable-ids="isGuest ? (myWatcherContactId ? [myWatcherContactId] : []) : null"
-                    @toggle="isGuest ? null : togglePicker('watchers')"
+                    :open="picker === 'watchers' && canEditFields"
+                    :no-add="!canEditFields"
+                    :removable-ids="!canEditFields ? (myWatcherContactId ? [myWatcherContactId] : []) : null"
+                    @toggle="canEditFields ? togglePicker('watchers') : null"
                     @update:selected="onWatchersChanged"
                   />
                 </div>
@@ -492,6 +492,7 @@
               </template>
               <span v-else-if="saveState === 'error'" class="text-red-500">ошибка сохранения</span>
               <span v-if="isGuest">режим наблюдателя</span>
+              <span v-else-if="isExecutor" class="text-indigo-500">режим исполнителя</span>
               <span v-else-if="localTask.completed_at" class="text-emerald-500">✓ задача завершена</span>
             </div>
             <button
@@ -546,6 +547,7 @@
 <script setup>
 import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick, h, Teleport } from 'vue'
 import api from '@/services/api'
+import { ROLE_ICONS } from '@/config/roleIcons'
 import ContactPicker from '@/components/tasks/ContactPicker.vue'
 import { useConfirmStore } from '@/stores/confirm'
 import { useTasksStore } from '@/stores/tasks'
@@ -577,8 +579,9 @@ const ICONS = {
   folder: 'M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z',
   target: 'M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-4a4 4 0 100 8 4 4 0 000-8z',
   sparkles: 'M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.29 5.29L20 11l-5.29 2.29L12 20l-2.29-5.29L4 11l5.29-2.29L12 3z',
-  user: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z',
-  eye: 'M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.46 12C3.73 7.94 7.52 5 12 5s8.27 2.94 9.54 7c-1.27 4.06-5.06 7-9.54 7S3.73 16.06 2.46 12z',
+  creator: ROLE_ICONS.creator.icon,
+  assignee: ROLE_ICONS.assignee.icon,
+  watcher: ROLE_ICONS.watcher.icon,
   'check-square': 'M9 12l2 2 4-4m5-6H4a1 1 0 00-1 1v16a1 1 0 001 1h16a1 1 0 001-1V5a1 1 0 00-1-1z',
   paperclip: 'M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13',
   flag: 'M3 21V5a2 2 0 012-2h10l-2 4 2 4H5v10',
@@ -588,8 +591,14 @@ const ICONS = {
   chat: 'M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z',
   'document-text': 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
 }
-const Icon = { props: ['name'], setup: (p) => () => h('svg', { class: 'w-3.5 h-3.5', fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24' },
-  [h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'stroke-width': '1.8', d: ICONS[p.name] || '' })]) }
+const Icon = { props: ['name'], setup: (p) => () => {
+  const val = ICONS[p.name]
+  if (typeof val === 'function' || typeof val === 'object') {
+    return h(val, { class: 'w-3.5 h-3.5', 'stroke-width': '1.8' })
+  }
+  return h('svg', { class: 'w-3.5 h-3.5', fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24' },
+    [h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'stroke-width': '1.8', d: val || '' })])
+} }
 
 const FieldLabel = {
   props: ['icon'],
@@ -867,6 +876,23 @@ const isGuest = computed(() => {
   return tWs != null && props.myWorkspaceId != null && tWs !== props.myWorkspaceId
 })
 
+// Я создатель задачи — полный доступ
+const isOwner = computed(() => {
+  if (!props.currentUserId || !localTask.value?.created_by) return false
+  return localTask.value.created_by === props.currentUserId
+})
+
+// Я исполнитель (но не создатель) — ограниченный доступ:
+// могу: завершить, чек-лист, комменты, файлы
+// не могу: название, описание, дату, статус, приоритет, категории, назначать людей
+const isExecutor = computed(() => {
+  if (isOwner.value || isGuest.value || !props.currentUserId) return false
+  return (localTask.value?.assignees || []).some(c => c.contact_user_id === props.currentUserId)
+})
+
+// Можно редактировать основные поля задачи (название, описание, дату, статус и т.д.)
+const canEditFields = computed(() => !isGuest.value && !isExecutor.value)
+
 // Мой собственный контакт, фигурирующий в watchers (для кнопки «выйти из наблюдателей»).
 const myWatcherContactId = computed(() => {
   if (!props.currentUserId) return null
@@ -1128,29 +1154,33 @@ const save = async () => {
     return
   }
   try {
-    const payload = {
-      title: localTask.value.title,
-      description: localTask.value.description || null,
-      status: localTask.value.status,
-      priority: localTask.value.priority,
-      project_id: localTask.value.project_id || null,
-      goal_id: localTask.value.goal_id || null,
-      life_sphere_id: localTask.value.life_sphere_id || null,
-      context_id: localTask.value.context_id || null,
-      due_date: localTask.value.due_date || null,
-      estimated_time: localTask.value.estimated_time || null,
-      end_time: localTask.value.end_time || null,
-      assignee_ids: assigneeIds.value,
-      watcher_ids: watcherIds.value,
-      checklist: (localTask.value.checklist_items || [])
-        .filter(i => i.text && i.text.trim())
-        .map((i, idx) => ({
-          id: i.id || null,
-          text: i.text.trim(),
-          is_done: !!i.is_done,
-          position: idx,
-        })),
-    }
+    const checklist = (localTask.value.checklist_items || [])
+      .filter(i => i.text && i.text.trim())
+      .map((i, idx) => ({
+        id: i.id || null,
+        text: i.text.trim(),
+        is_done: !!i.is_done,
+        position: idx,
+      }))
+    // Исполнитель может менять только чек-лист
+    const payload = isExecutor.value
+      ? { checklist }
+      : {
+          title: localTask.value.title,
+          description: localTask.value.description || null,
+          status: localTask.value.status,
+          priority: localTask.value.priority,
+          project_id: localTask.value.project_id || null,
+          goal_id: localTask.value.goal_id || null,
+          life_sphere_id: localTask.value.life_sphere_id || null,
+          context_id: localTask.value.context_id || null,
+          due_date: localTask.value.due_date || null,
+          estimated_time: localTask.value.estimated_time || null,
+          end_time: localTask.value.end_time || null,
+          assignee_ids: assigneeIds.value,
+          watcher_ids: watcherIds.value,
+          checklist,
+        }
     let res
     if (!localTask.value.id) {
       // Первое сохранение — создаём в БД
