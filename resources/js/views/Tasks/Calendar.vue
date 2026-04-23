@@ -166,14 +166,27 @@
                 'bg-primary-50/30 dark:bg-primary-900/20': day.isToday
               }"
             >
-              <!-- Time Slots -->
-              <div class="relative">
+              <!-- Time Slots (drop zone for time-based drop) -->
+              <div
+                class="relative"
+                @dragover.prevent="onDragOver($event, day.date)"
+                @dragleave="onDragLeave($event, day.date)"
+                @drop="onDropTimeGrid($event, day.date, weekHours)"
+                :class="{ 'ring-2 ring-inset ring-primary-400/50 bg-primary-50/30 dark:bg-primary-900/20': dropTargetDate === day.date }"
+              >
                 <div
                   v-for="hour in weekHours"
                   :key="hour"
-                  class="h-16 border-b border-gray-100 dark:border-gray-700/50"
-                ></div>
-                
+                  class="h-16 border-b border-gray-100 dark:border-gray-700/50 group/slot flex items-center justify-center"
+                >
+                  <button
+                    @click.stop="handleAddTaskForDayTime(day.date, hour)"
+                    class="w-4 h-4 flex items-center justify-center rounded-full text-gray-200 dark:text-gray-700 opacity-0 group-hover/slot:opacity-100 hover:text-gray-400 dark:hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all"
+                  >
+                    <PlusIcon class="w-3 h-3" />
+                  </button>
+                </div>
+
                 <!-- Current time line (only for today) -->
                 <div
                   v-if="day.isToday && getCurrentTimePosition(weekHours)"
@@ -185,27 +198,25 @@
                     <div class="flex-1 h-0.5 bg-red-500"></div>
                   </div>
                 </div>
-                
+
                 <!-- Tasks positioned by time -->
-                <div class="absolute inset-0">
+                <div class="absolute inset-0 pointer-events-none">
                   <div
                     v-for="task in getTasksForDayWithTime(day.date)"
                     :key="task.id"
-                    class="absolute left-1 right-1 rounded border-l-2 shadow-sm z-10 overflow-hidden"
-                    :class="[
-                      task.completed_at
-                        ? 'bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-500'
-                        : getDurationGradientClass(task) + ' border-primary-500'
-                    ]"
+                    draggable="true"
+                    @dragstart="onDragStart($event, task)"
+                    @dragend="onDragEnd"
+                    class="absolute left-1 right-1 z-10 overflow-hidden cursor-grab active:cursor-grabbing pointer-events-auto"
                     :style="getTaskPositionStyle(task, weekHours)"
                   >
-                    <TaskItem :task="task" compact @task-click="handleTaskClick" @toggle-complete="handleToggleComplete" />
+                    <TaskItem :task="task" mini @task-click="handleTaskClick" @toggle-complete="handleToggleComplete" />
                   </div>
                 </div>
               </div>
             </div>
           </div>
-          
+
           <!-- Tasks without time (below the grid) -->
           <div class="grid border-t border-gray-200 dark:border-gray-700" :style="{ gridTemplateColumns: '60px repeat(7, 1fr)' }">
             <div class="border-r border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 p-2">
@@ -215,19 +226,30 @@
               v-for="(day, dayIndex) in weekDaysData"
               :key="dayIndex"
               class="border-r border-gray-200 dark:border-gray-700 last:border-r-0 p-2 min-w-0 overflow-hidden"
-              :class="{
-                'bg-primary-50/30 dark:bg-primary-900/20': day.isToday
-              }"
+              :class="[
+                day.isToday ? 'bg-primary-50/30 dark:bg-primary-900/20' : '',
+                dropTargetDate === day.date ? 'ring-2 ring-inset ring-primary-400/50' : ''
+              ]"
+              @dragover.prevent="onDragOver($event, day.date)"
+              @dragleave="onDragLeave($event, day.date)"
+              @drop="onDropDay($event, day.date)"
             >
               <div class="space-y-1 min-w-0">
-                <TaskItem
+                <div
                   v-for="task in getTasksForDayWithoutTime(day.date)"
                   :key="task.id"
-                  :task="task"
-                  compact
-                  @task-click="handleTaskClick"
-                  @toggle-complete="handleToggleComplete"
-                />
+                  draggable="true"
+                  @dragstart="onDragStart($event, task)"
+                  @dragend="onDragEnd"
+                  class="cursor-grab active:cursor-grabbing"
+                >
+                  <TaskItem
+                    :task="task"
+                    mini
+                    @task-click="handleTaskClick"
+                    @toggle-complete="handleToggleComplete"
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -240,10 +262,12 @@
             <div
               v-for="(day, index) in weekDaysData.slice(0, 6)"
               :key="index"
-              class="p-2 border-b border-r border-gray-200 dark:border-gray-700 min-h-[120px]"
+              :data-drop-date="day.date"
+              class="p-2 border-b border-r border-gray-200 dark:border-gray-700 min-h-[120px] transition-colors"
               :class="[
                 index % 2 === 1 ? 'border-r-0' : '',
-                day.isToday ? 'bg-primary-50 dark:bg-primary-900/30' : ''
+                day.isToday ? 'bg-primary-50 dark:bg-primary-900/30' : '',
+                dropTargetDate === day.date ? 'ring-2 ring-inset ring-primary-400/50 bg-primary-50/50 dark:bg-primary-900/30' : ''
               ]"
             >
               <div class="flex items-center justify-between mb-2">
@@ -262,14 +286,21 @@
                 </button>
               </div>
               <div class="space-y-1">
-                <TaskItem
+                <div
                   v-for="task in day.tasks"
                   :key="task.id"
-                  :task="task"
-                  compact
-                  @task-click="handleTaskClick"
-                  @toggle-complete="handleToggleComplete"
-                />
+                  :data-task-id="task.id"
+                  @touchstart="onTouchStart($event, task)"
+                  @touchmove="onTouchMove($event)"
+                  @touchend="onTouchEnd"
+                >
+                  <TaskItem
+                    :task="task"
+                    mini
+                    @task-click="handleTaskClick"
+                    @toggle-complete="handleToggleComplete"
+                  />
+                </div>
                 <div v-if="day.tasks.length === 0" class="text-xs text-gray-400 dark:text-gray-500 text-center py-2">
                   Нет задач
                 </div>
@@ -279,8 +310,12 @@
           <!-- Вс: на всю ширину -->
           <div
             v-if="weekDaysData[6]"
-            class="p-2 min-h-[80px]"
-            :class="weekDaysData[6].isToday ? 'bg-primary-50 dark:bg-primary-900/30' : ''"
+            :data-drop-date="weekDaysData[6].date"
+            class="p-2 min-h-[80px] transition-colors"
+            :class="[
+              weekDaysData[6].isToday ? 'bg-primary-50 dark:bg-primary-900/30' : '',
+              dropTargetDate === weekDaysData[6].date ? 'ring-2 ring-inset ring-primary-400/50 bg-primary-50/50 dark:bg-primary-900/30' : ''
+            ]"
           >
             <div class="flex items-center justify-between mb-2">
               <div class="flex items-baseline gap-1.5">
@@ -298,14 +333,21 @@
               </button>
             </div>
             <div class="space-y-1">
-              <TaskItem
+              <div
                 v-for="task in weekDaysData[6].tasks"
                 :key="task.id"
-                :task="task"
-                compact
-                @task-click="handleTaskClick"
-                @toggle-complete="handleToggleComplete"
-              />
+                :data-task-id="task.id"
+                @touchstart="onTouchStart($event, task)"
+                @touchmove="onTouchMove($event)"
+                @touchend="onTouchEnd"
+              >
+                <TaskItem
+                  :task="task"
+                  mini
+                  @task-click="handleTaskClick"
+                  @toggle-complete="handleToggleComplete"
+                />
+              </div>
               <div v-if="weekDaysData[6].tasks.length === 0" class="text-xs text-gray-400 dark:text-gray-500 text-center py-2">
                 Нет задач
               </div>
@@ -354,16 +396,28 @@
               </div>
             </div>
 
-            <!-- Time Slots Column -->
-            <div class="relative">
+            <!-- Time Slots Column (drop zone) -->
+            <div
+              class="relative"
+              @dragover.prevent="onDragOver($event, currentDate.format('YYYY-MM-DD'))"
+              @dragleave="onDragLeave($event, currentDate.format('YYYY-MM-DD'))"
+              @drop="onDropTimeGrid($event, currentDate.format('YYYY-MM-DD'), dayHours)"
+            >
               <!-- Time Slots -->
               <div class="relative">
                 <div
                   v-for="hour in dayHours"
                   :key="hour"
-                  class="h-16 border-b border-gray-100 dark:border-gray-700/50"
-                ></div>
-                
+                  class="h-16 border-b border-gray-100 dark:border-gray-700/50 group/slot flex items-center justify-center"
+                >
+                  <button
+                    @click.stop="handleAddTaskForDayTime(currentDate.format('YYYY-MM-DD'), hour)"
+                    class="w-5 h-5 flex items-center justify-center rounded-full text-gray-200 dark:text-gray-700 opacity-0 group-hover/slot:opacity-100 hover:text-gray-400 dark:hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all"
+                  >
+                    <PlusIcon class="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
                 <!-- Current time line (only for today) -->
                 <div
                   v-if="currentDate.isSame(dayjs(), 'day') && getCurrentTimePosition(dayHours)"
@@ -375,13 +429,16 @@
                     <div class="flex-1 h-0.5 bg-red-500"></div>
                   </div>
                 </div>
-                
+
                 <!-- Tasks positioned by time -->
-                <div class="absolute inset-0">
+                <div class="absolute inset-0 pointer-events-none">
                   <div
                     v-for="task in dayTasksWithTime"
                     :key="task.id"
-                    class="absolute left-2 right-2 rounded-lg border-l-4 shadow-sm z-10 overflow-hidden"
+                    draggable="true"
+                    @dragstart="onDragStart($event, task)"
+                    @dragend="onDragEnd"
+                    class="absolute left-2 right-2 rounded-lg border-l-4 shadow-sm z-10 overflow-hidden cursor-grab active:cursor-grabbing pointer-events-auto"
                     :class="[
                       task.completed_at
                         ? 'bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-500'
@@ -403,13 +460,20 @@
             </div>
             <div class="p-3">
               <div class="space-y-2">
-                <TaskItem
+                <div
                   v-for="task in dayTasksWithoutTime"
                   :key="task.id"
-                  :task="task"
-                  @task-click="handleTaskClick"
-                  @toggle-complete="handleToggleComplete"
-                />
+                  draggable="true"
+                  @dragstart="onDragStart($event, task)"
+                  @dragend="onDragEnd"
+                  class="cursor-grab active:cursor-grabbing"
+                >
+                  <TaskItem
+                    :task="task"
+                    @task-click="handleTaskClick"
+                    @toggle-complete="handleToggleComplete"
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -1120,6 +1184,11 @@ const handleUncompleteTask = async (task) => {
 
 const { draftTask, showDraft, startDraft, closeDraft } = useTaskDraft(() => tasksStore.fetchTasks?.())
 const handleAddTaskForDay = (dateString) => startDraft({ status: 'scheduled', due_date: dateString })
+const handleAddTaskForDayTime = (dateString, hour) => {
+  const timeStr = `${String(hour).padStart(2, '0')}:00`
+  const endStr = `${String(Math.min(hour + 1, 23)).padStart(2, '0')}:00`
+  startDraft({ status: 'scheduled', due_date: dateString, estimated_time: timeStr, end_time: endStr })
+}
 
 const handleDayClick = (dateString) => {
   currentDate.value = dayjs(dateString)
@@ -1181,6 +1250,195 @@ const confirmComplete = async () => {
 const cancelComplete = () => {
   showConfirm.value = false
   taskToComplete.value = null
+}
+
+// ==================== Drag & Drop ====================
+const draggedTask = ref(null)
+const dropTargetDate = ref(null)
+
+// Desktop: HTML5 Drag API
+const onDragStart = (e, task) => {
+  draggedTask.value = task
+  e.dataTransfer.effectAllowed = 'move'
+  e.dataTransfer.setData('text/plain', task.id)
+  e.target.style.opacity = '0.4'
+}
+
+const onDragEnd = (e) => {
+  e.target.style.opacity = '1'
+  draggedTask.value = null
+  dropTargetDate.value = null
+}
+
+const onDragOver = (e, dateString) => {
+  e.preventDefault()
+  e.dataTransfer.dropEffect = 'move'
+  dropTargetDate.value = dateString
+}
+
+const onDragLeave = (_e, dateString) => {
+  if (dropTargetDate.value === dateString) {
+    dropTargetDate.value = null
+  }
+}
+
+// Вычислить длительность задачи в минутах
+const getTaskDurationMinutes = (task) => {
+  if (!task.estimated_time || !task.end_time) return 60 // default 1 hour
+  const st = formatTime(task.estimated_time)
+  const et = formatTime(task.end_time)
+  const [sh, sm] = st.split(':').map(Number)
+  const [eh, em] = et.split(':').map(Number)
+  let diff = (eh * 60 + em) - (sh * 60 + sm)
+  if (diff <= 0) diff += 24 * 60
+  return diff
+}
+
+const minutesToTimeStr = (totalMinutes) => {
+  const h = Math.min(23, Math.max(0, Math.floor(totalMinutes / 60)))
+  const m = Math.max(0, totalMinutes % 60)
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+}
+
+// Desktop week/day: drop на сетку времени — вычисляем час по Y
+const onDropTimeGrid = async (e, dateString, hoursRange) => {
+  e.preventDefault()
+  dropTargetDate.value = null
+  if (!draggedTask.value) return
+
+  const rect = e.currentTarget.getBoundingClientRect()
+  const y = e.clientY - rect.top
+  const hourHeight = 64
+  const minHour = hoursRange[0]
+  const rawMinutes = (y / hourHeight) * 60 + minHour * 60
+  const snappedMinutes = Math.round(rawMinutes / 15) * 15 // snap to 15min
+  const startStr = minutesToTimeStr(snappedMinutes)
+
+  // Сохраняем оригинальную длительность
+  const duration = getTaskDurationMinutes(draggedTask.value)
+  const endStr = minutesToTimeStr(snappedMinutes + duration)
+
+  try {
+    await tasksStore.updateTask(draggedTask.value.id, {
+      due_date: dateString,
+      estimated_time: startStr,
+      end_time: endStr,
+    })
+  } catch (error) {
+    console.error('Drag drop error:', error)
+  }
+  draggedTask.value = null
+}
+
+// Desktop/Mobile: drop без времени — только дата
+const onDropDay = async (e, dateString) => {
+  e.preventDefault()
+  dropTargetDate.value = null
+  if (!draggedTask.value) return
+
+  try {
+    await tasksStore.updateTask(draggedTask.value.id, {
+      due_date: dateString,
+    })
+  } catch (error) {
+    console.error('Drag drop error:', error)
+  }
+  draggedTask.value = null
+}
+
+// Mobile: Touch Drag
+const touchState = ref(null)
+const touchClone = ref(null)
+
+const onTouchStart = (e, task) => {
+  const touch = e.touches[0]
+  touchState.value = {
+    task,
+    startX: touch.clientX,
+    startY: touch.clientY,
+    isDragging: false,
+    holdTimer: setTimeout(() => {
+      if (!touchState.value) return
+      touchState.value.isDragging = true
+      draggedTask.value = task
+
+      // Create visual clone
+      const el = e.target.closest('[data-task-id]')
+      if (el) {
+        const clone = el.cloneNode(true)
+        clone.style.cssText = `
+          position: fixed; z-index: 9999; pointer-events: none;
+          width: ${el.offsetWidth}px; opacity: 0.8;
+          transform: translate(-50%, -50%);
+          left: ${touch.clientX}px; top: ${touch.clientY}px;
+        `
+        document.body.appendChild(clone)
+        touchClone.value = clone
+        el.style.opacity = '0.3'
+      }
+    }, 300),
+  }
+}
+
+const onTouchMove = (e) => {
+  if (!touchState.value) return
+  const touch = e.touches[0]
+
+  if (!touchState.value.isDragging) {
+    const dx = Math.abs(touch.clientX - touchState.value.startX)
+    const dy = Math.abs(touch.clientY - touchState.value.startY)
+    if (dx > 10 || dy > 10) {
+      clearTimeout(touchState.value.holdTimer)
+      touchState.value = null
+      return
+    }
+    return
+  }
+
+  e.preventDefault()
+
+  // Move clone
+  if (touchClone.value) {
+    touchClone.value.style.left = `${touch.clientX}px`
+    touchClone.value.style.top = `${touch.clientY}px`
+  }
+
+  // Highlight drop target
+  const el = document.elementFromPoint(touch.clientX, touch.clientY)
+  const dropZone = el?.closest('[data-drop-date]')
+  dropTargetDate.value = dropZone?.dataset.dropDate || null
+}
+
+const onTouchEnd = async () => {
+  if (!touchState.value) return
+  clearTimeout(touchState.value.holdTimer)
+
+  const wasDragging = touchState.value.isDragging
+  const task = touchState.value.task
+
+  // Cleanup clone
+  if (touchClone.value) {
+    touchClone.value.remove()
+    touchClone.value = null
+  }
+
+  // Restore opacity
+  const el = document.querySelector(`[data-task-id="${task.id}"]`)
+  if (el) el.style.opacity = '1'
+
+  if (wasDragging && dropTargetDate.value && draggedTask.value) {
+    try {
+      await tasksStore.updateTask(draggedTask.value.id, {
+        due_date: dropTargetDate.value,
+      })
+    } catch (error) {
+      console.error('Touch drag error:', error)
+    }
+  }
+
+  touchState.value = null
+  draggedTask.value = null
+  dropTargetDate.value = null
 }
 
 // Обновление линии текущего времени

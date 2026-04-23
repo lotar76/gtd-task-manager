@@ -1,5 +1,32 @@
 <template>
+  <!-- Mini mode (month/grid view) -->
   <div
+    v-if="mini"
+    class="cursor-pointer transition-colors px-1.5 py-1 rounded border border-gray-200/60 dark:border-gray-700/40 hover:bg-gray-50 dark:hover:bg-gray-800/50 h-full"
+    @click="$emit('task-click', task)"
+  >
+    <div class="flex items-center gap-1 min-w-0">
+      <svg v-if="role === 'watcher'" class="w-3 h-3 flex-shrink-0 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.46 12C3.73 7.94 7.52 5 12 5s8.27 2.94 9.54 7c-1.27 4.06-5.06 7-9.54 7S3.73 16.06 2.46 12z" /></svg>
+      <span
+        v-if="priorityMeta && task.priority !== 'medium'"
+        class="w-1 h-1 rounded-full flex-shrink-0"
+        :class="priorityMeta.dot"
+      ></span>
+      <h3 class="truncate text-[11px] font-medium" :class="task.completed_at ? 'text-gray-400 line-through' : 'text-gray-800 dark:text-gray-100'">{{ task.title }}</h3>
+    </div>
+    <div v-if="miniSubline" class="flex items-center gap-1.5 mt-0.5 text-[9px] text-gray-400 truncate">
+      <span v-if="task.estimated_time || task.end_time">
+        <template v-if="task.estimated_time && task.end_time">{{ formatTime(task.estimated_time) }}–{{ formatTime(task.end_time) }}</template>
+        <template v-else-if="task.estimated_time">{{ formatTime(task.estimated_time) }}</template>
+        <template v-else>до {{ formatTime(task.end_time) }}</template>
+      </span>
+      <span v-if="isOtherCreator" class="truncate">{{ task.creator.name }}</span>
+    </div>
+  </div>
+
+  <!-- Normal / Compact modes -->
+  <div
+    v-else
     class="group cursor-pointer transition-colors"
     :class="[
       compact ? 'px-1.5 py-1 rounded text-xs' : 'border rounded-lg px-3 py-2.5',
@@ -142,6 +169,10 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  mini: {
+    type: Boolean,
+    default: false,
+  },
 })
 
 defineEmits(['task-click', 'toggle-complete'])
@@ -173,6 +204,16 @@ const participants = (role) => {
 }
 const assigneeNames = computed(() => participants('assignee'))
 const watcherNames = computed(() => participants('watcher'))
+
+const isOtherCreator = computed(() => {
+  if (!props.task.creator?.name) return false
+  const uid = authStore.user?.id
+  return props.task.creator.id !== uid
+})
+
+const miniSubline = computed(() => {
+  return !!(props.task.estimated_time || props.task.end_time || isOtherCreator.value)
+})
 
 const priorityMap = {
   low:    { label: 'Низкий',  dot: 'bg-gray-400' },
