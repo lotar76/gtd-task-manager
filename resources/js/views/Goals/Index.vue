@@ -117,12 +117,12 @@
           <table class="border-separate border-spacing-0" style="table-layout: fixed;">
             <thead>
               <tr>
-                <th class="hidden sm:table-cell sticky left-0 z-20 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 w-8"></th>
-                <th class="sticky left-0 sm:left-8 z-20 bg-gray-50 dark:bg-gray-800 px-2 py-2 text-left text-[10px] font-medium text-gray-400 uppercase tracking-wider border-b border-gray-200 dark:border-gray-700 w-14 sm:min-w-[60px]"></th>
+                <th class="hidden sm:table-cell sticky left-0 top-0 z-30 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 w-8"></th>
+                <th class="sticky left-0 sm:left-8 top-0 z-30 bg-gray-50 dark:bg-gray-800 px-2 py-2 text-left text-[10px] font-medium text-gray-400 uppercase tracking-wider border-b border-gray-200 dark:border-gray-700 w-14 sm:min-w-[60px]"></th>
                 <th
                   v-for="(sphere, si) in matrixSpheres"
                   :key="sphere.id"
-                  class="px-2 py-2 text-center border-b border-l border-gray-100 dark:border-gray-800/50 bg-gray-50 dark:bg-gray-800 min-w-[280px] sm:min-w-[140px] snap-start"
+                  class="sticky top-0 z-20 px-2 py-2 text-center border-b border-l border-gray-100 dark:border-gray-800/50 bg-gray-50 dark:bg-gray-800 min-w-[280px] sm:min-w-[140px] snap-start"
                   @mouseenter="hoverCol = si"
                   @mouseleave="hoverCol = -1"
                 >
