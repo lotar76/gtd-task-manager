@@ -745,12 +745,21 @@ const weekDaysData = computed(() => {
   for (let i = 0; i < 7; i++) {
     const date = weekStart.add(i, 'day')
     const dateString = date.format('YYYY-MM-DD')
-    const dayTasks = tasks.value.filter(task => 
-      task.due_date && 
-      dayjs(task.due_date).format('YYYY-MM-DD') === dateString &&
-      task.status !== 'completed'
-    )
-    
+    const dayTasks = tasks.value
+      .filter(task =>
+        task.due_date &&
+        dayjs(task.due_date).format('YYYY-MM-DD') === dateString &&
+        task.status !== 'completed'
+      )
+      .sort((a, b) => {
+        const timeA = a.estimated_time || a.end_time
+        const timeB = b.estimated_time || b.end_time
+        if (!timeA && !timeB) return 0
+        if (!timeA) return 1
+        if (!timeB) return -1
+        return timeA.localeCompare(timeB)
+      })
+
     days.push({
       day: date.date(),
       monthName: date.format('MMM'),

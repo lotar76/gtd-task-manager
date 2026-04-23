@@ -2,7 +2,8 @@
   <!-- Mini mode (month/grid view) -->
   <div
     v-if="mini"
-    class="cursor-pointer transition-colors px-1.5 py-1 rounded border border-gray-200/60 dark:border-gray-700/40 hover:bg-gray-50 dark:hover:bg-gray-800/50 h-full"
+    class="cursor-pointer transition-colors px-1.5 py-1 rounded border border-gray-200/60 dark:border-gray-700/40 h-full"
+    :style="{ backgroundColor: miniBg }"
     @click="$emit('task-click', task)"
   >
     <div class="flex items-center gap-1 min-w-0">
@@ -213,6 +214,40 @@ const isOtherCreator = computed(() => {
 
 const miniSubline = computed(() => {
   return !!(props.task.estimated_time || props.task.end_time || isOtherCreator.value)
+})
+
+const miniPalette = [
+  '#f0f9ff', // sky-50
+  '#f0fdf4', // green-50
+  '#fefce8', // yellow-50
+  '#fff7ed', // orange-50
+  '#fdf2f8', // pink-50
+  '#faf5ff', // purple-50
+  '#ecfeff', // cyan-50
+  '#f5f3ff', // violet-50
+  '#fef2f2', // red-50
+  '#f0fdfa', // teal-50
+]
+const miniPaletteDark = [
+  'rgba(14,165,233,0.08)',
+  'rgba(34,197,94,0.08)',
+  'rgba(234,179,8,0.08)',
+  'rgba(249,115,22,0.08)',
+  'rgba(236,72,153,0.08)',
+  'rgba(168,85,247,0.08)',
+  'rgba(6,182,212,0.08)',
+  'rgba(139,92,246,0.08)',
+  'rgba(239,68,68,0.08)',
+  'rgba(20,184,166,0.08)',
+]
+const miniBg = computed(() => {
+  if (!props.mini) return undefined
+  if (props.task.completed_at) return undefined
+  const idx = (props.task.id || 0) % miniPalette.length
+  // Simple dark mode check via media query
+  const isDark = window.matchMedia?.('(prefers-color-scheme: dark)').matches
+    || document.documentElement.classList.contains('dark')
+  return isDark ? miniPaletteDark[idx] : miniPalette[idx]
 })
 
 const priorityMap = {
