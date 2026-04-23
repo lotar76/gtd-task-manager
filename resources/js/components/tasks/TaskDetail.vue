@@ -869,9 +869,10 @@ const mobileFieldsSummary = computed(() => {
   return names.length ? '— ' + names.join(', ') : ''
 })
 
-// Я создатель задачи — полный доступ
+// Я создатель задачи — полный доступ (новая задача без id тоже считается моей)
 const isOwner = computed(() => {
-  if (!props.currentUserId || !localTask.value?.created_by) return false
+  if (!props.currentUserId) return false
+  if (!localTask.value?.id) return true
   return localTask.value.created_by === props.currentUserId
 })
 
