@@ -19,7 +19,7 @@
             <!-- Desktop: chips inline -->
             <div v-if="!isMobile" class="flex items-center gap-1.5 flex-1 min-w-0 overflow-visible" data-picker-popover>
               <div class="relative">
-                <Chip v-if="localTask.due_date" icon="calendar" :label="formattedDateTime" @click="canEditFields || togglePicker('date')" :active="picker === 'date'" />
+                <Chip v-if="localTask.due_date" icon="calendar" :label="formattedDateTime" @click="canEditFields && togglePicker('date')" :active="picker === 'date'" />
                 <AddInline v-else-if="canEditFields" icon="calendar" label="Дата" @click="togglePicker('date')" />
                 <div v-if="picker === 'date' && canEditFields" class="absolute top-full left-0 mt-1 z-20 p-3 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 flex items-center gap-2 whitespace-nowrap" data-picker-popover>
                   <input v-model="localTask.due_date" @change="onDueDateChange" type="date" class="px-2 py-1 text-sm bg-gray-50 dark:bg-gray-900 rounded border border-gray-200 dark:border-gray-700" />
@@ -30,7 +30,7 @@
                 </div>
               </div>
               <div class="relative">
-                <Chip icon="flag" :label="statusLabel" @click="canEditFields || togglePicker('status')" :active="picker === 'status'" />
+                <Chip icon="flag" :label="statusLabel" @click="canEditFields && togglePicker('status')" :active="picker === 'status'" />
                 <div v-if="picker === 'status' && canEditFields" class="absolute top-full left-0 mt-1 z-20 p-1 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 min-w-[160px]" data-picker-popover>
                   <button
                     v-for="s in statusOptions" :key="s.value"
@@ -41,7 +41,7 @@
                 </div>
               </div>
               <div class="relative">
-                <Chip :dot-class="priorityDot" :label="priorityLabel" @click="canEditFields || togglePicker('priority')" :active="picker === 'priority'" :label-class="priorityLabelClass" />
+                <Chip :dot-class="priorityDot" :label="priorityLabel" @click="canEditFields && togglePicker('priority')" :active="picker === 'priority'" :label-class="priorityLabelClass" />
                 <div v-if="picker === 'priority' && canEditFields" class="absolute top-full left-0 mt-1 z-20 p-1 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 min-w-[140px]" data-picker-popover>
                   <button
                     v-for="p in priorityOptions" :key="p.value"
@@ -172,14 +172,14 @@
                   <!-- Chips: date, status, priority -->
                   <div class="flex items-center gap-1.5 overflow-x-auto pb-1">
                     <div class="flex-shrink-0">
-                      <Chip v-if="localTask.due_date" icon="calendar" :label="formattedDateTime" @click="canEditFields || togglePicker('date')" :active="picker === 'date'" />
+                      <Chip v-if="localTask.due_date" icon="calendar" :label="formattedDateTime" @click="canEditFields && togglePicker('date')" :active="picker === 'date'" />
                       <AddInline v-else-if="canEditFields" icon="calendar" label="Дата" @click="togglePicker('date')" />
                     </div>
                     <div class="flex-shrink-0">
-                      <Chip icon="flag" :label="statusLabel" @click="canEditFields || togglePicker('status')" :active="picker === 'status'" />
+                      <Chip icon="flag" :label="statusLabel" @click="canEditFields && togglePicker('status')" :active="picker === 'status'" />
                     </div>
                     <div class="flex-shrink-0">
-                      <Chip :dot-class="priorityDot" :label="priorityLabel" @click="canEditFields || togglePicker('priority')" :active="picker === 'priority'" :label-class="priorityLabelClass" />
+                      <Chip :dot-class="priorityDot" :label="priorityLabel" @click="canEditFields && togglePicker('priority')" :active="picker === 'priority'" :label-class="priorityLabelClass" />
                     </div>
                   </div>
 

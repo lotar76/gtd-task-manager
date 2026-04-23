@@ -289,50 +289,67 @@
         class="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden"
       />
 
-      <!-- Mobile FABs -->
-      <div v-if="!sidebarOpen" class="fixed bottom-5 right-5 z-30 lg:hidden flex flex-col gap-3 items-center">
-        <!-- Quick AI task -->
-        <button
-          @click="showQuickAiInput = true"
-          class="w-10 h-10 bg-violet-500 hover:bg-violet-600 text-white rounded-full shadow-lg inline-flex items-center justify-center active:scale-95 transition-transform"
-        >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456z" />
-          </svg>
-        </button>
-        <!-- Add task -->
-        <button
-          @click="handleQuickAddTask"
-          class="w-10 h-10 bg-green-500 hover:bg-green-600 text-white rounded-full shadow-lg inline-flex items-center justify-center active:scale-95 transition-transform"
-        >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-          </svg>
-        </button>
+      <!-- Mobile Bottom Bar -->
+      <div v-if="!sidebarOpen" class="fixed bottom-0 left-0 right-0 z-30 lg:hidden bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 safe-area-bottom">
+        <div class="flex items-center justify-around h-14">
+          <!-- Menu -->
+          <button
+            @click="sidebarOpen = true"
+            class="flex flex-col items-center justify-center flex-1 h-full text-gray-500 dark:text-gray-400 active:bg-gray-100 dark:active:bg-gray-700 transition-colors"
+          >
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+            </svg>
+            <span class="text-[10px] mt-0.5">Меню</span>
+          </button>
 
-        <!-- Calendar button -->
-        <button
-          @click="handleCalendarClick"
-          class="w-10 h-10 bg-purple-600 hover:bg-purple-700 text-white rounded-full shadow-lg inline-flex items-center justify-center active:scale-95 transition-transform"
-        >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-          </svg>
-        </button>
+          <!-- Calendar -->
+          <button
+            @click="handleCalendarClick"
+            class="flex flex-col items-center justify-center flex-1 h-full text-gray-500 dark:text-gray-400 active:bg-gray-100 dark:active:bg-gray-700 transition-colors"
+          >
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            <span class="text-[10px] mt-0.5">Календарь</span>
+          </button>
 
-        <!-- Open sidebar -->
-        <button
-          @click="sidebarOpen = true"
-          class="w-12 h-12 bg-primary-600 hover:bg-primary-700 text-white rounded-full shadow-lg inline-flex items-center justify-center active:scale-95 transition-transform"
-        >
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-          </svg>
-        </button>
+          <!-- Add task (center, accent circle) -->
+          <button
+            @click="handleQuickAddTask"
+            class="flex items-center justify-center w-10 h-10 bg-green-500 text-white rounded-full active:scale-95 transition-transform"
+          >
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+          </button>
+
+          <!-- AI -->
+          <button
+            @click="showQuickAiInput = true"
+            class="flex flex-col items-center justify-center flex-1 h-full text-gray-500 dark:text-gray-400 active:bg-gray-100 dark:active:bg-gray-700 transition-colors"
+          >
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z" />
+            </svg>
+            <span class="text-[10px] mt-0.5">AI</span>
+          </button>
+
+          <!-- Habits -->
+          <button
+            @click="$router.push('/challenge')"
+            class="flex flex-col items-center justify-center flex-1 h-full text-gray-500 dark:text-gray-400 active:bg-gray-100 dark:active:bg-gray-700 transition-colors"
+          >
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182" />
+            </svg>
+            <span class="text-[10px] mt-0.5">Привычки</span>
+          </button>
+        </div>
       </div>
 
       <!-- Main Content -->
-      <main class="flex-1 flex flex-col overflow-hidden">
+      <main class="flex-1 flex flex-col overflow-hidden pb-14 lg:pb-0">
         <!-- Toolbar -->
         <Toolbar
           :user="user"
@@ -1001,6 +1018,8 @@ const isProjectActive = (projectId) => {
   }
 }
 
-
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
 </style>
 
