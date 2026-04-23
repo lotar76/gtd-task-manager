@@ -7,24 +7,25 @@
     ]"
     @click="$emit('task-click', task)"
   >
-    <div class="flex items-start" :class="compact ? 'gap-1' : 'gap-2.5'">
-      <!-- Checkbox (скрыт для наблюдателя) -->
-      <button
-        v-if="role !== 'watcher'"
-        @click.stop="$emit('toggle-complete', task)"
-        class="flex-shrink-0 rounded border flex items-center justify-center transition-colors"
-        :class="[
-          compact ? 'mt-0.5 w-3.5 h-3.5' : 'mt-0.5 w-4 h-4',
-          task.completed_at
-            ? 'bg-emerald-500 border-emerald-500'
-            : 'border-gray-300 dark:border-gray-600 hover:border-emerald-500'
-        ]"
-      >
-        <svg v-if="task.completed_at" :class="compact ? 'w-2 h-2' : 'w-3 h-3'" class="text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>
-      </button>
-      <div v-else class="flex-shrink-0 flex items-center justify-center text-gray-300 dark:text-gray-600" :class="compact ? 'mt-0.5 w-3.5 h-3.5' : 'mt-0.5 w-4 h-4'" title="Только наблюдение">
-        <svg :class="compact ? 'w-3 h-3' : 'w-3.5 h-3.5'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.46 12C3.73 7.94 7.52 5 12 5s8.27 2.94 9.54 7c-1.27 4.06-5.06 7-9.54 7S3.73 16.06 2.46 12z" /></svg>
-      </div>
+    <div class="flex items-start" :class="compact ? '' : 'gap-2.5'">
+      <!-- Checkbox (скрыт для наблюдателя и в compact режиме) -->
+      <template v-if="!compact">
+        <button
+          v-if="role !== 'watcher'"
+          @click.stop="$emit('toggle-complete', task)"
+          class="flex-shrink-0 mt-0.5 w-4 h-4 rounded border flex items-center justify-center transition-colors"
+          :class="[
+            task.completed_at
+              ? 'bg-emerald-500 border-emerald-500'
+              : 'border-gray-300 dark:border-gray-600 hover:border-emerald-500'
+          ]"
+        >
+          <svg v-if="task.completed_at" class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>
+        </button>
+        <div v-else class="flex-shrink-0 mt-0.5 w-4 h-4 flex items-center justify-center text-gray-300 dark:text-gray-600" title="Только наблюдение">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.46 12C3.73 7.94 7.52 5 12 5s8.27 2.94 9.54 7c-1.27 4.06-5.06 7-9.54 7S3.73 16.06 2.46 12z" /></svg>
+        </div>
+      </template>
 
       <div class="flex-1 min-w-0">
         <!-- Title row -->
@@ -46,10 +47,14 @@
               {{ task.title }}
             </h3>
           </div>
-          <span v-if="task.creator?.name" class="inline-flex items-center gap-1 text-gray-400 flex-shrink-0 truncate" :class="compact ? 'text-[9px] max-w-[100px]' : 'text-[11px] max-w-[160px]'">
+          <span v-if="!compact && task.creator?.name" class="inline-flex items-center gap-1 text-gray-400 flex-shrink-0 truncate text-[11px] max-w-[160px]">
             <svg class="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
             {{ task.creator.name }}
           </span>
+        </div>
+        <!-- Creator under title (compact only) -->
+        <div v-if="compact && task.creator?.name" class="truncate text-[9px] text-gray-400 mt-0.5">
+          {{ task.creator.name }}
         </div>
 
         <!-- Meta -->

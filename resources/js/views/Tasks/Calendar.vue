@@ -233,42 +233,81 @@
           </div>
         </div>
 
-        <!-- Mobile: Horizontal Scroll -->
-        <div class="lg:hidden overflow-x-auto">
-          <div class="flex min-w-max">
+        <!-- Mobile: 2-column grid + full-width Sunday -->
+        <div class="lg:hidden">
+          <!-- Пн-Сб: 3 ряда по 2 колонки -->
+          <div class="grid grid-cols-2">
             <div
-              v-for="(day, index) in weekDaysData"
+              v-for="(day, index) in weekDaysData.slice(0, 6)"
               :key="index"
-              class="w-[280px] min-w-[280px] border-r border-gray-200 dark:border-gray-700 last:border-r-0 p-3"
-              :class="{
-                'bg-primary-50 dark:bg-primary-900/30': day.isToday
-              }"
+              class="p-2 border-b border-r border-gray-200 dark:border-gray-700 min-h-[120px]"
+              :class="[
+                index % 2 === 1 ? 'border-r-0' : '',
+                day.isToday ? 'bg-primary-50 dark:bg-primary-900/30' : ''
+              ]"
             >
-              <div class="mb-3 sticky top-0 bg-inherit pb-2 border-b border-gray-200 dark:border-gray-700">
-                <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">{{ weekDays[index] }}</div>
-                <span
-                  class="text-base font-semibold"
-                  :class="{
-                    'text-primary-700 dark:text-primary-400': day.isToday,
-                    'text-gray-900 dark:text-white': !day.isToday
-                  }"
+              <div class="flex items-center justify-between mb-2">
+                <div class="flex items-baseline gap-1.5">
+                  <span
+                    class="text-base font-semibold"
+                    :class="day.isToday ? 'text-primary-700 dark:text-primary-400' : 'text-gray-900 dark:text-white'"
+                  >{{ day.day }}</span>
+                  <span class="text-xs text-gray-500 dark:text-gray-400">{{ weekDays[index] }}</span>
+                </div>
+                <button
+                  @click.stop="handleAddTaskForDay(day.date)"
+                  class="w-5 h-5 flex items-center justify-center rounded-full text-gray-400 dark:text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors touch-manipulation"
                 >
-                  {{ day.day }} {{ day.monthName }}
-                </span>
+                  <PlusIcon class="w-3.5 h-3.5" />
+                </button>
               </div>
-
-              <!-- Tasks for this day -->
-              <div class="space-y-2">
+              <div class="space-y-1">
                 <TaskItem
                   v-for="task in day.tasks"
                   :key="task.id"
                   :task="task"
+                  compact
                   @task-click="handleTaskClick"
                   @toggle-complete="handleToggleComplete"
                 />
-                <div v-if="day.tasks.length === 0" class="text-xs text-gray-400 dark:text-gray-500 text-center py-4">
+                <div v-if="day.tasks.length === 0" class="text-xs text-gray-400 dark:text-gray-500 text-center py-2">
                   Нет задач
                 </div>
+              </div>
+            </div>
+          </div>
+          <!-- Вс: на всю ширину -->
+          <div
+            v-if="weekDaysData[6]"
+            class="p-2 min-h-[80px]"
+            :class="weekDaysData[6].isToday ? 'bg-primary-50 dark:bg-primary-900/30' : ''"
+          >
+            <div class="flex items-center justify-between mb-2">
+              <div class="flex items-baseline gap-1.5">
+                <span
+                  class="text-base font-semibold"
+                  :class="weekDaysData[6].isToday ? 'text-primary-700 dark:text-primary-400' : 'text-gray-900 dark:text-white'"
+                >{{ weekDaysData[6].day }}</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400">{{ weekDays[6] }}</span>
+              </div>
+              <button
+                @click.stop="handleAddTaskForDay(weekDaysData[6].date)"
+                class="w-5 h-5 flex items-center justify-center rounded-full text-gray-400 dark:text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors touch-manipulation"
+              >
+                <PlusIcon class="w-3.5 h-3.5" />
+              </button>
+            </div>
+            <div class="space-y-1">
+              <TaskItem
+                v-for="task in weekDaysData[6].tasks"
+                :key="task.id"
+                :task="task"
+                compact
+                @task-click="handleTaskClick"
+                @toggle-complete="handleToggleComplete"
+              />
+              <div v-if="weekDaysData[6].tasks.length === 0" class="text-xs text-gray-400 dark:text-gray-500 text-center py-2">
+                Нет задач
               </div>
             </div>
           </div>
