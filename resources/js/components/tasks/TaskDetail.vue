@@ -471,10 +471,12 @@
                 <button
                   v-if="localTask.id && !localTask.completed_at"
                   @click="handleComplete"
-                  class="px-4 py-1.5 text-sm font-medium rounded-lg transition-all bg-emerald-500 text-white hover:bg-emerald-600 active:scale-95 flex items-center gap-1.5"
+                  :disabled="completing"
+                  class="px-4 py-1.5 text-sm font-medium rounded-lg transition-all bg-emerald-500 text-white hover:bg-emerald-600 active:scale-95 flex items-center gap-1.5 disabled:opacity-70 disabled:cursor-wait"
                 >
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
-                  Выполнено
+                  <svg v-if="completing" class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke-width="3" stroke-dasharray="30 60" /></svg>
+                  <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                  {{ completing ? 'Завершаю…' : 'Выполнено' }}
                 </button>
                 <button
                   v-else-if="localTask.id && localTask.completed_at"
@@ -1228,6 +1230,7 @@ const handleClose = async () => {
   emit('close')
 }
 
+const completing = ref(false)
 const handleComplete = async () => {
   const ok = await confirmStore.ask({
     title: 'Завершить задачу?',
@@ -1236,9 +1239,14 @@ const handleComplete = async () => {
     danger: false,
   })
   if (!ok) return
-  await api.post(`/v1/tasks/${localTask.value.id}/complete`)
-  emit('completed', localTask.value)
-  emit('close')
+  completing.value = true
+  try {
+    await api.post(`/v1/tasks/${localTask.value.id}/complete`)
+    emit('completed', localTask.value)
+    emit('close')
+  } finally {
+    completing.value = false
+  }
 }
 const handleUncomplete = async () => {
   const ok = await confirmStore.ask({
