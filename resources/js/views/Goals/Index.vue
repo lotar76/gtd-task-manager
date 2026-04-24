@@ -48,7 +48,7 @@
           </button>
         </div>
 
-        <!-- MONTH: Calendar view -->
+        <!-- MONTH: Matrix view -->
         <div v-if="scale === 'month' && filteredGoals.length > 0">
           <!-- Month nav -->
           <div class="flex items-center gap-3 mb-3">
@@ -62,53 +62,94 @@
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
             </button>
           </div>
-          <!-- Calendar grid -->
-          <div class="rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-            <!-- Day names -->
-            <div class="grid grid-cols-7 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-              <div v-for="d in ['Пн','Вт','Ср','Чт','Пт','Сб','Вс']" :key="d" class="px-1 py-1.5 text-center text-[10px] font-medium text-gray-500 dark:text-gray-400">{{ d }}</div>
-            </div>
-            <!-- Weeks -->
-            <div class="grid grid-cols-7">
-              <div
-                v-for="(cell, idx) in calendarCells"
-                :key="idx"
-                class="min-h-[80px] border-b border-r border-gray-100 dark:border-gray-800 p-1 transition-all"
-                :class="[
-                  cell.isCurrentMonth ? 'bg-white dark:bg-gray-900' : 'bg-gray-50/50 dark:bg-gray-800/30',
-                  dragOver === `cal-${idx}` ? 'ring-2 ring-primary-400 ring-inset rounded' : ''
-                ]"
-                @dragover.prevent="cell.isCurrentMonth && (dragOver = `cal-${idx}`)"
-                @dragleave="dragOver = null"
-                @drop.prevent="handleCalDrop(cell)"
-              >
-                <div class="text-[10px] mb-1" :class="cell.isToday ? 'w-5 h-5 rounded-full bg-primary-500 text-white flex items-center justify-center font-bold' : cell.isCurrentMonth ? 'text-gray-500' : 'text-gray-300 dark:text-gray-600'">
-                  {{ cell.day }}
-                </div>
-                <div class="space-y-0.5">
-                  <div
-                    v-for="goal in cell.goals"
-                    :key="goal.id"
-                    draggable="true"
-                    @dragstart="handleDragStart($event, goal)"
-                    @dragend="dragGoal = null; dragOver = null"
-                    @click="openGoal(goal)"
-                    class="text-[10px] leading-tight px-1.5 py-1.5 rounded truncate cursor-grab text-white hover:brightness-110 active:cursor-grabbing"
-                    :style="{ backgroundColor: goal.life_sphere?.color || '#6366f1' }"
-                    :title="goal.name"
+          <!-- Matrix -->
+          <div class="overflow-x-auto rounded-lg sm:rounded-lg border border-gray-200 dark:border-gray-700 stream-matrix -mx-4 sm:mx-0 snap-x snap-mandatory sm:snap-none scroll-pl-14 sm:scroll-pl-0">
+            <table class="border-separate border-spacing-0" style="table-layout: fixed;">
+              <thead>
+                <tr>
+                  <th class="sticky left-0 top-0 z-30 bg-gray-50 dark:bg-gray-800 px-2 py-2 text-left text-[10px] font-medium text-gray-400 uppercase tracking-wider border-b border-gray-200 dark:border-gray-700 w-14 sm:min-w-[60px]"></th>
+                  <th
+                    v-for="(sphere, si) in matrixSpheres"
+                    :key="sphere.id"
+                    class="sticky top-0 z-20 px-2 py-2 text-center border-b border-l border-gray-100 dark:border-gray-800/50 bg-gray-50 dark:bg-gray-800 min-w-[280px] sm:min-w-[140px] snap-start"
+                    @mouseenter="hoverCol = si"
+                    @mouseleave="hoverCol = -1"
                   >
-                    {{ goal.name }}
-                  </div>
-                </div>
-                <button
-                  v-if="cell.isCurrentMonth"
-                  @click.stop="openNewGoalFromCal(cell.day)"
-                  class="w-full flex items-center justify-center mt-0.5 rounded text-gray-300 dark:text-gray-600 hover:text-primary-500 dark:hover:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors"
+                    <router-link :to="`/spheres/${sphere.id}`" class="flex flex-col items-center gap-1 hover:opacity-80 transition-opacity">
+                      <div class="w-6 h-6 rounded-full overflow-hidden border flex-shrink-0" :style="{ borderColor: sphere.color }">
+                        <img v-if="sphere.cover_image_url" :src="sphere.cover_image_url" class="w-full h-full object-cover" />
+                        <div v-else class="w-full h-full flex items-center justify-center text-white text-[7px] font-bold" :style="{ backgroundColor: sphere.color }">{{ sphere.name?.charAt(0) }}</div>
+                      </div>
+                      <span class="text-[10px] font-medium text-gray-500 dark:text-gray-400 truncate max-w-[100px]">{{ sphere.name }}</span>
+                    </router-link>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  v-for="day in monthDays"
+                  :key="day"
+                  @mouseenter="hoverRow = day - 1"
+                  @mouseleave="hoverRow = -1"
                 >
-                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
-                </button>
-              </div>
-            </div>
+                  <td
+                    class="sticky left-0 z-10 px-2 py-1.5 border-b border-gray-200 dark:border-gray-700 text-[11px] whitespace-nowrap w-14 sm:min-w-[60px]"
+                    :class="[
+                      isToday(day) ? 'text-primary-600 dark:text-primary-400 font-semibold bg-primary-50 dark:bg-primary-900' :
+                      isWeekend(day) ? 'text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-800' :
+                      'text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-900',
+                      hoverRow === day - 1 ? '!bg-primary-50 dark:!bg-primary-800' : ''
+                    ]"
+                  >
+                    {{ day }} {{ dayOfWeek(day) }}
+                  </td>
+                  <td
+                    v-for="(sphere, si) in matrixSpheres"
+                    :key="sphere.id"
+                    class="px-1 py-1 border-b border-l border-gray-100 dark:border-gray-800/50 align-top transition-colors min-w-[280px] sm:min-w-[140px] max-w-[280px] sm:max-w-none overflow-hidden"
+                    :class="[
+                      isToday(day) ? 'bg-primary-50/20 dark:bg-primary-900/5' :
+                      isWeekend(day) ? 'bg-gray-50/50 dark:bg-gray-800/20' : 'bg-white dark:bg-gray-900',
+                      (hoverRow === day - 1 || hoverCol === si) ? '!bg-primary-50/10 dark:!bg-primary-800/5' : ''
+                    ]"
+                    @mouseenter="hoverCol = si"
+                    @mouseleave="hoverCol = -1"
+                  >
+                    <div
+                      class="flex items-stretch gap-0.5 min-h-[24px] group/cell"
+                      @dragover.prevent="dragOver = `month-${sphere.id}-${day}`"
+                      @dragleave="dragOver = null"
+                      @drop.prevent="handleMonthMatrixDrop(sphere.id, day)"
+                      :class="dragOver === `month-${sphere.id}-${day}` ? 'ring-2 ring-primary-400 ring-inset rounded' : ''"
+                    >
+                      <div v-if="monthMatrixGoals(sphere.id, day).length > 0" class="flex-1 min-w-0 space-y-0.5">
+                        <div
+                          v-for="goal in monthMatrixGoals(sphere.id, day)"
+                          :key="goal.id"
+                          draggable="true"
+                          @dragstart="handleDragStart($event, goal)"
+                          @dragend="dragGoal = null; dragOver = null"
+                          @click="openGoal(goal)"
+                          class="text-[10px] leading-tight px-1.5 py-1.5 rounded cursor-grab truncate text-white hover:brightness-110 transition-all active:cursor-grabbing"
+                          :style="{ backgroundColor: sphere.color }"
+                          :title="goal.name"
+                        >
+                          {{ goal.name }}
+                        </div>
+                      </div>
+                      <button
+                        @click.stop="openNewGoalFromMonth(sphere.id, day)"
+                        class="flex-shrink-0 w-5 h-5 flex items-center justify-center rounded text-gray-300 dark:text-gray-600 hover:text-primary-500 dark:hover:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors self-center"
+                        :class="monthMatrixGoals(sphere.id, day).length === 0 ? 'mx-auto' : ''"
+                        title="Создать цель"
+                      >
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
 
@@ -629,6 +670,34 @@ const scaleYears = computed(() => {
 
 const isNowYearMonth = (yr, m) => yr === new Date().getFullYear() && m === new Date().getMonth()
 
+const monthMatrixGoals = (sphereId, day) => {
+  const dateStr = `${calYear.value}-${String(calMonth.value + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+  return filteredGoals.value
+    .filter(g => {
+      if (!g.deadline) return false
+      return g.life_sphere_id === sphereId && g.deadline.substring(0, 10) === dateStr
+    })
+    .sort((a, b) => new Date(a.deadline) - new Date(b.deadline))
+}
+
+const monthDays = computed(() => new Date(calYear.value, calMonth.value + 1, 0).getDate())
+
+const DAY_NAMES_SHORT = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб']
+
+const isToday = (day) => {
+  const t = new Date()
+  return calYear.value === t.getFullYear() && calMonth.value === t.getMonth() && day === t.getDate()
+}
+
+const dayOfWeek = (day) => {
+  return DAY_NAMES_SHORT[new Date(calYear.value, calMonth.value, day).getDay()]
+}
+
+const isWeekend = (day) => {
+  const dow = new Date(calYear.value, calMonth.value, day).getDay()
+  return dow === 0 || dow === 6
+}
+
 const streamMatrixGoals = (sphereId, yr, m) => {
   return filteredGoals.value
     .filter(g => {
@@ -713,6 +782,27 @@ const handleCalDrop = async (cell) => {
   }
 }
 
+const handleMonthMatrixDrop = async (sphereId, day) => {
+  dragOver.value = null
+  if (!dragGoal.value) return
+  const goal = dragGoal.value
+  dragGoal.value = null
+  const newDeadline = `${calYear.value}-${String(calMonth.value + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+  goal.deadline = newDeadline + 'T00:00:00.000000Z'
+  goal.life_sphere_id = sphereId
+  try {
+    await goalsStore.updateGoal(goal.id, { deadline: newDeadline, life_sphere_id: sphereId })
+  } catch {
+    await goalsStore.fetchAllGoals({ force: true })
+  }
+}
+
+const openNewGoalFromMonth = (sphereId, day) => {
+  const deadline = `${calYear.value}-${String(calMonth.value + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+  selectedGoal.value = { life_sphere_id: sphereId, deadline }
+  showGoalModal.value = true
+}
+
 const openGoal = (goal) => router.push(`/goals/${goal.id}`)
 
 const openNewGoalFromCal = (day) => {
@@ -730,7 +820,7 @@ const openNewGoal = (sphereId, year, month) => {
 const handleSaveGoal = async (goalData) => {
   goalError.value = ''
   try {
-    if (selectedGoal.value) {
+    if (selectedGoal.value?.id) {
       await goalsStore.updateGoal(selectedGoal.value.id, goalData)
     } else {
       await goalsStore.createGoal(goalData)
