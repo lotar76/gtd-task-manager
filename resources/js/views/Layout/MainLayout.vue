@@ -89,6 +89,27 @@
               >
                 Привычки
               </NavLink>
+              <NavLink
+                to="/projects"
+                icon="streams"
+                @close-sidebar="sidebarOpen = false"
+              >
+                Потоки
+              </NavLink>
+            </div>
+
+            <!-- Входящие -->
+            <div class="mb-4 border-t border-gray-200 dark:border-gray-700 pt-4">
+              <DroppableNavLink
+                to="/inbox"
+                icon="inbox"
+                :count="taskCounts.inbox"
+                drop-status="inbox"
+                @task-dropped="handleTaskDropped"
+                @close-sidebar="sidebarOpen = false"
+              >
+                Входящие
+              </DroppableNavLink>
             </div>
 
             <!-- Оперативный фокус -->
@@ -182,88 +203,6 @@
               </NavLink>
             </div>
 
-            <!-- Projects -->
-            <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-              <div
-                @click="toggleProjectsCollapsed"
-                class="flex items-center justify-between px-3 mb-2 cursor-pointer select-none hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-lg transition-colors -mx-1 px-4 py-1"
-              >
-                <h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
-                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 6v12M9 4v16M14 8v8M19 5v14" />
-                  </svg>
-                  Потоки
-                </h3>
-                <button
-                  @click.stop="handleQuickAddProject"
-                  class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                  title="Создать поток"
-                >
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                  </svg>
-                </button>
-              </div>
-              <div
-                class="overflow-hidden transition-all duration-300 ease-in-out"
-                :style="{ maxHeight: projectsCollapsed ? '0px' : projectsMaxHeight }"
-              >
-              <div class="space-y-1">
-                <div
-                  v-for="project in activeProjects"
-                  :key="project.id"
-                  :class="[
-                    'flex items-center justify-between group px-3 py-1.5 rounded-lg transition-colors',
-                    isProjectActive(project.id)
-                      ? 'bg-primary-50 dark:bg-primary-900/30'
-                      : 'hover:bg-gray-50 dark:hover:bg-gray-700'
-                  ]"
-                >
-                  <router-link
-                    :to="`/projects/${project.id}`"
-                    @click="handleProjectLinkClick"
-                    class="flex items-center flex-1 min-w-0"
-                  >
-                    <div class="flex-1 min-w-0">
-                      <span
-                        :class="[
-                          'text-sm line-clamp-2',
-                          isProjectActive(project.id)
-                            ? 'text-primary-700 dark:text-primary-400 font-medium'
-                            : 'text-gray-700 dark:text-gray-300'
-                        ]"
-                      >{{ project.name }}</span>
-                      <div v-if="project.goal?.name" class="text-[10px] text-gray-400 dark:text-gray-500 truncate mt-0.5">
-                        {{ project.goal.name }}
-                      </div>
-                      <div v-if="project.total_tasks_count > 0" class="flex items-center gap-0.5 mt-1" :title="`${project.completed_tasks_count} / ${project.total_tasks_count} выполнено`">
-                        <template v-if="project.total_tasks_count <= 12">
-                          <div
-                            v-for="i in project.total_tasks_count"
-                            :key="i"
-                            class="w-2 h-2 rounded-sm"
-                            :class="i <= project.completed_tasks_count ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'"
-                          ></div>
-                        </template>
-                        <template v-else>
-                          <div
-                            v-for="i in 12"
-                            :key="i"
-                            class="w-2 h-2 rounded-sm"
-                            :class="i <= Math.round(project.completed_tasks_count / project.total_tasks_count * 12) ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'"
-                          ></div>
-                          <span class="text-[10px] text-gray-400 ml-0.5">{{ project.completed_tasks_count }}/{{ project.total_tasks_count }}</span>
-                        </template>
-                      </div>
-                    </div>
-                  </router-link>
-                </div>
-                <div v-if="activeProjects.length === 0" class="px-3 py-1.5 text-sm text-gray-500 text-center">
-                  Нет потоков
-                </div>
-              </div>
-              </div>
-            </div>
 
             <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
               <div class="space-y-1">

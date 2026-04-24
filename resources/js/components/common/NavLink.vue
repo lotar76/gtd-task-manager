@@ -20,7 +20,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, h } from 'vue'
 import { useRoute } from 'vue-router'
 import {
   InboxIcon,
@@ -89,6 +89,11 @@ const iconMap = {
   refresh: ArrowPathIcon,
   'smile-plus': SmilePlus,
   bell: BellIcon,
+  streams: {
+    render: () => h('svg', { fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24', 'stroke-width': '2', class: 'w-5 h-5' }, [
+      h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', d: 'M4 6v12M9 4v16M14 8v8M19 5v14' })
+    ])
+  },
 }
 
 const iconComponent = computed(() => iconMap[props.icon] || FolderIcon)

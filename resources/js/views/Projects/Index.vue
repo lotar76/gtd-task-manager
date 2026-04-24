@@ -26,8 +26,8 @@
             <h3 class="text-lg font-semibold text-gray-900 dark:text-white truncate">
               {{ project.name }}
             </h3>
-            <p v-if="selectedWorkspaceIds.length > 1" class="text-sm text-gray-500 dark:text-gray-400 truncate">
-              {{ getWorkspaceName(project.workspace_id) }}
+            <p v-if="project.workspace?.name" class="text-sm text-gray-500 dark:text-gray-400 truncate">
+              {{ project.workspace.name }}
             </p>
           </div>
           <button
@@ -135,6 +135,6 @@ const handleArchiveProject = async (project) => {
 }
 
 onMounted(async () => {
-  await projectsStore.fetchAllProjects()
+  await projectsStore.fetchAllProjects({ force: true })
 })
 </script>

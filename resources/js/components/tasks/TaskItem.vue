@@ -75,13 +75,13 @@
               {{ task.title }}
             </h3>
           </div>
-          <span v-if="!compact && task.creator?.name" class="inline-flex items-center gap-1 text-gray-400 flex-shrink-0 truncate text-[11px] max-w-[160px]">
+          <span v-if="!compact && isOtherCreator" class="inline-flex items-center gap-1 text-gray-400 flex-shrink-0 truncate text-[11px] max-w-[160px]">
             <component :is="ROLE_ICONS.creator.icon" class="w-3 h-3 flex-shrink-0" :stroke-width="1.8" />
             {{ task.creator.name }}
           </span>
         </div>
         <!-- Creator under title (compact only) -->
-        <div v-if="compact && task.creator?.name" class="truncate text-[9px] text-gray-400 mt-0.5">
+        <div v-if="compact && isOtherCreator" class="truncate text-[9px] text-gray-400 mt-0.5">
           {{ task.creator.name }}
         </div>
 
