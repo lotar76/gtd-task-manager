@@ -178,9 +178,11 @@ class TaskService
             $data['position'] = Task::where('workspace_id', $workspace->id)->max('position') + 1;
         }
 
-        // Извлекаем contact_ids перед созданием задачи
+        // Извлекаем contact_ids, assignee_ids, watcher_ids перед созданием задачи
         $contactIds = $data['contact_ids'] ?? [];
-        unset($data['contact_ids']);
+        $assigneeIds = $data['assignee_ids'] ?? [];
+        $watcherIds = $data['watcher_ids'] ?? [];
+        unset($data['contact_ids'], $data['assignee_ids'], $data['watcher_ids']);
 
         $task = Task::create($data);
 
@@ -189,14 +191,26 @@ class TaskService
             $task->tags()->sync($data['tags']);
         }
 
-        // Привязка контактов
-        if (!empty($contactIds)) {
-            $task->contacts()->sync(
-                collect($contactIds)->mapWithKeys(fn ($id) => [$id => ['role' => 'informed']])->toArray()
-            );
+        // Привязка контактов (assignees, watchers, informed)
+        $sync = [];
+        foreach ($assigneeIds as $id) {
+            $sync[$id] = ['role' => 'assignee'];
+        }
+        foreach ($watcherIds as $id) {
+            if (!isset($sync[$id])) {
+                $sync[$id] = ['role' => 'watcher'];
+            }
+        }
+        foreach ($contactIds as $id) {
+            if (!isset($sync[$id])) {
+                $sync[$id] = ['role' => 'informed'];
+            }
+        }
+        if (!empty($sync)) {
+            $task->contacts()->sync($sync);
         }
 
-        $task->load(['project', 'context', 'assignee', 'tags', 'creator', 'contacts']);
+        $task->load(['project', 'context', 'assignee', 'tags', 'creator', 'contacts', 'assignees', 'watchers', 'checklistItems']);
 
         // Уведомляем
         $this->notifyMembers($task, $userId, 'created');

@@ -160,6 +160,10 @@ class TaskController extends Controller
             'tags.*' => 'exists:tags,id',
             'contact_ids' => 'nullable|array',
             'contact_ids.*' => 'exists:contacts,id',
+            'assignee_ids' => 'nullable|array',
+            'assignee_ids.*' => 'exists:contacts,id',
+            'watcher_ids' => 'nullable|array',
+            'watcher_ids.*' => 'exists:contacts,id',
         ]);
 
         $task = $this->taskService->createTask($request->user(), $validated, Auth::id());

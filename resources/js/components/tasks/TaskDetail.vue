@@ -482,7 +482,7 @@
               <span v-else-if="saveState === 'error'" class="text-red-500">ошибка</span>
               <span v-if="localTask.completed_at && !completing" class="text-emerald-500">✓ завершена</span>
             </div>
-            <div v-if="!isGuest" class="flex items-center gap-2 max-sm:flex-1 max-sm:justify-between">
+            <div v-if="!isGuest" class="flex items-center gap-2 max-sm:flex-1 max-sm:justify-end">
               <button
                 v-if="localTask.id && !localTask.completed_at"
                 @click="handleComplete"
