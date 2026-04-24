@@ -1,8 +1,9 @@
 <template>
   <div class="relative" ref="rootRef">
     <div
-      class="flex items-center gap-2.5 py-1.5 px-1 -mx-1 rounded cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/60 transition-colors"
-      @click.stop="toggle"
+      class="flex items-center gap-2.5 py-1.5 px-1 -mx-1 rounded transition-colors"
+      :class="disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/60'"
+      @click.stop="!disabled && toggle()"
     >
       <div v-if="icon" class="text-gray-400 flex-shrink-0">
         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -58,6 +59,7 @@ const props = defineProps({
   placeholder: { type: String, default: '—' },
   label: { type: String, default: '' },
   icon: { type: String, default: '' },
+  disabled: { type: Boolean, default: false },
 })
 const emit = defineEmits(['update:modelValue'])
 

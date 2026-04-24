@@ -35,6 +35,7 @@
               label="Сфера"
               placeholder="Без сферы"
               :items="availableSpheres"
+              :disabled="!!form.goal_id"
             />
 
             <InlineSelect
