@@ -45,7 +45,9 @@
     >
       <template #item="{ element: challenge }">
       <div
-        class="rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/70 active:scale-[0.97] transition-transform relative p-3"
+        class="rounded-2xl border border-gray-200 dark:border-gray-700 active:scale-[0.97] transition-transform relative p-3"
+        :class="getSphereColor(challenge) ? '' : 'bg-gray-50 dark:bg-gray-800/70'"
+        :style="sphereBgStyle(challenge)"
         @click="toggleToday(challenge)"
       >
         <!-- Menu -->
@@ -140,7 +142,7 @@
         >
           <template #item="{ element: challenge }">
           <tr class="group">
-            <td class="sticky left-0 z-10 bg-white dark:bg-gray-900 px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 border-b border-r border-gray-100 dark:border-gray-800/50 group-hover:bg-gray-50 dark:group-hover:bg-gray-800/50">
+            <td class="sticky left-0 z-10 px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 border-b border-r border-gray-100 dark:border-gray-800/50 group-hover:bg-gray-50 dark:group-hover:bg-gray-800/50" :class="getSphereColor(challenge) ? '' : 'bg-white dark:bg-gray-900'" :style="sphereBgStyle(challenge, 0.1)">
               <div class="flex items-center justify-between">
                 <div class="flex items-center min-w-0 flex-1">
                   <Bars3Icon class="drag-handle w-4 h-4 text-gray-300 dark:text-gray-600 cursor-grab mr-2 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -173,8 +175,8 @@
             <td
               v-for="day in daysInMonth"
               :key="day"
-              class="px-0 py-0 text-center border-b border-gray-100 dark:border-gray-800/50 bg-white dark:bg-gray-900 group-hover:bg-gray-50 dark:group-hover:bg-gray-800/50"
-              :class="isToday(day) ? 'cursor-pointer' : 'cursor-default'"
+              class="px-0 py-0 text-center border-b border-gray-100 dark:border-gray-800/50 group-hover:bg-gray-50 dark:group-hover:bg-gray-800/50"
+              :class="[isToday(day) ? 'cursor-pointer' : 'cursor-default', 'bg-white dark:bg-gray-900']"
               @click="isToday(day) && handleCellClick(challenge, day)"
             >
               <div
@@ -685,6 +687,19 @@ const getSphereName = (challenge) => {
   if (!challenge.life_sphere_id) return null
   const s = lifeSpheresStore.allSpheres.find(s => s.id === challenge.life_sphere_id)
   return s?.name || null
+}
+const getSphereColor = (challenge) => {
+  if (!challenge.life_sphere_id) return null
+  const s = lifeSpheresStore.allSpheres.find(s => s.id === challenge.life_sphere_id)
+  return s?.color || null
+}
+function sphereBgStyle(challenge, opacity = 0.4) {
+  const hex = getSphereColor(challenge)
+  if (!hex) return {}
+  const r = parseInt(hex.slice(1, 3), 16)
+  const g = parseInt(hex.slice(3, 5), 16)
+  const b = parseInt(hex.slice(5, 7), 16)
+  return { backgroundColor: `rgba(${r}, ${g}, ${b}, ${opacity})` }
 }
 const confirmStore = useConfirmStore()
 
