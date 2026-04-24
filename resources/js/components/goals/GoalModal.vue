@@ -4,7 +4,7 @@
       <div v-if="show" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm overflow-y-auto" @click.self="$emit('close')">
         <div class="bg-white dark:bg-gray-900 rounded-xl shadow-2xl w-full max-w-md overflow-hidden my-6">
           <div class="flex items-center justify-between px-5 py-2.5 border-b border-gray-100 dark:border-gray-800">
-            <span class="text-xs text-gray-400">{{ goal ? 'Редактирование цели' : 'Новая цель' }}</span>
+            <span class="text-xs text-gray-400">{{ goal?.id ? 'Редактирование цели' : 'Новая цель' }}</span>
             <button @click="$emit('close')" class="p-1.5 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
             </button>

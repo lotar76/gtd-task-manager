@@ -30,6 +30,14 @@
             ></textarea>
 
             <InlineSelect
+              v-model="form.life_sphere_id"
+              icon="sparkles"
+              label="Сфера"
+              placeholder="Без сферы"
+              :items="availableSpheres"
+            />
+
+            <InlineSelect
               v-model="form.goal_id"
               icon="target"
               label="Цель"
@@ -55,6 +63,7 @@
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useGoalsStore } from '@/stores/goals'
+import { useLifeSpheresStore } from '@/stores/lifeSpheres'
 import InlineSelect from '@/components/common/InlineSelect.vue'
 
 const props = defineProps({
@@ -65,19 +74,22 @@ const props = defineProps({
 const emit = defineEmits(['close', 'submit'])
 
 const goalsStore = useGoalsStore()
+const spheresStore = useLifeSpheresStore()
 const availableGoals = computed(() => goalsStore.activeGoals)
+const availableSpheres = computed(() => spheresStore.allSpheres)
 
 const handleKeydown = (e) => { if (e.key === 'Escape' && props.show) emit('close') }
 onMounted(() => document.addEventListener('keydown', handleKeydown))
 onUnmounted(() => document.removeEventListener('keydown', handleKeydown))
 
-const form = ref({ goal_id: null, name: '', description: '' })
+const form = ref({ goal_id: null, life_sphere_id: null, name: '', description: '' })
 const loading = ref(false)
 const error = ref('')
 
 watch(() => props.project, (p) => {
   form.value = {
     goal_id: p?.goal_id || null,
+    life_sphere_id: p?.life_sphere_id || null,
     name: p?.name || '',
     description: p?.description || '',
   }
@@ -86,6 +98,16 @@ watch(() => props.project, (p) => {
 
 watch(() => props.show, (s) => { if (!s) { loading.value = false; error.value = '' } })
 watch(() => props.serverError, (e) => { error.value = e; if (e) loading.value = false })
+
+// Автозаполнение сферы при выборе цели
+watch(() => form.value.goal_id, (goalId) => {
+  if (goalId) {
+    const goal = availableGoals.value.find(g => g.id === goalId)
+    if (goal?.life_sphere_id) {
+      form.value.life_sphere_id = goal.life_sphere_id
+    }
+  }
+})
 
 const handleSubmit = () => {
   error.value = ''

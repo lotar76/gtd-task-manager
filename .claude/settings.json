@@ -23,7 +23,8 @@
       "Bash(done)",
       "Bash(git -C /home/igor/projects/gtd-task-manager status public/ --short)",
       "WebFetch(domain:raw.githubusercontent.com)",
-      "WebFetch(domain:unpkg.com)"
+      "WebFetch(domain:unpkg.com)",
+      "Bash(find /home/igor/projects/gtd-task-manager -type f -name *habit* -o -name *Habit*)"
     ],
     "additionalDirectories": [
       "/home/igor/projects/gtd-task-manager",

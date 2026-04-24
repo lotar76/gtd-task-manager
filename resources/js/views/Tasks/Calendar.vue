@@ -24,24 +24,43 @@
         <div class="flex items-center space-x-1 sm:space-x-2">
           <button
             @click="setView('day')"
-            class="px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-lg transition-colors whitespace-nowrap touch-manipulation"
+            class="p-2 lg:px-4 lg:py-2 text-xs sm:text-sm font-medium rounded-lg transition-colors whitespace-nowrap touch-manipulation"
             :class="viewMode === 'day' ? 'bg-primary-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 active:bg-gray-200 dark:active:bg-gray-600'"
           >
-            День
+            <!-- Mobile: icon -->
+            <svg class="w-5 h-5 lg:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+              <rect x="4" y="4" width="16" height="16" rx="2" />
+              <path d="M4 9h16" />
+              <text x="12" y="18" text-anchor="middle" font-size="8" fill="currentColor" stroke="none" font-weight="bold">1</text>
+            </svg>
+            <!-- Desktop: text -->
+            <span class="hidden lg:inline">День</span>
           </button>
           <button
             @click="setView('week')"
-            class="px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-lg transition-colors whitespace-nowrap touch-manipulation"
+            class="p-2 lg:px-4 lg:py-2 text-xs sm:text-sm font-medium rounded-lg transition-colors whitespace-nowrap touch-manipulation"
             :class="viewMode === 'week' ? 'bg-primary-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 active:bg-gray-200 dark:active:bg-gray-600'"
           >
-            Неделя
+            <!-- Mobile: icon (columns) -->
+            <svg class="w-5 h-5 lg:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+              <rect x="4" y="4" width="16" height="16" rx="2" />
+              <path d="M4 9h16M9.33 9v11M14.66 9v11" />
+            </svg>
+            <!-- Desktop: text -->
+            <span class="hidden lg:inline">Неделя</span>
           </button>
           <button
             @click="setView('month')"
-            class="px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-lg transition-colors whitespace-nowrap touch-manipulation"
+            class="p-2 lg:px-4 lg:py-2 text-xs sm:text-sm font-medium rounded-lg transition-colors whitespace-nowrap touch-manipulation"
             :class="viewMode === 'month' ? 'bg-primary-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 active:bg-gray-200 dark:active:bg-gray-600'"
           >
-            Месяц
+            <!-- Mobile: icon (grid) -->
+            <svg class="w-5 h-5 lg:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+              <rect x="4" y="4" width="16" height="16" rx="2" />
+              <path d="M4 9h16M4 14h16M9.33 9v11M14.66 9v11" />
+            </svg>
+            <!-- Desktop: text -->
+            <span class="hidden lg:inline">Месяц</span>
           </button>
         </div>
       </div>

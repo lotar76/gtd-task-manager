@@ -4,7 +4,7 @@
       <!-- LEFT: timeline -->
       <div class="min-w-0">
         <!-- Header -->
-        <div class="flex items-center justify-between mb-5">
+        <div class="flex items-center justify-between mb-2">
           <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Цели</h1>
           <div class="flex items-center gap-2">
             <!-- Scale switcher -->
@@ -32,6 +32,12 @@
             </button>
           </div>
         </div>
+        <button
+          @click="showInfoModal = true"
+          class="text-sm text-gray-400 hover:text-primary-500 dark:text-gray-500 dark:hover:text-primary-400 transition-colors mb-4 sm:mb-5 sm:-mt-3"
+        >
+          Что такое цели?
+        </button>
 
         <!-- Mobile scale switcher -->
         <div class="sm:hidden flex bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5 mb-4">
@@ -348,6 +354,105 @@
       </aside>
     </div>
 
+    <!-- Info Modal -->
+    <Teleport to="body">
+      <Transition name="fade">
+        <div v-if="showInfoModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm overflow-y-auto" @click.self="showInfoModal = false">
+          <div class="bg-white dark:bg-gray-900 rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden my-6">
+            <div class="flex items-center justify-between px-6 py-3 border-b border-gray-100 dark:border-gray-800">
+              <span class="text-sm font-medium text-gray-900 dark:text-white">Что такое цели?</span>
+              <button @click="showInfoModal = false" class="p-1.5 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+
+            <div class="px-6 py-5 max-h-[70vh] overflow-y-auto space-y-5 text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+              <p class="text-base font-medium text-gray-900 dark:text-white">
+                Цели — это конкретные результаты, которых вы хотите достичь в определённый срок.
+              </p>
+
+              <p>
+                Если сферы жизни показывают <em>направления</em>, в которых вы хотите расти, то цели — это конкретные <strong>точки на карте</strong>, к которым вы двигаетесь. Цель отвечает на вопрос: «Что именно я хочу получить и когда?»
+              </p>
+
+              <p>
+                <strong>Цели расширяют</strong> сферу жизни — задают новые рубежи, прорывы, амбиции. А <strong>привычки поливают</strong> её — питают ежедневными действиями. Вместе они создают рост: цели определяют направление, привычки дают энергию.
+              </p>
+
+              <p>
+                Хорошая цель — это мост между вашим видением идеальной жизни и ежедневными задачами. Без целей видение остаётся мечтой, а задачи превращаются в бесконечную рутину без направления.
+              </p>
+
+              <div>
+                <p class="font-semibold text-gray-900 dark:text-white mb-2">Признаки хорошей цели:</p>
+                <ul class="space-y-1.5 ml-1">
+                  <li class="flex items-start gap-2">
+                    <span class="text-green-500 mt-0.5">&#x2022;</span>
+                    <span><strong>Конкретная</strong> — понятно, что именно нужно сделать или получить</span>
+                  </li>
+                  <li class="flex items-start gap-2">
+                    <span class="text-blue-500 mt-0.5">&#x2022;</span>
+                    <span><strong>Измеримая</strong> — можно однозначно определить, достигнута она или нет</span>
+                  </li>
+                  <li class="flex items-start gap-2">
+                    <span class="text-amber-500 mt-0.5">&#x2022;</span>
+                    <span><strong>Со сроком</strong> — есть дедлайн, который создаёт здоровое давление</span>
+                  </li>
+                  <li class="flex items-start gap-2">
+                    <span class="text-purple-500 mt-0.5">&#x2022;</span>
+                    <span><strong>Привязана к сфере</strong> — вписывается в общую картину вашей жизни</span>
+                  </li>
+                  <li class="flex items-start gap-2">
+                    <span class="text-pink-500 mt-0.5">&#x2022;</span>
+                    <span><strong>Вдохновляет</strong> — вызывает желание действовать, а не чувство долга</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div>
+                <p class="font-semibold text-gray-900 dark:text-white mb-2">Масштабы целей:</p>
+                <ul class="space-y-1.5 ml-1">
+                  <li class="flex items-start gap-2">
+                    <span class="text-indigo-500 mt-0.5">&#x2022;</span>
+                    <span><strong>На месяц</strong> — тактические цели, ближайшие шаги. «Пробежать 50 км за март»</span>
+                  </li>
+                  <li class="flex items-start gap-2">
+                    <span class="text-teal-500 mt-0.5">&#x2022;</span>
+                    <span><strong>На год</strong> — стратегические цели, ключевые результаты. «Выучить английский до B2»</span>
+                  </li>
+                  <li class="flex items-start gap-2">
+                    <span class="text-orange-500 mt-0.5">&#x2022;</span>
+                    <span><strong>На 3-5 лет</strong> — большие амбиции и трансформации. «Запустить свой бизнес с оборотом 10М»</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div>
+                <p class="font-semibold text-gray-900 dark:text-white mb-2">Как работать с целями:</p>
+                <ol class="space-y-2 ml-1 list-decimal list-inside">
+                  <li><strong>Поставьте цель</strong> в привязке к сфере жизни. Спросите себя: «Какой один результат в этой сфере изменит ситуацию больше всего?»</li>
+                  <li><strong>Установите дедлайн.</strong> Цель без срока — это мечта. Дедлайн превращает намерение в обязательство.</li>
+                  <li><strong>Разбейте на проекты и задачи.</strong> Цель «Пробежать марафон» превращается в план тренировок с конкретными задачами на каждую неделю.</li>
+                  <li><strong>Отслеживайте прогресс</strong> на карте целей. Перетаскивайте цели между месяцами, если сроки меняются — это нормально.</li>
+                  <li><strong>Пересматривайте</strong> раз в месяц: какие цели движутся? Какие застряли? Нужно ли что-то отложить или отказаться?</li>
+                </ol>
+              </div>
+
+              <div class="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
+                <p class="font-semibold text-gray-900 dark:text-white mb-1.5">Зачем это нужно?</p>
+                <p>
+                  Без целей мы живём в режиме реагирования: делаем то, что срочно, а не то, что важно. Цели переключают фокус с «тушения пожаров» на осознанное строительство жизни, которую вы хотите.
+                </p>
+                <p class="mt-2">
+                  Карта целей по сферам жизни показывает полную картину: куда вы движетесь, что в приоритете, а где образовались пробелы. Это ваш навигатор от текущей точки к желаемому будущему.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
+
     <!-- Goal Modal -->
     <GoalModal
       :show="showGoalModal"
@@ -371,6 +476,7 @@ const goalsStore = useGoalsStore()
 const spheresStore = useLifeSpheresStore()
 
 const showGoalModal = ref(false)
+const showInfoModal = ref(false)
 const selectedGoal = ref(null)
 const goalError = ref('')
 const scale = ref('year')

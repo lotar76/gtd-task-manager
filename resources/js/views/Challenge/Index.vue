@@ -1,5 +1,16 @@
 <template>
   <div class="p-4 sm:p-6 max-w-full">
+    <!-- Page title -->
+    <div class="mb-1">
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Привычки</h1>
+    </div>
+    <button
+      @click="showInfoModal = true"
+      class="text-sm text-gray-400 hover:text-primary-500 dark:text-gray-500 dark:hover:text-primary-400 transition-colors mb-4"
+    >
+      Что такое привычки?
+    </button>
+
     <!-- Header -->
     <div class="flex items-center justify-center lg:justify-between mb-6 relative">
       <div class="flex items-center space-x-3">
@@ -652,6 +663,82 @@
         </div>
       </div>
     </Teleport>
+
+    <!-- Info Modal -->
+    <Teleport to="body">
+      <Transition name="fade">
+        <div v-if="showInfoModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm overflow-y-auto" @click.self="showInfoModal = false">
+          <div class="bg-white dark:bg-gray-900 rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden my-6">
+            <div class="flex items-center justify-between px-6 py-3 border-b border-gray-100 dark:border-gray-800">
+              <span class="text-sm font-medium text-gray-900 dark:text-white">Что такое привычки?</span>
+              <button @click="showInfoModal = false" class="p-1.5 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+
+            <div class="px-6 py-5 max-h-[70vh] overflow-y-auto space-y-5 text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+              <p class="text-base font-medium text-gray-900 dark:text-white">
+                Привычки — это регулярные действия, которые «поливают» ваши сферы жизни и помогают им расти.
+              </p>
+
+              <p>
+                Если <strong>цели расширяют</strong> сферу жизни — задают новые рубежи и амбиции, то <strong>привычки поливают</strong> её — питают ежедневными маленькими действиями. Без привычек цели остаются сухими планами, а сферы жизни не получают энергии для роста.
+              </p>
+
+              <p>
+                Привычка отвечает на вопрос: «Что я делаю <em>каждый день</em>, чтобы поддерживать и развивать эту сферу?» Это не разовый подвиг, а стабильный полив — день за днём.
+              </p>
+
+              <div>
+                <p class="font-semibold text-gray-900 dark:text-white mb-2">Типы привычек:</p>
+                <ul class="space-y-1.5 ml-1">
+                  <li class="flex items-start gap-2">
+                    <CheckIcon class="w-4 h-4 text-gray-400 dark:text-gray-500 mt-0.5 flex-shrink-0" />
+                    <span><strong>Обычная</strong> — простая ежедневная привычка. Сделал — отметил.</span>
+                  </li>
+                  <li class="flex items-start gap-2">
+                    <ClockIcon class="w-4 h-4 text-gray-400 dark:text-gray-500 mt-0.5 flex-shrink-0" />
+                    <span><strong>Таймер</strong> — привычка с отсчётом времени. Медитация 10 минут, чтение 30 минут.</span>
+                  </li>
+                  <li class="flex items-start gap-2">
+                    <ListBulletIcon class="w-4 h-4 text-gray-400 dark:text-gray-500 mt-0.5 flex-shrink-0" />
+                    <span><strong>Составная</strong> — из нескольких шагов. Все шаги выполнены — день засчитан.</span>
+                  </li>
+                  <li class="flex items-start gap-2">
+                    <DocumentTextIcon class="w-4 h-4 text-gray-400 dark:text-gray-500 mt-0.5 flex-shrink-0" />
+                    <span><strong>Отчёт</strong> — напиши что сделал, и день засчитан. Для рефлексии и дневников.</span>
+                  </li>
+                  <li class="flex items-start gap-2">
+                    <ArrowTrendingUpIcon class="w-4 h-4 text-gray-400 dark:text-gray-500 mt-0.5 flex-shrink-0" />
+                    <span><strong>Прогресс</strong> — нагрузка растёт каждый день. Задай начало, шаг и цель.</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div>
+                <p class="font-semibold text-gray-900 dark:text-white mb-2">Как работать с привычками:</p>
+                <ol class="space-y-2 ml-1 list-decimal list-inside">
+                  <li><strong>Привяжите к сфере жизни.</strong> Каждая привычка должна «поливать» конкретную сферу — так вы видите, какие области получают ежедневное внимание.</li>
+                  <li><strong>Начните с малого.</strong> Лучше 5 минут каждый день, чем час раз в неделю. Регулярность важнее интенсивности.</li>
+                  <li><strong>Отслеживайте серии.</strong> Непрерывная цепочка дней — мощная мотивация. Не разрывайте цепь!</li>
+                  <li><strong>Пересматривайте.</strong> Если привычка больше не служит вашим целям — замените её. Привычки должны работать на вас, а не наоборот.</li>
+                </ol>
+              </div>
+
+              <div class="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
+                <p class="font-semibold text-gray-900 dark:text-white mb-1.5">Цели vs Привычки</p>
+                <p>
+                  <strong>Цели расширяют</strong> сферу жизни — это прорывы, новые достижения, конкретные результаты со сроком. <strong>Привычки поливают</strong> — это ежедневная забота, которая питает сферу и создаёт фундамент для достижения целей.
+                </p>
+                <p class="mt-2">
+                  Представьте сферу жизни как сад. Цель — посадить новое дерево. Привычка — поливать его каждый день. Без полива даже лучшее дерево засохнет. Без новых посадок сад перестанет расти.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
   </div>
 </template>
 
@@ -713,6 +800,7 @@ const editModal = ref({ open: false, id: null, title: '', type: 'checkbox', time
 
 const mobileMenuId = ref(null)
 const saving = ref(false)
+const showInfoModal = ref(false)
 const showCreateModal = ref(false)
 const creating = ref(false)
 const createInput = ref(null)

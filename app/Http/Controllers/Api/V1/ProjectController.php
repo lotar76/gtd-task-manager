@@ -19,7 +19,7 @@ class ProjectController extends Controller
         $workspaceIds = [$request->user()->defaultWorkspace()->id];
 
         $query = Project::whereIn('workspace_id', $workspaceIds)
-            ->with(['goal:id,name', 'creator'])
+            ->with(['goal:id,name', 'lifeSphere:id,name,color,cover_image_url', 'creator'])
             ->withCount('tasks as total_tasks_count')
             ->withCount(['tasks as completed_tasks_count' => function ($query) {
                 $query->whereNotNull('completed_at');
@@ -49,6 +49,7 @@ class ProjectController extends Controller
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'goal_id' => 'nullable|exists:goals,id',
+            'life_sphere_id' => 'nullable|exists:life_spheres,id',
             'color' => 'nullable|string|size:7',
             'status' => 'nullable|in:active,archived,completed',
         ]);
@@ -58,7 +59,7 @@ class ProjectController extends Controller
         $validated['created_by'] = Auth::id();
 
         $project = Project::create($validated);
-        $project->load(['goal:id,name', 'creator']);
+        $project->load(['goal:id,name', 'lifeSphere:id,name,color,cover_image_url', 'creator']);
         $project->loadCount('tasks');
 
         return ApiResponse::success($project, 'Поток создан', 201);
@@ -81,13 +82,14 @@ class ProjectController extends Controller
             'name' => 'sometimes|string|max:255',
             'description' => 'nullable|string',
             'goal_id' => 'nullable|exists:goals,id',
+            'life_sphere_id' => 'nullable|exists:life_spheres,id',
             'color' => 'nullable|string|size:7',
             'status' => 'sometimes|in:active,archived,completed',
         ]);
 
         $project->update($validated);
 
-        $fresh = $project->fresh(['goal:id,name', 'creator'])->loadCount('tasks');
+        $fresh = $project->fresh(['goal:id,name', 'lifeSphere:id,name,color,cover_image_url', 'creator'])->loadCount('tasks');
 
         return ApiResponse::success($fresh, 'Поток обновлен');
     }

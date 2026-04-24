@@ -16,6 +16,7 @@ class Project extends Model
     protected $fillable = [
         'workspace_id',
         'goal_id',
+        'life_sphere_id',
         'name',
         'description',
         'color',
@@ -31,6 +32,11 @@ class Project extends Model
     public function goal(): BelongsTo
     {
         return $this->belongsTo(Goal::class);
+    }
+
+    public function lifeSphere(): BelongsTo
+    {
+        return $this->belongsTo(LifeSphere::class);
     }
 
     public function creator(): BelongsTo
