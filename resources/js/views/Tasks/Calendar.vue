@@ -124,6 +124,74 @@
         </div>
       </div>
 
+      <!-- Month Day Tasks Panel -->
+      <div v-if="viewMode === 'month'" class="mt-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div class="p-3 sm:p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+          <h3 class="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">
+            {{ dayjs(selectedMonthDay).format('D MMMM YYYY') }}
+          </h3>
+          <div class="flex items-center gap-1">
+            <button
+              @click="monthDaySortMode = 'time'"
+              class="p-1.5 rounded-lg transition-colors touch-manipulation"
+              :class="monthDaySortMode === 'time' ? 'bg-primary-100 dark:bg-primary-900/40 text-primary-600 dark:text-primary-400' : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'"
+              title="Сортировка по времени"
+            >
+              <ClockIcon class="w-4 h-4" />
+            </button>
+            <button
+              @click="monthDaySortMode = 'priority'"
+              class="p-1.5 rounded-lg transition-colors touch-manipulation"
+              :class="monthDaySortMode === 'priority' ? 'bg-primary-100 dark:bg-primary-900/40 text-primary-600 dark:text-primary-400' : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'"
+              title="Сортировка по важности"
+            >
+              <ExclamationTriangleIcon class="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+        <div class="p-3 sm:p-4">
+          <div class="space-y-2">
+            <TaskItem
+              v-for="task in selectedMonthDayTasks"
+              :key="task.id"
+              :task="task"
+              @task-click="handleTaskClick"
+              @toggle-complete="handleToggleComplete"
+            />
+            <div v-if="selectedMonthDayTasks.length === 0 && selectedMonthDayCompleted.length === 0" class="text-center py-6 text-gray-400 dark:text-gray-500 text-sm">
+              Нет задач на этот день
+            </div>
+          </div>
+
+          <!-- Completed tasks -->
+          <div v-if="selectedMonthDayCompleted.length > 0" class="mt-3 border-t border-gray-100 dark:border-gray-800 pt-3">
+            <button
+              @click="showCompleted = !showCompleted"
+              class="flex items-center gap-2 w-full text-left px-1 py-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+            >
+              <span class="text-sm text-gray-500 dark:text-gray-400">Выполненные</span>
+              <span class="text-xs text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded-full">{{ selectedMonthDayCompleted.length }}</span>
+              <svg
+                class="w-3.5 h-3.5 text-gray-400 ml-auto transition-transform"
+                :class="showCompleted ? 'rotate-180' : ''"
+                fill="none" stroke="currentColor" viewBox="0 0 24 24"
+              >
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            <div v-if="showCompleted" class="mt-2 opacity-60 space-y-2">
+              <TaskItem
+                v-for="task in selectedMonthDayCompleted"
+                :key="task.id"
+                :task="task"
+                @task-click="handleTaskClick"
+                @toggle-complete="handleToggleComplete"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Week View -->
       <div v-if="viewMode === 'week'" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
         <!-- Desktop: Grid Layout with Time Grid -->
@@ -659,6 +727,8 @@ watch([currentDate, viewMode], () => {
 })
 const showCompleted = ref(false)
 const daySortMode = ref('time')
+const selectedMonthDay = ref(dayjs().format('YYYY-MM-DD'))
+const monthDaySortMode = ref('time')
 const showTaskView = ref(false)
 const selectedTask = ref(null)
 const taskError = ref('')
@@ -814,6 +884,48 @@ const dayTasksWithTime = computed(() => {
 // Задачи для дня без времени (для отображения ниже сетки)
 const dayTasksWithoutTime = computed(() => {
   return dayTasks.value.filter(task => !task.estimated_time && !task.end_time)
+})
+
+// Задачи выбранного дня в месячном виде
+const selectedMonthDayTasks = computed(() => {
+  const dateString = selectedMonthDay.value
+  const filtered = tasks.value.filter(task =>
+    task.due_date &&
+    dayjs(task.due_date).format('YYYY-MM-DD') === dateString &&
+    task.status !== 'completed'
+  )
+
+  if (monthDaySortMode.value === 'priority') {
+    return filtered.sort((a, b) => {
+      const pa = priorityOrder[a.priority] ?? 4
+      const pb = priorityOrder[b.priority] ?? 4
+      if (pa !== pb) return pa - pb
+      const timeA = a.estimated_time || a.end_time
+      const timeB = b.estimated_time || b.end_time
+      if (!timeA && !timeB) return 0
+      if (!timeA) return 1
+      if (!timeB) return -1
+      return timeA.localeCompare(timeB)
+    })
+  }
+
+  return filtered.sort((a, b) => {
+    const timeA = a.estimated_time || a.end_time
+    const timeB = b.estimated_time || b.end_time
+    if (!timeA && !timeB) return 0
+    if (!timeA) return 1
+    if (!timeB) return -1
+    return timeA.localeCompare(timeB)
+  })
+})
+
+const selectedMonthDayCompleted = computed(() => {
+  const dateString = selectedMonthDay.value
+  return tasksStore.allTasks.filter(task =>
+    task.due_date &&
+    task.due_date.substring(0, 10) === dateString &&
+    task.completed_at
+  )
 })
 
 // Выполненные задачи дня
@@ -1114,8 +1226,11 @@ const getDurationGradientClass = (task) => {
 const getDayCellClass = (day) => {
   const base = []
 
+  if (day.date === selectedMonthDay.value && viewMode.value === 'month') {
+    base.push('ring-1 ring-inset ring-gray-300 dark:ring-gray-600')
+  }
   if (day.isToday) {
-    base.push('ring-2 ring-inset ring-primary-500')
+    base.push('ring-1 ring-inset ring-primary-300 dark:ring-primary-600')
   }
 
   if (!day.currentMonth) {
@@ -1200,8 +1315,12 @@ const handleAddTaskForDayTime = (dateString, hour) => {
 }
 
 const handleDayClick = (dateString) => {
-  currentDate.value = dayjs(dateString)
-  setView('day')
+  if (viewMode.value === 'month') {
+    selectedMonthDay.value = dateString
+  } else {
+    currentDate.value = dayjs(dateString)
+    setView('day')
+  }
 }
 
 const handleSaveTask = async (taskData) => {
