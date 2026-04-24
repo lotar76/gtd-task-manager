@@ -499,15 +499,20 @@
                 Вернуть в работу
               </button>
               <button
+                v-if="isDirty"
                 @click="handleSave"
-                :disabled="!isDirty || saveState === 'saving'"
-                class="relative px-4 py-1.5 text-sm font-medium rounded-lg transition-all"
-                :class="isDirty
-                  ? 'bg-primary-600 text-white hover:bg-primary-700 active:scale-95'
-                  : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-default'"
+                :disabled="saveState === 'saving'"
+                class="relative px-4 py-1.5 text-sm font-medium rounded-lg transition-all bg-primary-600 text-white hover:bg-primary-700 active:scale-95"
               >
-                <span v-if="isDirty" class="absolute -top-0.5 -right-0.5 w-2 h-2 bg-amber-400 rounded-full"></span>
+                <span class="absolute -top-0.5 -right-0.5 w-2 h-2 bg-amber-400 rounded-full"></span>
                 {{ saveState === 'saving' ? 'Сохраняю…' : 'Сохранить' }}
+              </button>
+              <button
+                v-else
+                @click="emit('close')"
+                class="px-4 py-1.5 text-sm font-medium rounded-lg transition-all bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 active:scale-95"
+              >
+                Закрыть
               </button>
             </div>
           </div>
