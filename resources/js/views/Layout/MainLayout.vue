@@ -324,15 +324,15 @@
             <span class="text-[10px] mt-0.5">Меню</span>
           </button>
 
-          <!-- Calendar -->
+          <!-- AI -->
           <button
-            @click="handleCalendarClick"
+            @click="showQuickAiInput = true"
             class="flex flex-col items-center justify-center flex-1 h-full text-gray-500 dark:text-gray-400 active:bg-gray-100 dark:active:bg-gray-700 transition-colors"
           >
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z" />
             </svg>
-            <span class="text-[10px] mt-0.5">Календарь</span>
+            <span class="text-[10px] mt-0.5">AI</span>
           </button>
 
           <!-- Add task (center, accent circle) -->
@@ -345,17 +345,6 @@
             </svg>
           </button>
 
-          <!-- AI -->
-          <button
-            @click="showQuickAiInput = true"
-            class="flex flex-col items-center justify-center flex-1 h-full text-gray-500 dark:text-gray-400 active:bg-gray-100 dark:active:bg-gray-700 transition-colors"
-          >
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z" />
-            </svg>
-            <span class="text-[10px] mt-0.5">AI</span>
-          </button>
-
           <!-- Habits -->
           <button
             @click="$router.push('/challenge')"
@@ -365,6 +354,17 @@
               <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182" />
             </svg>
             <span class="text-[10px] mt-0.5">Привычки</span>
+          </button>
+
+          <!-- Calendar -->
+          <button
+            @click="handleCalendarClick"
+            class="flex flex-col items-center justify-center flex-1 h-full text-gray-500 dark:text-gray-400 active:bg-gray-100 dark:active:bg-gray-700 transition-colors"
+          >
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            <span class="text-[10px] mt-0.5">Календарь</span>
           </button>
         </div>
       </div>
