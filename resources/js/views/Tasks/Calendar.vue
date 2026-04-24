@@ -2,13 +2,26 @@
   <div class="p-2 sm:p-4 lg:p-8">
     <div class="max-w-7xl mx-auto">
       <!-- Header -->
-      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-4 lg:mb-6">
-        <div>
-          <h1 class="text-lg sm:text-xl lg:text-2xl font-semibold text-gray-900 dark:text-white">Календарь</h1>
+      <div class="flex items-center justify-between mb-4 lg:mb-6">
+        <!-- Desktop: заголовок "Календарь" -->
+        <div class="hidden lg:block">
+          <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">Календарь</h1>
         </div>
-        
-        <div class="flex items-center space-x-1 sm:space-x-2 mt-3 lg:mt-0 overflow-x-auto pb-2 lg:pb-0">
-          <!-- View Mode Switcher -->
+
+        <!-- Mobile: навигация вместо заголовка -->
+        <div class="flex lg:hidden items-center gap-1">
+          <button @click="previousPeriod" class="p-1.5 rounded-lg bg-gray-100 dark:bg-gray-700 active:bg-gray-300 transition-colors touch-manipulation">
+            <ChevronLeftIcon class="w-5 h-5 text-gray-700 dark:text-gray-300" />
+          </button>
+          <h2 class="text-sm sm:text-base font-semibold text-gray-900 dark:text-white text-center px-1 min-w-0 truncate">
+            {{ currentPeriodTitle }}
+          </h2>
+          <button @click="nextPeriod" class="p-1.5 rounded-lg bg-gray-100 dark:bg-gray-700 active:bg-gray-300 transition-colors touch-manipulation">
+            <ChevronRightIcon class="w-5 h-5 text-gray-700 dark:text-gray-300" />
+          </button>
+        </div>
+
+        <div class="flex items-center space-x-1 sm:space-x-2">
           <button
             @click="setView('day')"
             class="px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-lg transition-colors whitespace-nowrap touch-manipulation"
@@ -33,19 +46,19 @@
         </div>
       </div>
 
-      <!-- Calendar Navigation -->
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-3 sm:p-4 mb-4 lg:mb-6">
+      <!-- Calendar Navigation (desktop only) -->
+      <div class="hidden lg:block bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6">
         <div class="flex items-center justify-between">
-          <button @click="previousPeriod" class="p-2 sm:p-3 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 active:bg-gray-300 transition-colors touch-manipulation">
-            <ChevronLeftIcon class="w-5 h-5 sm:w-6 sm:h-6 text-gray-700 dark:text-gray-300" />
+          <button @click="previousPeriod" class="p-3 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 active:bg-gray-300 transition-colors touch-manipulation">
+            <ChevronLeftIcon class="w-6 h-6 text-gray-700 dark:text-gray-300" />
           </button>
 
-          <h2 class="text-base sm:text-lg font-semibold text-gray-900 dark:text-white text-center px-2">
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-white text-center px-2">
             {{ currentPeriodTitle }}
           </h2>
 
-          <button @click="nextPeriod" class="p-2 sm:p-3 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 active:bg-gray-300 transition-colors touch-manipulation">
-            <ChevronRightIcon class="w-5 h-5 sm:w-6 sm:h-6 text-gray-700 dark:text-gray-300" />
+          <button @click="nextPeriod" class="p-3 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 active:bg-gray-300 transition-colors touch-manipulation">
+            <ChevronRightIcon class="w-6 h-6 text-gray-700 dark:text-gray-300" />
           </button>
         </div>
       </div>
@@ -710,6 +723,10 @@ const loading = computed(() => tasksStore.loading)
 const viewMode = ref('month')
 
 const setView = (view) => {
+  // При переключении с месяца — используем выделенный день
+  if (viewMode.value === 'month' && selectedMonthDay.value) {
+    currentDate.value = dayjs(selectedMonthDay.value)
+  }
   viewMode.value = view
   router.replace({ query: { ...route.query, view } })
 }
