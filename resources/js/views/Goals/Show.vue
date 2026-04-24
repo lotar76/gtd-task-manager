@@ -382,13 +382,11 @@
           @submit="handleSaveGoal"
         />
 
-        <!-- Task modal -->
-        <TaskModal
-          :show="showTaskModal"
-          :task="taskForModal"
-          :server-error="taskError"
-          @close="showTaskModal = false; taskForModal = null; taskError = ''"
-          @submit="handleSaveTask"
+        <!-- Draft task view -->
+        <TaskView
+          :show="showDraftTask"
+          :task="draftTask"
+          @close="closeDraft"
         />
 
         <!-- Note modal -->
@@ -513,7 +511,7 @@ import { useAuthStore } from '@/stores/auth'
 import { PencilIcon, ArchiveBoxArrowDownIcon, ArrowUturnLeftIcon } from '@heroicons/vue/24/outline'
 import TaskList from '@/components/tasks/TaskList.vue'
 import TaskView from '@/components/tasks/TaskView.vue'
-import TaskModal from '@/components/tasks/TaskModal.vue'
+import { useTaskDraft } from '@/composables/useTaskDraft'
 import GoalModal from '@/components/goals/GoalModal.vue'
 import ProjectModal from '@/components/projects/ProjectModal.vue'
 import NoteModal from '@/components/notes/NoteModal.vue'
@@ -531,20 +529,18 @@ const authStore = useAuthStore()
 const notesStore = useNotesStore()
 
 const showTaskView = ref(false)
+const { draftTask, showDraft: showDraftTask, startDraft, closeDraft } = useTaskDraft(() => tasksStore.fetchAllTasks?.({ force: true }))
 const showGoalModal = ref(false)
 const showCompletedDirect = ref(false)
 const showCompletedProjects = ref({})
 const toggleProjectCompleted = (id) => { showCompletedProjects.value[id] = !showCompletedProjects.value[id] }
 const showProjectPicker = ref(false)
-const showTaskModal = ref(false)
 const showProjectModal = ref(false)
 const showNoteModal = ref(false)
 const selectedTask = ref(null)
-const taskForModal = ref(null)
 const projectForModal = ref(null)
 const noteForModal = ref(null)
 const goalError = ref('')
-const taskError = ref('')
 const projectError = ref('')
 const participants = ref([])
 const allContacts = ref([])
@@ -780,12 +776,11 @@ const formatSidebarDate = (dateStr) => {
 }
 
 const openNewTask = (project) => {
-  taskForModal.value = {
+  startDraft({
     goal_id: currentGoalId.value,
     project_id: project?.id || null,
     life_sphere_id: goal.value?.life_sphere_id || null,
-  }
-  showTaskModal.value = true
+  })
 }
 
 const editProject = (project) => {
@@ -793,20 +788,6 @@ const editProject = (project) => {
   showProjectModal.value = true
 }
 
-const handleSaveTask = async (taskData) => {
-  taskError.value = ''
-  try {
-    if (taskData.id) {
-      await tasksStore.updateTask(taskData.id, taskData)
-    } else {
-      await tasksStore.createTask(taskData)
-    }
-    showTaskModal.value = false
-    taskForModal.value = null
-  } catch (e) {
-    taskError.value = e.response?.data?.message || 'Ошибка сохранения задачи'
-  }
-}
 
 const handleSaveProject = async (projectData) => {
   projectError.value = ''
