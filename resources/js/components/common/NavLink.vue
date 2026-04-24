@@ -38,7 +38,10 @@ import {
   DocumentTextIcon,
   GlobeAltIcon,
   ListBulletIcon,
+  ArrowPathIcon,
 } from '@heroicons/vue/24/outline'
+import { SmilePlus } from 'lucide-vue-next'
+import { BellIcon } from '@heroicons/vue/24/outline'
 
 const props = defineProps({
   to: {
@@ -83,6 +86,9 @@ const iconMap = {
   'table-cells': TableCellsIcon,
   'globe-alt': GlobeAltIcon,
   'list-bullet': ListBulletIcon,
+  refresh: ArrowPathIcon,
+  'smile-plus': SmilePlus,
+  bell: BellIcon,
 }
 
 const iconComponent = computed(() => iconMap[props.icon] || FolderIcon)

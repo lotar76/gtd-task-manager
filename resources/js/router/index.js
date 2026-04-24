@@ -125,6 +125,11 @@ const routes = [
         component: () => import('@/views/Challenge/Index.vue'),
       },
       {
+        path: 'notifications',
+        name: 'Notifications',
+        component: () => import('@/views/Notifications/Index.vue'),
+      },
+      {
         path: 'tasks/:taskId',
         name: 'TaskPage',
         component: () => import('@/views/Tasks/TaskPage.vue'),

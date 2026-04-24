@@ -21,7 +21,9 @@
       "Bash(while ! grep -q \"Container api_app\" /tmp/claude-1000/-home-igor-projects-gtd-task-manager/5f63bb2c-d50b-44d6-9fd0-767cc1160499/tasks/b9cwur6cg.output)",
       "Bash(do sleep:*)",
       "Bash(done)",
-      "Bash(git -C /home/igor/projects/gtd-task-manager status public/ --short)"
+      "Bash(git -C /home/igor/projects/gtd-task-manager status public/ --short)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:unpkg.com)"
     ],
     "additionalDirectories": [
       "/home/igor/projects/gtd-task-manager",

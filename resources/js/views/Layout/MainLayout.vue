@@ -82,6 +82,13 @@
               >
                 Цели
               </NavLink>
+              <NavLink
+                to="/challenge"
+                icon="refresh"
+                @close-sidebar="sidebarOpen = false"
+              >
+                Привычки
+              </NavLink>
             </div>
 
             <!-- Оперативный фокус -->
@@ -260,6 +267,20 @@
 
             <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
               <div class="space-y-1">
+                <NavLink
+                  to="/contacts"
+                  icon="smile-plus"
+                  @close-sidebar="sidebarOpen = false"
+                >
+                  Контакты
+                </NavLink>
+                <NavLink
+                  to="/notifications"
+                  icon="bell"
+                  @close-sidebar="sidebarOpen = false"
+                >
+                  Уведомления
+                </NavLink>
                 <NavLink
                   to="/documents"
                   icon="document-text"

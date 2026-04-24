@@ -65,24 +65,6 @@
             {{ inboxCount }}
           </span>
         </router-link>
-        <router-link
-          to="/contacts"
-          class="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
-          :class="$route.path === '/contacts' ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'"
-        >
-          <SmilePlus class="w-4 h-4" :stroke-width="2" />
-          <span>Контакты</span>
-        </router-link>
-        <router-link
-          to="/challenge"
-          class="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
-          :class="$route.path === '/challenge' ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'"
-        >
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-          </svg>
-          <span>Привычки</span>
-        </router-link>
       </nav>
 
       <!-- Spacer -->
@@ -457,6 +439,10 @@ const handleToggleTheme = () => {
 }
 
 const toggleNotifications = () => {
+  if (window.innerWidth < 1024) {
+    router.push('/notifications')
+    return
+  }
   showNotifications.value = !showNotifications.value
   if (showNotifications.value) {
     notificationsStore.fetchNotifications()
