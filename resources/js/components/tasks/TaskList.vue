@@ -5,9 +5,11 @@
       :key="task.id"
       :data-task-id="task.id"
       draggable="true"
+      class="touch-drag-item"
       @dragstart="handleDragStart($event, task)"
       @dragend="handleDragEnd"
       @touchstart.passive="handleTouchStart($event, task)"
+      @contextmenu.prevent
       :class="{ 'opacity-50': isDragging && draggedTask?.id === task.id }"
     >
       <TaskItem
@@ -245,5 +247,11 @@ const cancelComplete = () => {
 
 .task-move {
   transition: transform 0.3s ease;
+}
+
+.touch-drag-item {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 </style>
