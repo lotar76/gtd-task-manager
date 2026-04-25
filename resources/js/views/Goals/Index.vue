@@ -160,11 +160,11 @@
         </div>
 
         <!-- YEAR/3YEAR/5YEAR: same matrix as stream but different year count -->
-        <div v-if="(scale === 'year' || scale === '3year' || scale === '5year')" class="overflow-x-auto rounded-lg sm:rounded-lg border border-gray-200 dark:border-gray-700 stream-matrix -mx-4 sm:mx-0">
-          <table class="border-collapse">
+        <div v-if="(scale === 'year' || scale === '3year' || scale === '5year')" class="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700 stream-matrix snap-x snap-mandatory sm:snap-none scroll-pl-[50px] sm:scroll-pl-0">
+          <table class="border-separate border-spacing-0">
             <thead>
               <tr>
-                <th class="sticky left-0 top-0 z-30 bg-gray-50 dark:bg-gray-800 px-2 py-2 text-left text-[10px] font-medium text-gray-400 uppercase tracking-wider border-b border-r border-gray-200 dark:border-gray-700 min-w-[70px]"></th>
+                <th class="sticky left-0 top-0 z-30 bg-gray-50 dark:bg-gray-800 px-2 py-2 text-left text-[10px] font-medium text-gray-400 uppercase tracking-wider border-b border-r border-gray-200 dark:border-gray-700 min-w-[50px]"></th>
                 <th
                   v-for="(sphere, si) in matrixSpheres"
                   :key="sphere.id"
