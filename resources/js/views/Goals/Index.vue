@@ -160,7 +160,7 @@
         </div>
 
         <!-- YEAR/3YEAR/5YEAR: same matrix as stream but different year count -->
-        <div v-if="(scale === 'year' || scale === '3year' || scale === '5year')" class="overflow-x-auto rounded-lg sm:rounded-lg border border-gray-200 dark:border-gray-700 stream-matrix -mx-4 sm:mx-0 snap-x snap-mandatory sm:snap-none scroll-pl-14 sm:scroll-pl-0">
+        <div v-if="(scale === 'year' || scale === '3year' || scale === '5year')" class="overflow-x-auto rounded-lg sm:rounded-lg border border-gray-200 dark:border-gray-700 stream-matrix -mx-4 sm:mx-0">
           <table class="border-collapse">
             <thead>
               <tr>
@@ -191,14 +191,15 @@
                   @mouseleave="hoverRow = -1"
                 >
                   <td
-                    class="sticky left-0 z-10 px-2 py-1.5 border-b border-r border-gray-200 dark:border-gray-700 text-[11px] whitespace-nowrap min-w-[70px]"
+                    class="sticky left-0 z-10 px-2 py-1 border-b border-r border-gray-200 dark:border-gray-700 text-[11px] whitespace-nowrap min-w-[50px]"
                     :class="[
                       isNowYearMonth(yr, m - 1) ? 'text-primary-600 dark:text-primary-400 font-semibold bg-primary-50 dark:bg-primary-900' :
                       yi % 2 === 0 ? 'text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800' : 'text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-900',
                       hoverRow === yi * 12 + m - 1 ? '!bg-primary-50 dark:!bg-primary-800' : ''
                     ]"
                   >
-                    <template v-if="m === 1"><span class="font-bold text-gray-400 dark:text-gray-500 mr-1">{{ yr }}</span></template>{{ monthNamesShort[m - 1] }}
+                    <div v-if="m === 1" class="text-[9px] font-bold text-gray-400 dark:text-gray-500 leading-tight">{{ yr }}</div>
+                    <div class="leading-tight">{{ monthNamesShort[m - 1] }}</div>
                   </td>
                   <td
                     v-for="(sphere, si) in matrixSpheres"
