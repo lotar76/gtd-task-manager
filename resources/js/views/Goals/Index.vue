@@ -70,7 +70,7 @@
           </div>
           <!-- Matrix -->
           <div class="overflow-x-auto rounded-lg sm:rounded-lg border border-gray-200 dark:border-gray-700 stream-matrix -mx-4 sm:mx-0 snap-x snap-mandatory sm:snap-none scroll-pl-14 sm:scroll-pl-0">
-            <table class="border-separate border-spacing-0" style="table-layout: fixed;">
+            <table class="border-separate border-spacing-0">
               <thead>
                 <tr>
                   <th class="sticky left-0 top-0 z-30 bg-gray-50 dark:bg-gray-800 px-2 py-2 text-left text-[10px] font-medium text-gray-400 uppercase tracking-wider border-b border-gray-200 dark:border-gray-700 w-14 sm:min-w-[60px]"></th>
@@ -161,11 +161,10 @@
 
         <!-- YEAR/3YEAR/5YEAR: same matrix as stream but different year count -->
         <div v-if="(scale === 'year' || scale === '3year' || scale === '5year')" class="overflow-x-auto rounded-lg sm:rounded-lg border border-gray-200 dark:border-gray-700 stream-matrix -mx-4 sm:mx-0 snap-x snap-mandatory sm:snap-none scroll-pl-14 sm:scroll-pl-0">
-          <table class="border-separate border-spacing-0" style="table-layout: fixed;">
+          <table class="border-collapse">
             <thead>
               <tr>
-                <th class="hidden sm:table-cell sticky left-0 top-0 z-30 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 w-8"></th>
-                <th class="sticky left-0 sm:left-8 top-0 z-30 bg-gray-50 dark:bg-gray-800 px-2 py-2 text-left text-[10px] font-medium text-gray-400 uppercase tracking-wider border-b border-gray-200 dark:border-gray-700 w-14 sm:min-w-[60px]"></th>
+                <th class="sticky left-0 top-0 z-30 bg-gray-50 dark:bg-gray-800 px-2 py-2 text-left text-[10px] font-medium text-gray-400 uppercase tracking-wider border-b border-r border-gray-200 dark:border-gray-700 min-w-[70px]"></th>
                 <th
                   v-for="(sphere, si) in matrixSpheres"
                   :key="sphere.id"
@@ -192,23 +191,14 @@
                   @mouseleave="hoverRow = -1"
                 >
                   <td
-                    v-if="m === 1"
-                    :rowspan="12"
-                    class="hidden sm:table-cell sticky left-0 z-10 w-8 text-center align-middle"
-                    :class="yi % 2 === 0 ? 'bg-gray-50 dark:bg-gray-800' : 'bg-white dark:bg-gray-900'"
-                  >
-                    <span class="text-[10px] font-bold text-gray-400 dark:text-gray-500 [writing-mode:vertical-lr] rotate-180">{{ yr }}</span>
-                  </td>
-                  <td
-                    class="sticky left-0 sm:left-8 z-10 px-2 py-1.5 border-b border-gray-200 dark:border-gray-700 text-[11px] whitespace-nowrap w-14 sm:min-w-[60px]"
+                    class="sticky left-0 z-10 px-2 py-1.5 border-b border-r border-gray-200 dark:border-gray-700 text-[11px] whitespace-nowrap min-w-[70px]"
                     :class="[
                       isNowYearMonth(yr, m - 1) ? 'text-primary-600 dark:text-primary-400 font-semibold bg-primary-50 dark:bg-primary-900' :
                       yi % 2 === 0 ? 'text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800' : 'text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-900',
                       hoverRow === yi * 12 + m - 1 ? '!bg-primary-50 dark:!bg-primary-800' : ''
                     ]"
                   >
-                    <span class="sm:hidden">{{ monthNamesShort[m - 1] }}<template v-if="scaleYears.length > 1 && m === 1"> '{{ String(yr).slice(2) }}</template></span>
-                    <span class="hidden sm:inline">{{ monthNamesShort[m - 1] }}</span>
+                    <template v-if="m === 1"><span class="font-bold text-gray-400 dark:text-gray-500 mr-1">{{ yr }}</span></template>{{ monthNamesShort[m - 1] }}
                   </td>
                   <td
                     v-for="(sphere, si) in matrixSpheres"
