@@ -8,7 +8,7 @@
       class="touch-drag-item"
       @dragstart="handleDragStart($event, task)"
       @dragend="handleDragEnd"
-      @touchstart.passive="handleTouchStart($event, task)"
+      @touchstart="handleTouchStart($event, task)"
       @contextmenu.prevent
       :class="{ 'opacity-50': isDragging && draggedTask?.id === task.id }"
     >
@@ -109,7 +109,6 @@ const cleanupTouch = () => {
   touchDragTask = null
   document.removeEventListener('touchmove', onDocTouchMove)
   document.removeEventListener('touchend', onDocTouchEnd)
-  document.removeEventListener('touchcancel', onDocTouchEnd)
 }
 
 const onDocTouchMove = (e) => {
@@ -163,9 +162,15 @@ const onDocTouchEnd = () => {
 }
 
 const handleTouchStart = (e, task) => {
+  // Cleanup any previous drag state (e.g. from touchcancel)
+  if (touchDrag) cleanupTouch()
+
   const touch = e.touches[0]
+  const taskEl = e.target.closest('[data-task-id]')
+
   touchDrag = {
     task,
+    taskEl,
     startX: touch.clientX,
     startY: touch.clientY,
     isDragging: false,
@@ -174,19 +179,18 @@ const handleTouchStart = (e, task) => {
       touchDrag.isDragging = true
       touchDragTask = task
 
-      const el = e.target.closest('[data-task-id]')
-      if (el) {
-        const clone = el.cloneNode(true)
+      if (taskEl) {
+        const clone = taskEl.cloneNode(true)
         clone.style.cssText = `
           position: fixed; z-index: 9999; pointer-events: none;
-          width: ${el.offsetWidth}px; opacity: 0.85;
+          width: ${taskEl.offsetWidth}px; opacity: 0.85;
           transform: translate(-50%, -50%);
           left: ${touch.clientX}px; top: ${touch.clientY}px;
           background: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         `
         document.body.appendChild(clone)
         touchCloneEl = clone
-        el.style.opacity = '0.3'
+        taskEl.style.opacity = '0.3'
       }
 
       emit('task-drag-start', task)
@@ -195,7 +199,6 @@ const handleTouchStart = (e, task) => {
 
   document.addEventListener('touchmove', onDocTouchMove, { passive: false })
   document.addEventListener('touchend', onDocTouchEnd)
-  document.addEventListener('touchcancel', onDocTouchEnd)
 }
 
 onUnmounted(() => {
