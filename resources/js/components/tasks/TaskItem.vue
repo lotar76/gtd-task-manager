@@ -96,6 +96,7 @@
             <template v-else>до {{ formatTime(task.end_time) }}</template>
           </span>
           <span v-if="task.project && !hideProject" class="inline-block px-0.5 rounded text-[8px] font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">{{ task.project.name }}</span>
+          <span v-if="task.life_sphere" class="inline-flex items-center gap-0.5 px-0.5 rounded text-[8px] font-medium" :style="{ backgroundColor: task.life_sphere.color + '20', color: task.life_sphere.color }">{{ task.life_sphere.name }}</span>
           <span v-for="name in assigneeNames" :key="name" class="inline-flex items-center gap-0.5 px-0.5 rounded text-[8px] font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300"><component :is="ROLE_ICONS.assignee.icon" class="w-2 h-2 flex-shrink-0" :stroke-width="2" />{{ name }}</span>
           <span v-if="task.context" class="inline-block px-0.5 rounded text-[8px] font-medium" :style="{ backgroundColor: task.context.color + '20', color: task.context.color }">{{ task.context.name }}</span>
           <span v-for="tag in task.tags" :key="tag.id" class="inline-block px-0.5 rounded text-[8px] font-medium" :style="{ backgroundColor: tag.color + '20', color: tag.color }">{{ tag.name }}</span>
@@ -119,6 +120,11 @@
           <span v-if="task.project && !hideProject" class="inline-flex items-center gap-1">
             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 6v12M9 4v16M14 8v8M19 5v14" /></svg>
             {{ task.project.name }}
+          </span>
+
+          <span v-if="task.life_sphere" class="inline-flex items-center gap-1">
+            <span class="w-1.5 h-1.5 rounded-full flex-shrink-0" :style="{ backgroundColor: task.life_sphere.color }"></span>
+            {{ task.life_sphere.name }}
           </span>
 
           <span v-if="assigneeNames.length" class="inline-flex items-center gap-1 text-indigo-600 dark:text-indigo-300" title="Исполнители">
