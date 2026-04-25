@@ -8,8 +8,6 @@
       @dragstart="handleDragStart($event, task)"
       @dragend="handleDragEnd"
       @touchstart.passive="handleTouchStart($event, task)"
-      @touchmove="handleTouchMove($event)"
-      @touchend="handleTouchEnd($event)"
       :class="{ 'opacity-50': isDragging && draggedTask?.id === task.id }"
     >
       <TaskItem
@@ -44,7 +42,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onUnmounted } from 'vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import TaskItem from '@/components/tasks/TaskItem.vue'
 
@@ -89,6 +87,85 @@ const touchState = ref(null)
 const touchClone = ref(null)
 let lastHighlighted = null
 
+const cleanupTouch = () => {
+  if (touchClone.value) {
+    touchClone.value.remove()
+    touchClone.value = null
+  }
+  if (lastHighlighted) {
+    lastHighlighted.classList.remove('ring-2', 'ring-primary-400', 'ring-inset', 'bg-primary-100', 'dark:bg-primary-900/40')
+    lastHighlighted = null
+  }
+  if (touchState.value) {
+    const el = document.querySelector(`[data-task-id="${touchState.value.task.id}"]`)
+    if (el) el.style.opacity = '1'
+    clearTimeout(touchState.value.holdTimer)
+  }
+  isDragging.value = false
+  draggedTask.value = null
+  touchState.value = null
+  document.removeEventListener('touchmove', onDocTouchMove)
+  document.removeEventListener('touchend', onDocTouchEnd)
+  document.removeEventListener('touchcancel', onDocTouchEnd)
+}
+
+const onDocTouchMove = (e) => {
+  if (!touchState.value) return
+  const touch = e.touches[0]
+
+  if (!touchState.value.isDragging) {
+    const dx = Math.abs(touch.clientX - touchState.value.startX)
+    const dy = Math.abs(touch.clientY - touchState.value.startY)
+    if (dx > 10 || dy > 10) {
+      cleanupTouch()
+      return
+    }
+    return
+  }
+
+  e.preventDefault()
+
+  if (touchClone.value) {
+    touchClone.value.style.left = `${touch.clientX}px`
+    touchClone.value.style.top = `${touch.clientY}px`
+  }
+
+  const el = document.elementFromPoint(touch.clientX, touch.clientY)
+  const dropZone = el?.closest('[data-drop-date]')
+
+  if (lastHighlighted && lastHighlighted !== dropZone) {
+    lastHighlighted.classList.remove('ring-2', 'ring-primary-400', 'ring-inset', 'bg-primary-100', 'dark:bg-primary-900/40')
+  }
+
+  if (dropZone) {
+    dropZone.classList.add('ring-2', 'ring-primary-400', 'ring-inset', 'bg-primary-100', 'dark:bg-primary-900/40')
+    lastHighlighted = dropZone
+  } else {
+    lastHighlighted = null
+  }
+}
+
+const onDocTouchEnd = (e) => {
+  if (!touchState.value) return
+
+  const wasDragging = touchState.value.isDragging
+  const task = touchState.value.task
+
+  if (wasDragging && draggedTask.value) {
+    const lastTouch = e.changedTouches?.[0]
+    if (lastTouch) {
+      const dropEl = document.elementFromPoint(lastTouch.clientX, lastTouch.clientY)
+      const dropZone = dropEl?.closest('[data-drop-date]')
+      if (dropZone) {
+        emit('touch-drop', { task: draggedTask.value, date: dropZone.dataset.dropDate })
+      }
+    }
+  }
+
+  cleanupTouch()
+  emit('task-drag-end')
+}
+
 const handleTouchStart = (e, task) => {
   const touch = e.touches[0]
   touchState.value = {
@@ -120,87 +197,15 @@ const handleTouchStart = (e, task) => {
       emit('task-drag-start', task)
     }, 300),
   }
+
+  document.addEventListener('touchmove', onDocTouchMove, { passive: false })
+  document.addEventListener('touchend', onDocTouchEnd)
+  document.addEventListener('touchcancel', onDocTouchEnd)
 }
 
-const handleTouchMove = (e) => {
-  if (!touchState.value) return
-  const touch = e.touches[0]
-
-  if (!touchState.value.isDragging) {
-    const dx = Math.abs(touch.clientX - touchState.value.startX)
-    const dy = Math.abs(touch.clientY - touchState.value.startY)
-    if (dx > 10 || dy > 10) {
-      clearTimeout(touchState.value.holdTimer)
-      touchState.value = null
-      return
-    }
-    return
-  }
-
-  e.preventDefault()
-
-  if (touchClone.value) {
-    touchClone.value.style.left = `${touch.clientX}px`
-    touchClone.value.style.top = `${touch.clientY}px`
-  }
-
-  // Highlight drop zone
-  const el = document.elementFromPoint(touch.clientX, touch.clientY)
-  const dropZone = el?.closest('[data-drop-date]')
-
-  if (lastHighlighted && lastHighlighted !== dropZone) {
-    lastHighlighted.classList.remove('ring-2', 'ring-primary-400', 'ring-inset', 'bg-primary-100', 'dark:bg-primary-900/40')
-  }
-
-  if (dropZone) {
-    dropZone.classList.add('ring-2', 'ring-primary-400', 'ring-inset', 'bg-primary-100', 'dark:bg-primary-900/40')
-    lastHighlighted = dropZone
-  } else {
-    lastHighlighted = null
-  }
-}
-
-const handleTouchEnd = (e) => {
-  if (!touchState.value) return
-  clearTimeout(touchState.value.holdTimer)
-
-  const wasDragging = touchState.value.isDragging
-  const task = touchState.value.task
-
-  // Clean up clone
-  if (touchClone.value) {
-    touchClone.value.remove()
-    touchClone.value = null
-  }
-
-  // Restore original element opacity
-  const el = document.querySelector(`[data-task-id="${task.id}"]`)
-  if (el) el.style.opacity = '1'
-
-  // Clean up highlight
-  if (lastHighlighted) {
-    lastHighlighted.classList.remove('ring-2', 'ring-primary-400', 'ring-inset', 'bg-primary-100', 'dark:bg-primary-900/40')
-    lastHighlighted = null
-  }
-
-  // Detect drop zone
-  if (wasDragging && draggedTask.value) {
-    const lastTouch = e.changedTouches?.[0]
-    let dropEl = null
-    if (lastTouch) {
-      dropEl = document.elementFromPoint(lastTouch.clientX, lastTouch.clientY)
-    }
-    const dropZone = dropEl?.closest('[data-drop-date]')
-    if (dropZone) {
-      emit('touch-drop', { task: draggedTask.value, date: dropZone.dataset.dropDate })
-    }
-  }
-
-  isDragging.value = false
-  draggedTask.value = null
-  touchState.value = null
-  emit('task-drag-end')
-}
+onUnmounted(() => {
+  cleanupTouch()
+})
 
 const handleToggleComplete = (task) => {
   // Если задача уже завершена, сразу отменяем завершение без подтверждения
