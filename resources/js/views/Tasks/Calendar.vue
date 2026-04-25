@@ -181,6 +181,14 @@
           <span v-if="isCalSphereHidden(sphere.id)" class="w-1.5 h-1.5 rounded-full opacity-40" :style="{ backgroundColor: sphere.color }"></span>
           {{ sphere.name }}
         </button>
+        <button
+          @click="calHideNoSphere = !calHideNoSphere"
+          class="px-1.5 py-0.5 text-[10px] rounded-full transition-all"
+          :class="calHideNoSphere
+            ? 'text-gray-300 dark:text-gray-600 line-through'
+            : 'text-gray-500 dark:text-gray-400 font-medium'"
+          :style="!calHideNoSphere ? { background: 'rgba(156,163,175,0.1)' } : {}"
+        >Без сферы</button>
       </div>
 
       <!-- Month Day Tasks Panel -->
@@ -739,6 +747,7 @@ const workspaceStore = useWorkspaceStore()
 const spheresStore = useLifeSpheresStore()
 const hiddenCalSpheres = ref([])
 const calOnlyMine = ref(false)
+const calHideNoSphere = ref(false)
 const isCalSphereHidden = (id) => hiddenCalSpheres.value.includes(id)
 
 const monthSpheres = computed(() => {
@@ -983,7 +992,8 @@ const selectedMonthDayTasks = computed(() => {
     dayjs(task.due_date).format('YYYY-MM-DD') === dateString &&
     task.status !== 'completed' &&
     !hiddenCalSpheres.value.includes(task.life_sphere_id) &&
-    (!calOnlyMine.value || task.creator?.id === myId)
+    (!calOnlyMine.value || task.creator?.id === myId) &&
+    (!calHideNoSphere.value || task.life_sphere_id)
   )
 
   if (monthDaySortMode.value === 'priority') {
@@ -1018,7 +1028,8 @@ const selectedMonthDayCompleted = computed(() => {
     task.due_date.substring(0, 10) === dateString &&
     task.completed_at &&
     !hiddenCalSpheres.value.includes(task.life_sphere_id) &&
-    (!calOnlyMine.value || task.creator?.id === myId)
+    (!calOnlyMine.value || task.creator?.id === myId) &&
+    (!calHideNoSphere.value || task.life_sphere_id)
   )
 })
 
@@ -1088,6 +1099,7 @@ const weekHours = computed(() => {
 const calendarDays = computed(() => {
   const hidden = [...hiddenCalSpheres.value] // force reactive track
   const onlyMine = calOnlyMine.value
+  const hideNoSphere = calHideNoSphere.value
   const days = []
   const startOfMonth = currentDate.value.startOf('month')
   const endOfMonth = currentDate.value.endOf('month')
@@ -1096,26 +1108,26 @@ const calendarDays = computed(() => {
   // Предыдущий месяц
   for (let i = startDay - 1; i >= 0; i--) {
     const date = startOfMonth.subtract(i + 1, 'day')
-    days.push(createDayObject(date, false, hidden, onlyMine))
+    days.push(createDayObject(date, false, hidden, onlyMine, hideNoSphere))
   }
 
   // Текущий месяц
   for (let i = 0; i < endOfMonth.date(); i++) {
     const date = startOfMonth.add(i, 'day')
-    days.push(createDayObject(date, true, hidden, onlyMine))
+    days.push(createDayObject(date, true, hidden, onlyMine, hideNoSphere))
   }
 
   // Следующий месяц
   const remainingDays = 42 - days.length // 6 недель
   for (let i = 0; i < remainingDays; i++) {
     const date = endOfMonth.add(i + 1, 'day')
-    days.push(createDayObject(date, false, hidden, onlyMine))
+    days.push(createDayObject(date, false, hidden, onlyMine, hideNoSphere))
   }
   
   return days
 })
 
-const createDayObject = (date, currentMonth, hidden, onlyMine) => {
+const createDayObject = (date, currentMonth, hidden, onlyMine, hideNoSphere) => {
   const dateString = date.format('YYYY-MM-DD')
   const myId = authStore.user?.id
   const dayTasks = tasks.value.filter(task =>
@@ -1123,7 +1135,8 @@ const createDayObject = (date, currentMonth, hidden, onlyMine) => {
     dayjs(task.due_date).format('YYYY-MM-DD') === dateString &&
     task.status !== 'completed' &&
     !hidden.includes(task.life_sphere_id) &&
-    (!onlyMine || task.creator?.id === myId)
+    (!onlyMine || task.creator?.id === myId) &&
+    (!hideNoSphere || task.life_sphere_id)
   )
   
   return {
