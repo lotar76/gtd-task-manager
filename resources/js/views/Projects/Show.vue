@@ -394,26 +394,29 @@ const handleCalendarDragLeave = () => {
   dragOverDate.value = null
 }
 
-const handleCalendarDrop = async (e, date) => {
+const optimisticMoveToDate = (taskId, date) => {
+  const index = tasksStore.allTasks.findIndex(t => t.id === taskId)
+  if (index === -1) return
+  const backup = { ...tasksStore.allTasks[index] }
+  tasksStore.allTasks[index] = { ...backup, due_date: date }
+  tasksStore.updateTask(taskId, { due_date: date }).catch(() => {
+    const i = tasksStore.allTasks.findIndex(t => t.id === taskId)
+    if (i !== -1) tasksStore.allTasks[i] = backup
+  })
+}
+
+const handleCalendarDrop = (e, date) => {
   dragOverDate.value = null
   try {
     const task = JSON.parse(e.dataTransfer.getData('application/json'))
-    if (task?.id) {
-      await tasksStore.updateTask(task.id, { due_date: date })
-    }
+    if (task?.id) optimisticMoveToDate(task.id, date)
   } catch (err) {
     console.error('Drop error:', err)
   }
 }
 
-const handleTouchDrop = async ({ task, date }) => {
-  if (task?.id && date) {
-    try {
-      await tasksStore.updateTask(task.id, { due_date: date })
-    } catch (err) {
-      console.error('Touch drop error:', err)
-    }
-  }
+const handleTouchDrop = ({ task, date }) => {
+  if (task?.id && date) optimisticMoveToDate(task.id, date)
 }
 
 const projectWorkspace = computed(() => null)
