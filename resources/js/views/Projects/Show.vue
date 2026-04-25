@@ -19,20 +19,38 @@
               <router-link
                 v-if="projectGoal"
                 :to="`/goals/${projectGoal.id}`"
-                class="inline-flex items-center gap-1.5 px-2 py-0.5 text-[12.5px] bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700"
+                class="hidden lg:inline-flex items-center gap-1.5 px-2 py-0.5 text-[12.5px] bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700"
               >
                 <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-4a4 4 0 100 8 4 4 0 000-8z" /></svg>
                 {{ projectGoal.name }}
               </router-link>
-              <span v-if="allTasks.length > 0" class="text-sm text-gray-400 dark:text-gray-500 flex-shrink-0">
+              <span v-if="allTasks.length > 0" class="text-sm text-gray-400 dark:text-gray-500 flex-shrink-0 hidden lg:inline">
                 {{ allTasks.length }}
               </span>
+            </div>
+            <!-- Mobile: goal + sphere -->
+            <div v-if="projectGoal || projectSphere" class="lg:hidden flex items-center gap-2 mt-1 text-[11px] text-gray-400 dark:text-gray-500 min-w-0">
+              <router-link
+                v-if="projectGoal"
+                :to="`/goals/${projectGoal.id}`"
+                class="inline-flex items-center gap-1 min-w-0 hover:text-gray-600 dark:hover:text-gray-300"
+              >
+                <svg class="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" stroke-width="1.8" /><circle cx="12" cy="12" r="4" stroke-width="1.8" /></svg>
+                <span class="truncate">{{ projectGoal.name }}</span>
+              </router-link>
+              <template v-if="projectSphere">
+                <span v-if="projectGoal" class="flex-shrink-0">·</span>
+                <router-link :to="`/spheres/${projectSphere.id}`" class="inline-flex items-center gap-1 flex-shrink-0 hover:text-gray-600 dark:hover:text-gray-300">
+                  <span class="w-1.5 h-1.5 rounded-full" :style="{ backgroundColor: projectSphere.color }"></span>
+                  {{ projectSphere.name }}
+                </router-link>
+              </template>
             </div>
             <p v-if="project?.description" class="text-sm text-gray-600 dark:text-gray-400 mt-1 truncate">
               {{ project.description }}
             </p>
             <!-- Progress cubes -->
-            <div v-if="allTasks.length > 0" class="flex items-center gap-1 mt-2" :title="`${completedTasks.length} / ${allTasks.length} выполнено`">
+            <div v-if="allTasks.length > 0" class="hidden lg:flex items-center gap-1 mt-2" :title="`${completedTasks.length} / ${allTasks.length} выполнено`">
               <template v-if="allTasks.length <= 20">
                 <div
                   v-for="i in allTasks.length"
@@ -56,34 +74,11 @@
 
         <div class="flex items-center space-x-1 flex-shrink-0 ml-2">
           <button
-            @click="handleCreateTask"
-            class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-            title="Добавить задачу"
-          >
-            <PlusIcon class="w-5 h-5" />
-          </button>
-          <button
             @click="handleEditProject"
             class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
             title="Редактировать"
           >
             <PencilIcon class="w-5 h-5" />
-          </button>
-          <button
-            v-if="project?.status !== 'archived'"
-            @click="handleArchiveProject"
-            class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-            title="Архивировать"
-          >
-            <ArchiveBoxArrowDownIcon class="w-5 h-5" />
-          </button>
-          <button
-            v-else
-            @click="handleUnarchiveProject"
-            class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-            title="Восстановить"
-          >
-            <ArrowUturnLeftIcon class="w-5 h-5" />
           </button>
         </div>
       </div>
@@ -120,9 +115,9 @@
         </div>
 
         <!-- Two-column layout: tasks + calendar -->
-        <div v-else class="flex gap-6 items-start">
-          <!-- Left: Task list -->
-          <div class="w-1/2 min-w-0">
+        <div v-else class="flex flex-col lg:flex-row gap-6 items-start">
+          <!-- Tasks -->
+          <div class="w-full lg:w-1/2 min-w-0 order-1 lg:order-1">
             <!-- Add task button -->
             <button
               v-if="sortedActiveTasks.length > 0"
@@ -137,6 +132,7 @@
             <TaskList
               v-if="sortedActiveTasks.length > 0"
               :tasks="sortedActiveTasks"
+              hide-project
               @task-click="handleTaskClick"
               @toggle-complete="handleToggleComplete"
             />
@@ -180,6 +176,7 @@
               <div v-if="showCompleted" class="mt-2 opacity-60">
                 <TaskList
                   :tasks="completedTasks"
+                  hide-project
                   @task-click="handleTaskClick"
                   @toggle-complete="handleToggleComplete"
                 />
@@ -187,8 +184,8 @@
             </div>
           </div>
 
-          <!-- Right: Month Calendar -->
-          <div class="w-1/2 sticky top-4">
+          <!-- Calendar -->
+          <div class="w-full lg:w-1/2 lg:sticky lg:top-4 order-2 lg:order-2">
             <!-- Month nav -->
             <div class="flex items-center justify-between mb-3">
               <button @click="calendarMonth = calendarMonth.subtract(1, 'month')" class="p-1.5 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700">

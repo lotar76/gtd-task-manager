@@ -10,6 +10,7 @@
     >
       <TaskItem
         :task="task"
+        :hide-project="hideProject"
         @task-click="$emit('task-click', task)"
         @toggle-complete="handleToggleComplete"
       />
@@ -47,6 +48,10 @@ defineProps({
   tasks: {
     type: Array,
     default: () => [],
+  },
+  hideProject: {
+    type: Boolean,
+    default: false,
   },
 })
 
