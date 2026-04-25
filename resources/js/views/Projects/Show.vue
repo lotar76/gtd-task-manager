@@ -135,6 +135,7 @@
               hide-project
               @task-click="handleTaskClick"
               @toggle-complete="handleToggleComplete"
+              @touch-drop="handleTouchDrop"
             />
 
             <!-- No active tasks -->
@@ -179,6 +180,7 @@
                   hide-project
                   @task-click="handleTaskClick"
                   @toggle-complete="handleToggleComplete"
+                  @touch-drop="handleTouchDrop"
                 />
               </div>
             </div>
@@ -212,6 +214,7 @@
                 <div
                   v-for="(day, idx) in calendarDays"
                   :key="idx"
+                  :data-drop-date="day.date"
                   class="group/day relative min-h-[70px] border-b border-r border-gray-200 dark:border-gray-700 last:border-r-0 p-1.5 cursor-pointer touch-manipulation transition-colors"
                   :class="[
                     getDayCellClass(day),
@@ -400,6 +403,16 @@ const handleCalendarDrop = async (e, date) => {
     }
   } catch (err) {
     console.error('Drop error:', err)
+  }
+}
+
+const handleTouchDrop = async ({ task, date }) => {
+  if (task?.id && date) {
+    try {
+      await tasksStore.updateTask(task.id, { due_date: date })
+    } catch (err) {
+      console.error('Touch drop error:', err)
+    }
   }
 }
 
