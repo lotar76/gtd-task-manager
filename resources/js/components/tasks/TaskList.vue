@@ -85,39 +85,40 @@ const handleDragEnd = () => {
 }
 
 // Touch drag-and-drop for mobile
-const touchState = ref(null)
-const touchClone = ref(null)
+// IMPORTANT: use plain variables (not ref) to avoid Vue re-renders causing touchcancel
+let touchDrag = null
+let touchCloneEl = null
 let lastHighlighted = null
+let touchDragTask = null
 
 const cleanupTouch = () => {
-  if (touchClone.value) {
-    touchClone.value.remove()
-    touchClone.value = null
+  if (touchCloneEl) {
+    touchCloneEl.remove()
+    touchCloneEl = null
   }
   if (lastHighlighted) {
     lastHighlighted.classList.remove('ring-2', 'ring-primary-400', 'ring-inset', 'bg-primary-100', 'dark:bg-primary-900/40')
     lastHighlighted = null
   }
-  if (touchState.value) {
-    const el = document.querySelector(`[data-task-id="${touchState.value.task.id}"]`)
+  if (touchDrag) {
+    const el = document.querySelector(`[data-task-id="${touchDrag.task.id}"]`)
     if (el) el.style.opacity = '1'
-    clearTimeout(touchState.value.holdTimer)
+    clearTimeout(touchDrag.holdTimer)
   }
-  isDragging.value = false
-  draggedTask.value = null
-  touchState.value = null
+  touchDrag = null
+  touchDragTask = null
   document.removeEventListener('touchmove', onDocTouchMove)
   document.removeEventListener('touchend', onDocTouchEnd)
   document.removeEventListener('touchcancel', onDocTouchEnd)
 }
 
 const onDocTouchMove = (e) => {
-  if (!touchState.value) return
+  if (!touchDrag) return
   const touch = e.touches[0]
 
-  if (!touchState.value.isDragging) {
-    const dx = Math.abs(touch.clientX - touchState.value.startX)
-    const dy = Math.abs(touch.clientY - touchState.value.startY)
+  if (!touchDrag.isDragging) {
+    const dx = Math.abs(touch.clientX - touchDrag.startX)
+    const dy = Math.abs(touch.clientY - touchDrag.startY)
     if (dx > 10 || dy > 10) {
       cleanupTouch()
       return
@@ -127,9 +128,9 @@ const onDocTouchMove = (e) => {
 
   e.preventDefault()
 
-  if (touchClone.value) {
-    touchClone.value.style.left = `${touch.clientX}px`
-    touchClone.value.style.top = `${touch.clientY}px`
+  if (touchCloneEl) {
+    touchCloneEl.style.left = `${touch.clientX}px`
+    touchCloneEl.style.top = `${touch.clientY}px`
   }
 
   const el = document.elementFromPoint(touch.clientX, touch.clientY)
@@ -148,14 +149,12 @@ const onDocTouchMove = (e) => {
 }
 
 const onDocTouchEnd = () => {
-  if (!touchState.value) return
+  if (!touchDrag) return
 
-  const wasDragging = touchState.value.isDragging
-
-  if (wasDragging && draggedTask.value && lastHighlighted) {
+  if (touchDrag.isDragging && touchDragTask && lastHighlighted) {
     const date = lastHighlighted.dataset.dropDate
     if (date) {
-      emit('touch-drop', { task: draggedTask.value, date })
+      emit('touch-drop', { task: touchDragTask, date })
     }
   }
 
@@ -165,16 +164,15 @@ const onDocTouchEnd = () => {
 
 const handleTouchStart = (e, task) => {
   const touch = e.touches[0]
-  touchState.value = {
+  touchDrag = {
     task,
     startX: touch.clientX,
     startY: touch.clientY,
     isDragging: false,
     holdTimer: setTimeout(() => {
-      if (!touchState.value) return
-      touchState.value.isDragging = true
-      isDragging.value = true
-      draggedTask.value = task
+      if (!touchDrag) return
+      touchDrag.isDragging = true
+      touchDragTask = task
 
       const el = e.target.closest('[data-task-id]')
       if (el) {
@@ -187,7 +185,7 @@ const handleTouchStart = (e, task) => {
           background: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         `
         document.body.appendChild(clone)
-        touchClone.value = clone
+        touchCloneEl = clone
         el.style.opacity = '0.3'
       }
 
