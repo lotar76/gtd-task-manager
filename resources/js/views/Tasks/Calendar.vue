@@ -977,10 +977,13 @@ const dayTasksWithoutTime = computed(() => {
 // Задачи выбранного дня в месячном виде
 const selectedMonthDayTasks = computed(() => {
   const dateString = selectedMonthDay.value
+  const myId = authStore.user?.id
   const filtered = tasks.value.filter(task =>
     task.due_date &&
     dayjs(task.due_date).format('YYYY-MM-DD') === dateString &&
-    task.status !== 'completed'
+    task.status !== 'completed' &&
+    !hiddenCalSpheres.value.includes(task.life_sphere_id) &&
+    (!calOnlyMine.value || task.creator?.id === myId)
   )
 
   if (monthDaySortMode.value === 'priority') {
@@ -1009,10 +1012,13 @@ const selectedMonthDayTasks = computed(() => {
 
 const selectedMonthDayCompleted = computed(() => {
   const dateString = selectedMonthDay.value
+  const myId = authStore.user?.id
   return tasksStore.allTasks.filter(task =>
     task.due_date &&
     task.due_date.substring(0, 10) === dateString &&
-    task.completed_at
+    task.completed_at &&
+    !hiddenCalSpheres.value.includes(task.life_sphere_id) &&
+    (!calOnlyMine.value || task.creator?.id === myId)
   )
 })
 
