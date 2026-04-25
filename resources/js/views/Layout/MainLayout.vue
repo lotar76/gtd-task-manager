@@ -77,7 +77,7 @@
               </NavLink>
               <NavLink
                 to="/goals"
-                icon="flag"
+                icon="target"
                 @close-sidebar="sidebarOpen = false"
               >
                 Цели

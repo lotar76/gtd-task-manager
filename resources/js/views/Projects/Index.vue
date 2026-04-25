@@ -7,12 +7,11 @@
       <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Потоки</h1>
       <button
         @click="showProjectModal = true"
-        class="p-2 sm:px-4 sm:py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg flex items-center space-x-2 transition-colors"
+        class="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 transition-colors"
       >
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
         </svg>
-        <span class="hidden sm:inline">Создать поток</span>
       </button>
     </div>
     <button
@@ -23,45 +22,64 @@
     </button>
 
     <!-- Projects Grid -->
-    <div v-if="filteredProjects.length > 0" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-      <div
-        v-for="project in filteredProjects"
-        :key="project.id"
-        class="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow cursor-pointer"
-        @click="$router.push(`/projects/${project.id}`)"
-      >
-        <div class="flex items-start justify-between mb-4">
-          <div class="flex-1 min-w-0">
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white truncate">
-              {{ project.name }}
-            </h3>
-            <p v-if="getSphereName(project)" class="text-sm text-gray-500 dark:text-gray-400 truncate flex items-center gap-1.5">
-              <span class="w-2.5 h-2.5 rounded-full flex-shrink-0" :style="{ backgroundColor: getSphereColor(project) }"></span>
-              {{ getSphereName(project) }}
-            </p>
-          </div>
-          <button
-            @click.stop="handleArchiveProject(project)"
-            class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 transition-colors"
-            title="Архивировать"
-          >
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
-            </svg>
-          </button>
+    <div v-if="filteredProjects.length > 0" class="space-y-4">
+      <div v-for="group in groupedProjects" :key="group.sphere?.id || 'none'">
+        <!-- Sphere header -->
+        <div class="flex items-center gap-2 mb-1.5 px-1">
+          <span v-if="group.sphere" class="w-1.5 h-1.5 rounded-full flex-shrink-0" :style="{ backgroundColor: group.sphere.color }"></span>
+          <span class="text-[10px] uppercase tracking-wider text-gray-400 dark:text-gray-500 font-medium">{{ group.sphere?.name || 'Без сферы' }}</span>
         </div>
-
-        <p v-if="project.description" class="text-sm text-gray-600 dark:text-gray-300 mb-4 line-clamp-2">
-          {{ project.description }}
-        </p>
-
-        <div class="flex items-center justify-between text-sm">
-          <span class="text-gray-500 dark:text-gray-400">
-            {{ project.tasks_count || 0 }} задач
-          </span>
-          <span v-if="project.status === 'active'" class="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400 rounded-full text-xs">
-            Активен
-          </span>
+        <!-- Projects -->
+        <div class="space-y-1">
+          <div
+            v-for="project in group.projects"
+            :key="project.id"
+            class="border rounded-lg px-3 py-2.5 cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/50 border-gray-200 dark:border-gray-700"
+            @click="$router.push(`/projects/${project.id}`)"
+          >
+            <div class="flex items-center gap-2.5">
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center justify-between gap-2">
+                  <h3 class="text-[13.5px] text-gray-800 dark:text-gray-100 truncate">
+                    {{ project.name }}
+                  </h3>
+                  <div v-if="project.total_tasks_count > 0" class="flex items-center gap-[3px] flex-shrink-0">
+                    <template v-if="project.total_tasks_count <= 16">
+                      <div
+                        v-for="i in project.total_tasks_count"
+                        :key="i"
+                        class="w-[6px] h-[6px] rounded-sm"
+                        :class="i <= (project.completed_tasks_count || 0) ? 'bg-emerald-500' : 'bg-gray-200 dark:bg-gray-700'"
+                      />
+                    </template>
+                    <template v-else>
+                      <div
+                        v-for="i in 16"
+                        :key="i"
+                        class="w-[6px] h-[6px] rounded-sm"
+                        :class="i <= Math.round((project.completed_tasks_count || 0) / project.total_tasks_count * 16) ? 'bg-emerald-500' : 'bg-gray-200 dark:bg-gray-700'"
+                      />
+                      <span class="text-[9px] text-gray-400 ml-0.5">{{ project.completed_tasks_count }}/{{ project.total_tasks_count }}</span>
+                    </template>
+                  </div>
+                </div>
+                <div class="flex flex-wrap items-center gap-x-3 gap-y-1 mt-0.5 text-[11.5px] text-gray-500 dark:text-gray-400">
+                  <span v-if="project.tasks_count" class="inline-flex items-center gap-1">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
+                    {{ project.tasks_count }}
+                  </span>
+                  <span v-if="getSphereName(project)" class="inline-flex items-center gap-1">
+                    <span class="w-1.5 h-1.5 rounded-full" :style="{ backgroundColor: getSphereColor(project) }"></span>
+                    {{ getSphereName(project) }}
+                  </span>
+                  <span v-if="project.goal" class="inline-flex items-center gap-1">
+                    <svg class="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" stroke-width="1.8" /><circle cx="12" cy="12" r="4" stroke-width="1.8" /></svg>
+                    {{ project.goal.name }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -224,6 +242,24 @@ const filteredProjects = computed(() => {
   return activeProjects.value.filter(p => p.life_sphere_id === selectedSphereId.value)
 })
 
+const groupedProjects = computed(() => {
+  const groups = []
+  const projects = filteredProjects.value
+  // По порядку сфер
+  for (const sphere of spheres.value) {
+    const items = projects.filter(p => p.life_sphere_id === sphere.id)
+    if (items.length > 0) {
+      groups.push({ sphere, projects: items })
+    }
+  }
+  // Без сферы
+  const noSphere = projects.filter(p => !p.life_sphere_id)
+  if (noSphere.length > 0) {
+    groups.push({ sphere: null, projects: noSphere })
+  }
+  return groups
+})
+
 const spheres = computed(() => spheresStore.visibleSpheres)
 
 const sortedSpheres = computed(() => {
@@ -245,6 +281,12 @@ const getSphereColor = (project) => {
   if (!project.life_sphere_id) return null
   const s = spheres.value.find(s => s.id === project.life_sphere_id)
   return s?.color || project.life_sphere?.color || null
+}
+
+const getSphereCover = (project) => {
+  if (!project.life_sphere_id) return null
+  const s = spheres.value.find(s => s.id === project.life_sphere_id)
+  return s?.cover_image_url || null
 }
 
 const handleSaveProject = async (projectData) => {

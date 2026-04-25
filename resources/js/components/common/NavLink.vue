@@ -76,7 +76,13 @@ const iconMap = {
   archive: ArchiveBoxIcon,
   folder: FolderIcon,
   'calendar-days': CalendarDaysIcon,
-  target: FolderIcon,
+  target: {
+    render: () => h('svg', { fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24', 'stroke-width': '1.8', class: 'w-5 h-5' }, [
+      h('circle', { cx: '12', cy: '12', r: '9' }),
+      h('circle', { cx: '12', cy: '12', r: '5' }),
+      h('circle', { cx: '12', cy: '12', r: '1' }),
+    ])
+  },
   'rectangle-stack': RectangleStackIcon,
   cog: Cog6ToothIcon,
   'chart-bar': ChartBarIcon,

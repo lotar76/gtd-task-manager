@@ -12,7 +12,7 @@
     </button>
 
     <!-- Header -->
-    <div class="flex items-center justify-center lg:justify-between mb-6 relative">
+    <div class="flex items-center justify-center lg:hidden mb-6 relative">
       <div class="flex items-center space-x-3">
         <button
           @click="prevMonth"
@@ -98,7 +98,17 @@
         <thead>
           <!-- Chart row -->
           <tr>
-            <th class="sticky left-0 z-10 bg-white dark:bg-gray-900 border-none min-w-[180px]"></th>
+            <th class="sticky left-0 z-10 bg-white dark:bg-gray-900 border-none min-w-[180px] px-2 py-1">
+              <div class="flex items-center justify-center gap-0.5">
+                <button @click="prevMonth" class="p-0.5 rounded text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+                  <ChevronLeftIcon class="w-3.5 h-3.5" />
+                </button>
+                <span class="text-xs font-medium text-gray-700 dark:text-gray-300 capitalize">{{ monthLabel }}</span>
+                <button @click="nextMonth" class="p-0.5 rounded text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+                  <ChevronRightIcon class="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </th>
             <th
               v-for="day in daysInMonth"
               :key="'chart-'+day"
@@ -119,7 +129,7 @@
           </tr>
           <!-- Day headers -->
           <tr>
-            <th class="sticky left-0 z-10 bg-white dark:bg-gray-900 px-3 py-1 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider border-b border-r border-gray-100 dark:border-gray-800/50 min-w-[180px]">
+            <th class="sticky left-0 z-10 bg-white dark:bg-gray-900 px-3 py-1 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider border-t border-b border-r border-gray-100 dark:border-gray-800/50 min-w-[180px]">
               <div class="flex items-center justify-between">
                 <span>Привычка</span>
                 <button @click="showCreateModal = true" class="p-0.5 text-gray-400 hover:text-primary-500 transition-colors">
@@ -130,7 +140,7 @@
             <th
               v-for="day in daysInMonth"
               :key="day"
-              class="px-0 py-0.5 text-center text-[10px] font-medium border-b border-gray-100 dark:border-gray-800 w-9 min-w-[36px] bg-white dark:bg-gray-900"
+              class="px-0 py-0.5 text-center text-[10px] font-medium border-t border-b border-gray-100 dark:border-gray-800 w-9 min-w-[36px] bg-white dark:bg-gray-900"
             >
               <div class="text-gray-400 dark:text-gray-500">{{ dayOfWeekShort(day) }}</div>
               <div
@@ -783,10 +793,12 @@ const getSphereColor = (challenge) => {
 function sphereBgStyle(challenge, opacity = 0.4) {
   const hex = getSphereColor(challenge)
   if (!hex) return {}
+  const isDark = document.documentElement.classList.contains('dark')
+  const finalOpacity = isDark ? Math.min(opacity * 2.5, 0.35) : opacity
   const r = parseInt(hex.slice(1, 3), 16)
   const g = parseInt(hex.slice(3, 5), 16)
   const b = parseInt(hex.slice(5, 7), 16)
-  return { backgroundColor: `rgba(${r}, ${g}, ${b}, ${opacity})` }
+  return { backgroundColor: `rgba(${r}, ${g}, ${b}, ${finalOpacity})` }
 }
 const confirmStore = useConfirmStore()
 
