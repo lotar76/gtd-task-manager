@@ -145,20 +145,15 @@ const onDocTouchMove = (e) => {
   }
 }
 
-const onDocTouchEnd = (e) => {
+const onDocTouchEnd = () => {
   if (!touchState.value) return
 
   const wasDragging = touchState.value.isDragging
-  const task = touchState.value.task
 
-  if (wasDragging && draggedTask.value) {
-    const lastTouch = e.changedTouches?.[0]
-    if (lastTouch) {
-      const dropEl = document.elementFromPoint(lastTouch.clientX, lastTouch.clientY)
-      const dropZone = dropEl?.closest('[data-drop-date]')
-      if (dropZone) {
-        emit('touch-drop', { task: draggedTask.value, date: dropZone.dataset.dropDate })
-      }
+  if (wasDragging && draggedTask.value && lastHighlighted) {
+    const date = lastHighlighted.dataset.dropDate
+    if (date) {
+      emit('touch-drop', { task: draggedTask.value, date })
     }
   }
 
