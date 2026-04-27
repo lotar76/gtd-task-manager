@@ -1,16 +1,16 @@
 <template>
   <div class="p-4 lg:p-8">
-    <div class="flex items-center justify-between mb-4">
-      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Библиотека</h1>
+    <div class="flex items-center justify-between mb-3">
+      <h1 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Библиотека</h1>
     </div>
 
     <!-- Tabs -->
-    <div class="flex gap-1 mb-6 overflow-x-auto pb-1 -mx-4 px-4 sm:mx-0 sm:px-0">
+    <div class="flex gap-1.5 mb-5 overflow-x-auto pb-0.5 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-hide">
       <button
         v-for="tab in tabs" :key="tab.key"
         @click="activeTab = tab.key"
-        class="px-3 py-2 text-sm font-medium rounded-lg whitespace-nowrap transition-colors flex-shrink-0"
-        :class="activeTab === tab.key ? 'bg-primary-600 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 active:bg-gray-200 dark:active:bg-gray-700'"
+        class="px-3 py-1.5 text-xs sm:text-sm font-medium rounded-full whitespace-nowrap transition-colors flex-shrink-0"
+        :class="activeTab === tab.key ? 'bg-primary-600 text-white' : 'text-gray-500 dark:text-gray-400 active:text-gray-700 dark:active:text-gray-200'"
       >{{ tab.label }}</button>
     </div>
 
