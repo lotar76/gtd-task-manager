@@ -85,9 +85,13 @@
           <template v-else>
             <CheckIcon v-if="isTodayCompleted(challenge)" class="w-6 h-6 stroke-[3]" />
             <PlayIcon v-else-if="challenge.type === 'timer'" class="w-6 h-6" />
-            <span v-else-if="challenge.type === 'composite'" class="text-xs font-bold">{{ compositeProgress(challenge) }}</span>
+            <span v-else-if="challenge.type === 'composite'" class="font-bold">
+              <span class="text-sm" :class="compositeProgressDone(challenge) > 0 ? 'text-emerald-500' : ''">{{ compositeProgressDone(challenge) }}</span><span class="text-xs">/{{ compositeProgressTotal(challenge) }}</span>
+            </span>
             <DocumentTextIcon v-else-if="challenge.type === 'report'" class="w-6 h-6" />
-            <span v-else-if="challenge.type === 'progressive' && challenge.progress_sets" class="text-xs font-bold">{{ progressSetsProgress(challenge) }}</span>
+            <span v-else-if="challenge.type === 'progressive' && challenge.progress_sets" class="font-bold">
+              <span class="text-sm" :class="progressSetsProgressDone(challenge) > 0 ? 'text-emerald-500' : ''">{{ progressSetsProgressDone(challenge) }}</span><span class="text-xs">/{{ challenge.progress_sets }}</span>
+            </span>
             <span v-else-if="challenge.type === 'progressive'" class="text-xs font-bold">{{ progressTarget(challenge, todayDay.value) }}</span>
             <CheckIcon v-else class="w-6 h-6" />
           </template>
@@ -181,8 +185,10 @@
                     v-if="typeIcon(challenge.type)"
                     class="w-3.5 h-3.5 text-gray-400 dark:text-gray-500 mr-1.5 flex-shrink-0"
                   />
-                  <span class="cursor-default truncate">{{ challenge.title }}</span>
-                  <span v-if="getSphereName(challenge)" class="text-[10px] text-gray-400 dark:text-gray-600 ml-1.5 flex-shrink-0">{{ getSphereName(challenge) }}</span>
+                  <div class="min-w-0 flex-1">
+                    <span class="cursor-default truncate block">{{ challenge.title }}</span>
+                    <span v-if="getSphereName(challenge)" class="text-[10px] text-gray-400 dark:text-gray-600 truncate block">{{ getSphereName(challenge) }}</span>
+                  </div>
                 </div>
                 <div class="flex items-center ml-2">
                   <button
@@ -1084,6 +1090,26 @@ function compositeProgress(challenge) {
   const total = challenge.subtasks?.length || 0
   const done = entry?.subtask_states?.filter(Boolean).length || 0
   return `${done}/${total}`
+}
+
+function compositeProgressDone(challenge) {
+  const entry = challenge.entries?.find(e => {
+    const ed = typeof e.date === 'string' ? e.date.substring(0, 10) : ''
+    return ed === todayStr.value
+  })
+  return entry?.subtask_states?.filter(Boolean).length || 0
+}
+
+function compositeProgressTotal(challenge) {
+  return challenge.subtasks?.length || 0
+}
+
+function progressSetsProgressDone(challenge) {
+  const entry = challenge.entries?.find(e => {
+    const ed = typeof e.date === 'string' ? e.date.substring(0, 10) : ''
+    return ed === todayStr.value
+  })
+  return entry?.subtask_states?.filter(Boolean).length || 0
 }
 
 function dayStats(day) {
