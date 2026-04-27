@@ -73,15 +73,14 @@
           class="w-12 h-12 rounded-xl flex items-center justify-center transition-all mb-2"
           :class="challenge.type === 'anti'
             ? (isTodayCompleted(challenge)
-              ? 'bg-red-500 text-white'
-              : 'bg-emerald-500 text-white')
+              ? 'bg-gray-100 dark:bg-gray-800 text-red-500 dark:text-red-400'
+              : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500')
             : (isTodayCompleted(challenge)
               ? 'bg-emerald-500 text-white'
               : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500')"
         >
           <template v-if="challenge.type === 'anti'">
-            <XMarkIcon v-if="isTodayCompleted(challenge)" class="w-6 h-6 stroke-[3]" />
-            <CheckIcon v-else class="w-6 h-6 stroke-[3]" />
+            <ExclamationTriangleIcon class="w-6 h-6" />
           </template>
           <template v-else>
             <CheckIcon v-if="isTodayCompleted(challenge)" class="w-6 h-6 stroke-[3]" />
@@ -173,7 +172,7 @@
         >
           <template #item="{ element: challenge }">
           <tr class="group">
-            <td class="sticky left-0 z-10 px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 border-b border-r border-gray-100 dark:border-gray-800/50 group-hover:bg-gray-50 dark:group-hover:bg-gray-800/50" :class="getSphereColor(challenge) ? '' : 'bg-white dark:bg-gray-900'" :style="sphereBgStyle(challenge, 0.1)">
+            <td class="sticky left-0 z-10 px-3 py-0.5 text-sm text-gray-700 dark:text-gray-300 border-b border-r border-gray-100 dark:border-gray-800/50 group-hover:bg-gray-50 dark:group-hover:bg-gray-800/50" :class="getSphereColor(challenge) ? '' : 'bg-white dark:bg-gray-900'" :style="sphereBgStyle(challenge, 0.1)">
               <div class="flex items-center justify-between">
                 <div class="flex items-center min-w-0 flex-1">
                   <Bars3Icon class="drag-handle w-4 h-4 text-gray-300 dark:text-gray-600 cursor-grab mr-2 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -182,10 +181,8 @@
                     v-if="typeIcon(challenge.type)"
                     class="w-3.5 h-3.5 text-gray-400 dark:text-gray-500 mr-1.5 flex-shrink-0"
                   />
-                  <div class="min-w-0 flex-1">
-                    <span class="cursor-default truncate block">{{ challenge.title }}</span>
-                    <span v-if="getSphereName(challenge)" class="text-[10px] text-gray-400 dark:text-gray-600 truncate block">{{ getSphereName(challenge) }}</span>
-                  </div>
+                  <span class="cursor-default truncate">{{ challenge.title }}</span>
+                  <span v-if="getSphereName(challenge)" class="text-[10px] text-gray-400 dark:text-gray-600 ml-1.5 flex-shrink-0">{{ getSphereName(challenge) }}</span>
                 </div>
                 <div class="flex items-center ml-2">
                   <button
@@ -211,12 +208,11 @@
               @click="isToday(day) && handleCellClick(challenge, day)"
             >
               <div
-                class="w-8 h-8 flex items-center justify-center rounded-full mx-auto my-1"
+                class="w-7 h-7 flex items-center justify-center rounded-full mx-auto my-0.5"
                 :class="cellClass(challenge, day)"
               >
                 <template v-if="challenge.type === 'anti'">
-                  <XMarkIcon v-if="isDayCompleted(challenge, day)" class="w-4 h-4" />
-                  <CheckIcon v-else-if="isMissed(day) && isAfterStart(challenge, day)" class="w-4 h-4" />
+                  <ExclamationTriangleIcon v-if="isDayCompleted(challenge, day)" class="w-3.5 h-3.5" />
                 </template>
                 <template v-else>
                   <CheckIcon v-if="isDayCompleted(challenge, day)" class="w-4 h-4" />
@@ -796,6 +792,7 @@ import {
   ClockIcon,
   ArrowTrendingUpIcon,
   NoSymbolIcon,
+  ExclamationTriangleIcon,
 } from '@heroicons/vue/24/outline'
 
 const store = useChallengesStore()
@@ -968,13 +965,10 @@ function isDaySuccess(challenge, day) {
   return challenge.type === 'anti' ? !completed : completed
 }
 
-function isTodaySuccess(challenge) {
-  return isDaySuccess(challenge, todayDay.value)
-}
+
 
 function cellClass(challenge, day) {
   const completed = isDayCompleted(challenge, day)
-  const success = isDaySuccess(challenge, day)
   const today = isToday(day)
   const afterStart = isAfterStart(challenge, day)
   const missed = isMissed(day)
