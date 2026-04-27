@@ -21,12 +21,34 @@
 
             <div>
               <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Дата рождения</label>
-              <input
-                v-model="form.date"
-                type="date"
-                required
-                class="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-white"
-              />
+              <div class="flex gap-2">
+                <input
+                  v-model="formDay"
+                  type="text"
+                  inputmode="numeric"
+                  maxlength="2"
+                  placeholder="ДД"
+                  required
+                  class="w-16 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-white text-center"
+                />
+                <input
+                  v-model="formMonth"
+                  type="text"
+                  inputmode="numeric"
+                  maxlength="2"
+                  placeholder="ММ"
+                  required
+                  class="w-16 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-white text-center"
+                />
+                <input
+                  v-model="formYear"
+                  type="text"
+                  inputmode="numeric"
+                  maxlength="4"
+                  placeholder="ГГГГ"
+                  class="w-20 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-white text-center"
+                />
+              </div>
             </div>
 
             <textarea
@@ -70,7 +92,10 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'submit', 'delete'])
 
-const form = ref({ name: '', date: '', note: '' })
+const form = ref({ name: '', note: '' })
+const formDay = ref('')
+const formMonth = ref('')
+const formYear = ref('')
 const saving = ref(false)
 const error = ref('')
 
@@ -80,20 +105,36 @@ watch(() => props.show, (val) => {
     if (props.item) {
       form.value = {
         name: props.item.name || '',
-        date: props.item.date?.slice(0, 10) || '',
         note: props.item.note || '',
       }
+      const d = props.item.date?.slice(0, 10) || ''
+      if (d) {
+        const parts = d.split('-')
+        formYear.value = parts[0] || ''
+        formMonth.value = parts[1] || ''
+        formDay.value = parts[2] || ''
+      }
     } else {
-      form.value = { name: '', date: '', note: '' }
+      form.value = { name: '', note: '' }
+      formDay.value = ''
+      formMonth.value = ''
+      formYear.value = ''
     }
   }
 })
 
 const handleSubmit = async () => {
+  const day = formDay.value.padStart(2, '0')
+  const month = formMonth.value.padStart(2, '0')
+  const year = formYear.value || '2000'
+  if (!day || !month || parseInt(day) < 1 || parseInt(day) > 31 || parseInt(month) < 1 || parseInt(month) > 12) {
+    error.value = 'Введите корректную дату'
+    return
+  }
   saving.value = true
   error.value = ''
   try {
-    emit('submit', { ...form.value })
+    emit('submit', { ...form.value, date: `${year}-${month}-${day}` })
   } catch (e) {
     error.value = e.message
   } finally {
