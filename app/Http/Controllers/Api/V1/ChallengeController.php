@@ -37,7 +37,7 @@ class ChallengeController extends Controller
     {
         $validated = $request->validate([
             'title' => 'required|string|max:255',
-            'type' => 'sometimes|in:checkbox,timer,composite,report,progressive',
+            'type' => 'sometimes|in:checkbox,timer,composite,report,progressive,anti',
             'life_sphere_id' => 'nullable|integer|exists:life_spheres,id',
             'timer_minutes' => 'required_if:type,timer|nullable|integer|min:1|max:480',
             'subtasks' => 'required_if:type,composite|nullable|array|min:1|max:20',

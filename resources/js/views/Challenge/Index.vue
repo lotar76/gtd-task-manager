@@ -71,17 +71,27 @@
         <!-- Status icon -->
         <div
           class="w-12 h-12 rounded-xl flex items-center justify-center transition-all mb-2"
-          :class="isTodayCompleted(challenge)
-            ? 'bg-emerald-500 text-white'
-            : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500'"
+          :class="challenge.type === 'anti'
+            ? (isTodayCompleted(challenge)
+              ? 'bg-red-500 text-white'
+              : 'bg-emerald-500 text-white')
+            : (isTodayCompleted(challenge)
+              ? 'bg-emerald-500 text-white'
+              : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500')"
         >
-          <CheckIcon v-if="isTodayCompleted(challenge)" class="w-6 h-6 stroke-[3]" />
-          <PlayIcon v-else-if="challenge.type === 'timer'" class="w-6 h-6" />
-          <span v-else-if="challenge.type === 'composite'" class="text-xs font-bold">{{ compositeProgress(challenge) }}</span>
-          <DocumentTextIcon v-else-if="challenge.type === 'report'" class="w-6 h-6" />
-          <span v-else-if="challenge.type === 'progressive' && challenge.progress_sets" class="text-xs font-bold">{{ progressSetsProgress(challenge) }}</span>
-          <span v-else-if="challenge.type === 'progressive'" class="text-xs font-bold">{{ progressTarget(challenge, todayDay.value) }}</span>
-          <CheckIcon v-else class="w-6 h-6" />
+          <template v-if="challenge.type === 'anti'">
+            <XMarkIcon v-if="isTodayCompleted(challenge)" class="w-6 h-6 stroke-[3]" />
+            <CheckIcon v-else class="w-6 h-6 stroke-[3]" />
+          </template>
+          <template v-else>
+            <CheckIcon v-if="isTodayCompleted(challenge)" class="w-6 h-6 stroke-[3]" />
+            <PlayIcon v-else-if="challenge.type === 'timer'" class="w-6 h-6" />
+            <span v-else-if="challenge.type === 'composite'" class="text-xs font-bold">{{ compositeProgress(challenge) }}</span>
+            <DocumentTextIcon v-else-if="challenge.type === 'report'" class="w-6 h-6" />
+            <span v-else-if="challenge.type === 'progressive' && challenge.progress_sets" class="text-xs font-bold">{{ progressSetsProgress(challenge) }}</span>
+            <span v-else-if="challenge.type === 'progressive'" class="text-xs font-bold">{{ progressTarget(challenge, todayDay.value) }}</span>
+            <CheckIcon v-else class="w-6 h-6" />
+          </template>
         </div>
         <!-- Title -->
         <p class="text-sm font-semibold text-gray-900 dark:text-gray-100 leading-tight pr-5 line-clamp-2">
@@ -204,22 +214,28 @@
                 class="w-8 h-8 flex items-center justify-center rounded-full mx-auto my-1"
                 :class="cellClass(challenge, day)"
               >
-                <CheckIcon v-if="isDayCompleted(challenge, day)" class="w-4 h-4" />
-                <template v-else-if="isToday(day) && !isDayCompleted(challenge, day)">
-                  <PlayIcon v-if="challenge.type === 'timer'" class="w-4 h-4 text-primary-500" />
-                  <span v-else-if="challenge.type === 'composite'" class="text-[9px] font-medium text-primary-500">
-                    {{ compositeProgress(challenge) }}
-                  </span>
-                  <DocumentTextIcon v-else-if="challenge.type === 'report'" class="w-4 h-4 text-primary-500" />
-                  <span v-else-if="challenge.type === 'progressive' && challenge.progress_sets" class="text-[9px] font-medium text-primary-500">
-                    {{ progressSetsProgress(challenge) }}
-                  </span>
-                  <span v-else-if="challenge.type === 'progressive'" class="text-[9px] font-medium text-primary-500">
-                    {{ progressTarget(challenge, day) }}
-                  </span>
+                <template v-if="challenge.type === 'anti'">
+                  <XMarkIcon v-if="isDayCompleted(challenge, day)" class="w-4 h-4" />
+                  <CheckIcon v-else-if="isMissed(day) && isAfterStart(challenge, day)" class="w-4 h-4" />
                 </template>
-                <XMarkIcon v-else-if="isMissed(day) && isAfterStart(challenge, day)" class="w-3 h-3 text-red-400 dark:text-red-500" />
-                <XMarkIcon v-else-if="isMissed(day) && !isAfterStart(challenge, day)" class="w-3 h-3 text-gray-300 dark:text-gray-600" />
+                <template v-else>
+                  <CheckIcon v-if="isDayCompleted(challenge, day)" class="w-4 h-4" />
+                  <template v-else-if="isToday(day) && !isDayCompleted(challenge, day)">
+                    <PlayIcon v-if="challenge.type === 'timer'" class="w-4 h-4 text-primary-500" />
+                    <span v-else-if="challenge.type === 'composite'" class="text-[9px] font-medium text-primary-500">
+                      {{ compositeProgress(challenge) }}
+                    </span>
+                    <DocumentTextIcon v-else-if="challenge.type === 'report'" class="w-4 h-4 text-primary-500" />
+                    <span v-else-if="challenge.type === 'progressive' && challenge.progress_sets" class="text-[9px] font-medium text-primary-500">
+                      {{ progressSetsProgress(challenge) }}
+                    </span>
+                    <span v-else-if="challenge.type === 'progressive'" class="text-[9px] font-medium text-primary-500">
+                      {{ progressTarget(challenge, day) }}
+                    </span>
+                  </template>
+                  <XMarkIcon v-else-if="isMissed(day) && isAfterStart(challenge, day)" class="w-3 h-3 text-red-400 dark:text-red-500" />
+                  <XMarkIcon v-else-if="isMissed(day) && !isAfterStart(challenge, day)" class="w-3 h-3 text-gray-300 dark:text-gray-600" />
+                </template>
               </div>
             </td>
           </tr>
@@ -262,7 +278,7 @@
                 newType === t.value
                   ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'
                   : 'border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:border-gray-300',
-                idx < 3 ? 'col-span-2' : 'col-span-3',
+                'col-span-2',
               ]"
             >
               <div class="h-6 flex items-center justify-center mb-0.5">
@@ -722,6 +738,10 @@
                     <ArrowTrendingUpIcon class="w-4 h-4 text-gray-400 dark:text-gray-500 mt-0.5 flex-shrink-0" />
                     <span><strong>Прогресс</strong> — нагрузка растёт каждый день. Задай начало, шаг и цель.</span>
                   </li>
+                  <li class="flex items-start gap-2">
+                    <NoSymbolIcon class="w-4 h-4 text-gray-400 dark:text-gray-500 mt-0.5 flex-shrink-0" />
+                    <span><strong>Срыв</strong> — отслеживание нежелательных действий. Пока не отмечаешь — день зелёный, ты держишься. Сорвался — нажал, день стал красным. Помогает видеть паттерн срывов.</span>
+                  </li>
                 </ul>
               </div>
 
@@ -775,6 +795,7 @@ import {
   DocumentTextIcon,
   ClockIcon,
   ArrowTrendingUpIcon,
+  NoSymbolIcon,
 } from '@heroicons/vue/24/outline'
 
 const store = useChallengesStore()
@@ -827,6 +848,7 @@ const challengeTypes = [
   { value: 'composite', label: 'Составная', icon: '☰', component: null, hint: 'Привычка из нескольких шагов. Все шаги выполнены — день засчитан.' },
   { value: 'report', label: 'Отчёт', icon: null, component: DocumentTextIcon, hint: 'Привычка с текстовым отчётом. Напиши что сделал — и день засчитан.' },
   { value: 'progressive', label: 'Прогресс', icon: null, component: ArrowTrendingUpIcon, hint: 'Нагрузка растёт каждый день. Задай начало, шаг и цель. Можно разбить на подходы.' },
+  { value: 'anti', label: 'Срыв', icon: null, component: NoSymbolIcon, hint: 'Отслеживай срывы. Пока не отмечаешь -- всё хорошо. Сорвался -- нажал.' },
 ]
 
 const typeIcons = {
@@ -835,6 +857,7 @@ const typeIcons = {
   composite: ListBulletIcon,
   report: DocumentTextIcon,
   progressive: ArrowTrendingUpIcon,
+  anti: NoSymbolIcon,
 }
 
 function typeIcon(type) {
@@ -940,14 +963,38 @@ function isTodayCompleted(challenge) {
   return isDayCompleted(challenge, todayDay.value)
 }
 
+function isDaySuccess(challenge, day) {
+  const completed = isDayCompleted(challenge, day)
+  return challenge.type === 'anti' ? !completed : completed
+}
+
+function isTodaySuccess(challenge) {
+  return isDaySuccess(challenge, todayDay.value)
+}
+
 function cellClass(challenge, day) {
   const completed = isDayCompleted(challenge, day)
+  const success = isDaySuccess(challenge, day)
   const today = isToday(day)
   const afterStart = isAfterStart(challenge, day)
   const missed = isMissed(day)
 
   if (!afterStart) {
     return 'bg-gray-50 dark:bg-gray-800/30 text-gray-300 dark:text-gray-700'
+  }
+  if (challenge.type === 'anti') {
+    if (completed) {
+      // Срыв -- красный
+      return 'bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400'
+    }
+    if (today) {
+      return 'bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/30'
+    }
+    if (missed) {
+      // Прошедший день без срыва -- зелёный
+      return 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400'
+    }
+    return 'bg-gray-50 dark:bg-gray-800/30 text-gray-300 dark:text-gray-600'
   }
   if (completed) {
     return 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400'
@@ -963,14 +1010,13 @@ function cellClass(challenge, day) {
 
 function completionPercent(challenge) {
   const start = challengeStartDate(challenge) || dateStr(1)
-  // Считаем total как количество дней от старта до конца месяца
   let total = 0
   let completed = 0
   for (let d = 1; d <= daysInMonth.value; d++) {
     const ds = dateStr(d)
     if (ds >= start) {
       total++
-      if (isDayCompleted(challenge, d)) completed++
+      if (isDaySuccess(challenge, d)) completed++
     }
   }
   if (total === 0) return 0
@@ -984,7 +1030,7 @@ function statsBar(challenge) {
     const ds = dateStr(d)
     if (ds < start) continue
     total++
-    if (isDayCompleted(challenge, d)) completed++
+    if (isDaySuccess(challenge, d)) completed++
     else if (ds < todayStr.value) missed++
   }
   if (total === 0) return { green: 0, red: 0 }
@@ -1051,7 +1097,7 @@ function dayStats(day) {
   for (const ch of store.challenges) {
     if (!isAfterStart(ch, day)) continue
     active++
-    if (isDayCompleted(ch, day)) completed++
+    if (isDaySuccess(ch, day)) completed++
   }
   return { active, completed }
 }
