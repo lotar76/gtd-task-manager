@@ -191,24 +191,16 @@
           :key="sphere.id"
           @click="toggleCalSphere(sphere.id)"
           class="px-1.5 py-0.5 text-[10px] rounded-full transition-all flex items-center gap-0.5"
-          :class="isCalSphereHidden(sphere.id)
-            ? 'text-gray-300 dark:text-gray-600 line-through'
-            : 'font-medium'"
-          :style="!isCalSphereHidden(sphere.id)
+          :class="activeSphereId === sphere.id
+            ? 'font-medium'
+            : 'text-gray-400 dark:text-gray-500'"
+          :style="activeSphereId === sphere.id
             ? { color: sphere.color, background: `${sphere.color}15` }
             : {}"
         >
-          <span v-if="isCalSphereHidden(sphere.id)" class="w-1.5 h-1.5 rounded-full opacity-40" :style="{ backgroundColor: sphere.color }"></span>
+          <span class="w-1.5 h-1.5 rounded-full" :style="{ backgroundColor: sphere.color }" :class="activeSphereId === sphere.id ? '' : 'opacity-40'"></span>
           {{ sphere.name }}
         </button>
-        <button
-          @click="calHideNoSphere = !calHideNoSphere"
-          class="px-1.5 py-0.5 text-[10px] rounded-full transition-all"
-          :class="calHideNoSphere
-            ? 'text-gray-300 dark:text-gray-600 line-through'
-            : 'text-gray-500 dark:text-gray-400 font-medium'"
-          :style="!calHideNoSphere ? { background: 'rgba(156,163,175,0.1)' } : {}"
-        >Без сферы</button>
       </div>
         </div>
 
@@ -781,10 +773,8 @@ const tasksStore = useTasksStore()
 const authStore = useAuthStore()
 const workspaceStore = useWorkspaceStore()
 const spheresStore = useLifeSpheresStore()
-const hiddenCalSpheres = ref([])
+const activeSphereId = ref(null)
 const calOnlyMine = ref(false)
-const calHideNoSphere = ref(false)
-const isCalSphereHidden = (id) => hiddenCalSpheres.value.includes(id)
 
 const monthSpheres = computed(() => {
   const startOfMonth = currentDate.value.startOf('month').format('YYYY-MM')
@@ -798,12 +788,7 @@ const monthSpheres = computed(() => {
 })
 
 const toggleCalSphere = (id) => {
-  const idx = hiddenCalSpheres.value.indexOf(id)
-  if (idx !== -1) {
-    hiddenCalSpheres.value.splice(idx, 1)
-  } else {
-    hiddenCalSpheres.value.push(id)
-  }
+  activeSphereId.value = activeSphereId.value === id ? null : id
 }
 
 const taskPeople = (task) => {
@@ -1027,9 +1012,8 @@ const selectedMonthDayTasks = computed(() => {
     task.due_date &&
     dayjs(task.due_date).format('YYYY-MM-DD') === dateString &&
     task.status !== 'completed' &&
-    !hiddenCalSpheres.value.includes(task.life_sphere_id) &&
-    (!calOnlyMine.value || task.creator?.id === myId) &&
-    (!calHideNoSphere.value || task.life_sphere_id)
+    (!activeSphereId.value || task.life_sphere_id === activeSphereId.value) &&
+    (!calOnlyMine.value || task.creator?.id === myId)
   )
 
   if (monthDaySortMode.value === 'priority') {
@@ -1063,9 +1047,8 @@ const selectedMonthDayCompleted = computed(() => {
     task.due_date &&
     task.due_date.substring(0, 10) === dateString &&
     task.completed_at &&
-    !hiddenCalSpheres.value.includes(task.life_sphere_id) &&
-    (!calOnlyMine.value || task.creator?.id === myId) &&
-    (!calHideNoSphere.value || task.life_sphere_id)
+    (!activeSphereId.value || task.life_sphere_id === activeSphereId.value) &&
+    (!calOnlyMine.value || task.creator?.id === myId)
   )
 })
 
@@ -1133,9 +1116,8 @@ const weekHours = computed(() => {
 })
 
 const calendarDays = computed(() => {
-  const hidden = [...hiddenCalSpheres.value] // force reactive track
+  const sphereId = activeSphereId.value
   const onlyMine = calOnlyMine.value
-  const hideNoSphere = calHideNoSphere.value
   const days = []
   const startOfMonth = currentDate.value.startOf('month')
   const endOfMonth = currentDate.value.endOf('month')
@@ -1144,35 +1126,34 @@ const calendarDays = computed(() => {
   // Предыдущий месяц
   for (let i = startDay - 1; i >= 0; i--) {
     const date = startOfMonth.subtract(i + 1, 'day')
-    days.push(createDayObject(date, false, hidden, onlyMine, hideNoSphere))
+    days.push(createDayObject(date, false, sphereId, onlyMine))
   }
 
   // Текущий месяц
   for (let i = 0; i < endOfMonth.date(); i++) {
     const date = startOfMonth.add(i, 'day')
-    days.push(createDayObject(date, true, hidden, onlyMine, hideNoSphere))
+    days.push(createDayObject(date, true, sphereId, onlyMine))
   }
 
   // Следующий месяц
   const remainingDays = 42 - days.length // 6 недель
   for (let i = 0; i < remainingDays; i++) {
     const date = endOfMonth.add(i + 1, 'day')
-    days.push(createDayObject(date, false, hidden, onlyMine, hideNoSphere))
+    days.push(createDayObject(date, false, sphereId, onlyMine))
   }
   
   return days
 })
 
-const createDayObject = (date, currentMonth, hidden, onlyMine, hideNoSphere) => {
+const createDayObject = (date, currentMonth, sphereId, onlyMine) => {
   const dateString = date.format('YYYY-MM-DD')
   const myId = authStore.user?.id
   const dayTasks = tasks.value.filter(task =>
     task.due_date &&
     dayjs(task.due_date).format('YYYY-MM-DD') === dateString &&
     task.status !== 'completed' &&
-    !hidden.includes(task.life_sphere_id) &&
-    (!onlyMine || task.creator?.id === myId) &&
-    (!hideNoSphere || task.life_sphere_id)
+    (!sphereId || task.life_sphere_id === sphereId) &&
+    (!onlyMine || task.creator?.id === myId)
   )
   
   return {
