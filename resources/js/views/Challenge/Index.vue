@@ -854,7 +854,7 @@ const typeIcons = {
   composite: ListBulletIcon,
   report: DocumentTextIcon,
   progressive: ArrowTrendingUpIcon,
-  anti: NoSymbolIcon,
+  anti: ExclamationTriangleIcon,
 }
 
 function typeIcon(type) {

@@ -133,7 +133,7 @@
               v-if="sphere.description"
               class="text-[13px] text-gray-500 dark:text-gray-400 leading-relaxed line-clamp-3 hidden sm:block"
             >
-              {{ sphere.description }}
+              {{ sphere.description.length > 100 ? sphere.description.slice(0, 100) + '...' : sphere.description }}
             </p>
           </div>
         </div>
