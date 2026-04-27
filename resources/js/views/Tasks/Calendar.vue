@@ -65,8 +65,8 @@
         </div>
       </div>
 
-      <!-- Calendar Navigation (desktop only) -->
-      <div class="hidden lg:block bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6">
+      <!-- Calendar Navigation (desktop only, non-month views) -->
+      <div v-if="viewMode !== 'month'" class="hidden lg:block bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6">
         <div class="flex items-center justify-between">
           <button @click="previousPeriod" class="p-3 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 active:bg-gray-300 transition-colors touch-manipulation">
             <ChevronLeftIcon class="w-6 h-6 text-gray-700 dark:text-gray-300" />
@@ -86,6 +86,16 @@
       <div v-if="viewMode === 'month'" class="flex flex-col lg:flex-row gap-6 items-start">
         <!-- Right: Calendar / Top on mobile -->
         <div class="w-full lg:w-1/2 lg:sticky lg:top-4 order-1 lg:order-2">
+          <!-- Month nav (compact, desktop) -->
+          <div class="hidden lg:flex items-center justify-between mb-3">
+            <button @click="previousPeriod" class="p-1.5 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700">
+              <ChevronLeftIcon class="w-4 h-4" />
+            </button>
+            <span class="text-sm font-semibold text-gray-700 dark:text-gray-200 capitalize">{{ currentPeriodTitle }}</span>
+            <button @click="nextPeriod" class="p-1.5 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700">
+              <ChevronRightIcon class="w-4 h-4" />
+            </button>
+          </div>
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
         <!-- Days Header -->
         <div class="grid grid-cols-7 border-b border-gray-200 dark:border-gray-700">
