@@ -544,17 +544,12 @@ import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useTasksStore } from '@/stores/tasks'
 import { useProjectsStore } from '@/stores/projects'
-import { useThemeStore } from '@/stores/theme'
 import GlobalConfirm from '@/components/common/GlobalConfirm.vue'
 import NavLink from '@/components/common/NavLink.vue'
 import DroppableNavLink from '@/components/common/DroppableNavLink.vue'
 import Toolbar from '@/components/common/Toolbar.vue'
-// Логотипы для заставки (старые файлы)
-import loadingLogoLight from '@/assets/images/logo.jpg'
-import loadingLogoDark from '@/assets/images/logo-bg.png'
-// Логотипы для сайдбара (новые SVG)
-import sidebarLogoLight from '@/assets/images/logo.svg'
-import sidebarLogoDark from '@/assets/images/logo-dark.svg'
+import loadingLogoImg from '@/assets/images/logo.png'
+import sidebarLogoImg from '@/assets/images/logo_small.png'
 import ProjectModal from '@/components/projects/ProjectModal.vue'
 import TaskView from '@/components/tasks/TaskView.vue'
 import api from '@/services/api'
@@ -572,11 +567,8 @@ const projectsStore = useProjectsStore()
 const goalsStore = useGoalsStore()
 const lifeSpheresStore = useLifeSpheresStore()
 const notificationsStore = useNotificationsStore()
-const themeStore = useThemeStore()
-// Логотип для заставки (старые файлы)
-const loadingLogo = computed(() => themeStore.isDark ? loadingLogoDark : loadingLogoLight)
-// Логотип для сайдбара (новые SVG)
-const sidebarLogo = computed(() => themeStore.isDark ? sidebarLogoDark : sidebarLogoLight)
+const loadingLogo = loadingLogoImg
+const sidebarLogo = sidebarLogoImg
 const appLoading = ref(true)
 const loadingText = ref('Загрузка...'.split(''))
 const sidebarOpen = ref(false)
