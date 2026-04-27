@@ -48,7 +48,7 @@ self.addEventListener('push', (event) => {
   try {
     data = event.data.json()
   } catch {
-    data = { title: 'GTD TODO', body: event.data.text() }
+    data = { title: 'Крепкая Башня', body: event.data.text() }
   }
 
   const options = {
@@ -62,7 +62,7 @@ self.addEventListener('push', (event) => {
   }
 
   event.waitUntil(
-    self.registration.showNotification(data.title || 'GTD TODO', options)
+    self.registration.showNotification(data.title || 'Крепкая Башня', options)
   )
 })
 

@@ -8,12 +8,12 @@
           <div class="mb-6 flex justify-center">
             <img
               :src="loadingLogo"
-              alt="GTD TODO"
+              alt="Крепкая Башня"
               class="w-48 h-48 object-contain"
               @error="handleLogoError"
             />
           </div>
-          <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">GTD TODO</h2>
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Крепкая Башня</h2>
           <p class="text-sm text-gray-500 dark:text-gray-400 flex justify-center">
             <span
               v-for="(letter, index) in loadingText"
@@ -42,10 +42,10 @@
             <div class="flex items-center space-x-3">
               <img
                 :src="sidebarLogo"
-                alt="GTD TODO"
+                alt="Крепкая Башня"
                 class="h-10 w-10 object-contain"
               />
-              <h1 class="text-xl font-bold text-gray-900 dark:text-white">GTD TODO</h1>
+              <h1 class="text-xl font-bold text-gray-900 dark:text-white">Крепкая Башня</h1>
             </div>
           </div>
 
