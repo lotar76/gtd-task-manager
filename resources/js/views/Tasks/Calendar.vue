@@ -209,9 +209,18 @@
       <!-- Month Day Tasks Panel -->
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
         <div class="p-3 sm:p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-          <h3 class="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">
-            {{ dayjs(selectedMonthDay).format('D MMMM YYYY') }}
-          </h3>
+          <div class="flex items-center gap-2">
+            <h3 class="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">
+              {{ dayjs(selectedMonthDay).format('D MMMM YYYY') }}
+            </h3>
+            <button
+              @click="handleAddTaskForDay(selectedMonthDay)"
+              class="w-6 h-6 flex items-center justify-center rounded-full text-gray-400 dark:text-gray-500 hover:text-green-500 dark:hover:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 transition-colors"
+              title="Создать задачу"
+            >
+              <PlusIcon class="w-4 h-4" />
+            </button>
+          </div>
           <div class="flex items-center gap-1">
             <button
               @click="monthDaySortMode = 'time'"

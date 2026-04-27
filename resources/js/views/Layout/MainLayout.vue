@@ -9,12 +9,11 @@
             <img
               :src="loadingLogo"
               alt="Крепкая Башня"
-              class="w-48 h-48 object-contain"
+              class="w-72 h-72 object-contain"
               @error="handleLogoError"
             />
           </div>
-          <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Крепкая Башня</h2>
-          <p class="text-sm text-gray-500 dark:text-gray-400 flex justify-center">
+          <p class="text-sm text-gray-500 dark:text-gray-400 flex justify-center mt-4">
             <span
               v-for="(letter, index) in loadingText"
               :key="index"
