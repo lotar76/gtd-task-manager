@@ -163,6 +163,9 @@
               class="hidden lg:block absolute left-1/2 -translate-x-1/2 bottom-full mb-2 z-50 pointer-events-none opacity-0 group-hover/day:opacity-100 transition-opacity duration-150"
             >
               <div class="bg-gray-900 dark:bg-gray-700 text-white text-xs rounded-lg shadow-lg px-3 py-2 whitespace-nowrap max-w-[250px]">
+                <div v-for="b in (day.birthdays || [])" :key="'bd-' + b.id" class="truncate py-0.5 text-pink-300">
+                  {{ b.name }} (ДР)
+                </div>
                 <div v-for="task in day.tasks.slice(0, 8)" :key="task.id" class="truncate py-0.5">
                   {{ task.title }}
                 </div>
@@ -241,6 +244,24 @@
           </div>
         </div>
         <div class="p-3 sm:p-4">
+          <!-- Birthdays -->
+          <div v-if="selectedDayBirthdays.length > 0" class="space-y-2 mb-3">
+            <div
+              v-for="b in selectedDayBirthdays" :key="'bd-' + b.id"
+              class="flex items-center gap-3 p-2.5 bg-pink-50 dark:bg-pink-900/20 rounded-lg border border-pink-200 dark:border-pink-800/40"
+            >
+              <div class="w-8 h-8 rounded-full bg-pink-100 dark:bg-pink-900/40 flex items-center justify-center text-pink-600 dark:text-pink-400 flex-shrink-0">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 8.25v-1.5m0 1.5c-1.355 0-2.697.056-4.024.166C6.845 8.51 6 9.473 6 10.608v2.513m6-4.871c1.355 0 2.697.056 4.024.166C17.155 8.51 18 9.473 18 10.608v2.513M15 8.25v-1.5m-6 1.5v-1.5m12 9.75l-1.5.75a3.354 3.354 0 01-3 0 3.354 3.354 0 00-3 0 3.354 3.354 0 01-3 0 3.354 3.354 0 00-3 0 3.354 3.354 0 01-3 0L3 16.5m15-3.379a48.474 48.474 0 00-6-.371c-2.032 0-4.034.126-6 .371m12 0c.39.049.777.102 1.163.16 1.07.16 1.837 1.094 1.837 2.175v5.169c0 .621-.504 1.125-1.125 1.125H4.125A1.125 1.125 0 013 20.625v-5.17c0-1.08.768-2.014 1.837-2.174A47.78 47.78 0 016 13.12M12.265 3.11a.375.375 0 11-.53 0L12 2.845l.265.265z" />
+                </svg>
+              </div>
+              <div class="min-w-0">
+                <div class="text-sm font-medium text-pink-900 dark:text-pink-200">{{ b.name }}</div>
+                <div v-if="birthdayAge(b)" class="text-xs text-pink-600 dark:text-pink-400">{{ birthdayAge(b) }}</div>
+              </div>
+            </div>
+          </div>
+
           <div class="space-y-2">
             <div
               v-for="task in selectedMonthDayTasks"
@@ -260,7 +281,7 @@
                 @toggle-complete="handleToggleComplete"
               />
             </div>
-            <div v-if="selectedMonthDayTasks.length === 0 && selectedMonthDayCompleted.length === 0" class="text-center py-6 text-gray-400 dark:text-gray-500 text-sm">
+            <div v-if="selectedMonthDayTasks.length === 0 && selectedDayBirthdays.length === 0 && selectedMonthDayCompleted.length === 0" class="text-center py-6 text-gray-400 dark:text-gray-500 text-sm">
               Нет задач на этот день
             </div>
           </div>
@@ -762,6 +783,7 @@ import { useTasksStore } from '@/stores/tasks'
 import { useAuthStore } from '@/stores/auth'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useLifeSpheresStore } from '@/stores/lifeSpheres'
+import { useBirthdaysStore } from '@/stores/birthdays'
 import TaskView from '@/components/tasks/TaskView.vue'
 import TaskItem from '@/components/tasks/TaskItem.vue'
 import { useTaskDraft } from '@/composables/useTaskDraft'
@@ -782,6 +804,7 @@ const tasksStore = useTasksStore()
 const authStore = useAuthStore()
 const workspaceStore = useWorkspaceStore()
 const spheresStore = useLifeSpheresStore()
+const birthdaysStore = useBirthdaysStore()
 const activeSphereId = ref(null)
 const calOnlyMine = ref(false)
 
@@ -1049,6 +1072,16 @@ const selectedMonthDayTasks = computed(() => {
   })
 })
 
+const selectedDayBirthdays = computed(() => getBirthdaysForDate(selectedMonthDay.value))
+
+const birthdayAge = (b) => {
+  const bd = dayjs(b.date)
+  const now = dayjs()
+  const age = now.year() - bd.year()
+  if (age > 0 && age < 150) return `${age} лет`
+  return null
+}
+
 const selectedMonthDayCompleted = computed(() => {
   const dateString = selectedMonthDay.value
   const myId = authStore.user?.id
@@ -1154,6 +1187,14 @@ const calendarDays = computed(() => {
   return days
 })
 
+const getBirthdaysForDate = (dateString) => {
+  const d = dayjs(dateString)
+  return birthdaysStore.allBirthdays.filter(b => {
+    const bd = dayjs(b.date)
+    return bd.month() === d.month() && bd.date() === d.date()
+  })
+}
+
 const createDayObject = (date, currentMonth, sphereId, onlyMine) => {
   const dateString = date.format('YYYY-MM-DD')
   const myId = authStore.user?.id
@@ -1164,14 +1205,16 @@ const createDayObject = (date, currentMonth, sphereId, onlyMine) => {
     (!sphereId || task.life_sphere_id === sphereId) &&
     (!onlyMine || task.creator?.id === myId)
   )
-  
+  const dayBirthdays = getBirthdaysForDate(dateString)
+
   return {
     day: date.date(),
     date: dateString,
     currentMonth,
     isToday: date.isSame(dayjs(), 'day'),
-    taskCount: dayTasks.length,
+    taskCount: dayTasks.length + dayBirthdays.length,
     tasks: dayTasks,
+    birthdays: dayBirthdays,
   }
 }
 
@@ -1728,6 +1771,7 @@ onMounted(() => {
     currentTime.value = dayjs()
   }, 60000)
   spheresStore.fetchAll()
+  birthdaysStore.fetchAll()
 })
 
 onUnmounted(() => {

@@ -224,7 +224,7 @@
                   icon="document-text"
                   @close-sidebar="sidebarOpen = false"
                 >
-                  Документы
+                  Библиотека
                 </NavLink>
                 <NavLink
                   to="/archive"

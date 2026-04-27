@@ -18,6 +18,11 @@ use App\Http\Controllers\Api\V1\TaskController;
 use App\Http\Controllers\Api\V1\TelegramSubscriptionController;
 use App\Http\Controllers\Api\V1\ChallengeController;
 use App\Http\Controllers\Api\V1\NoteController;
+use App\Http\Controllers\Api\V1\BirthdayController;
+use App\Http\Controllers\Api\V1\BookController;
+use App\Http\Controllers\Api\V1\FilmController;
+use App\Http\Controllers\Api\V1\ArticleFolderController;
+use App\Http\Controllers\Api\V1\ArticleController;
 use App\Http\Controllers\Api\V1\PrincipleController;
 use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\PushSubscriptionController;
@@ -152,6 +157,38 @@ Route::prefix('v1')->group(function () {
         Route::get('/notes/{note}', [NoteController::class, 'show']);
         Route::put('/notes/{note}', [NoteController::class, 'update']);
         Route::delete('/notes/{note}', [NoteController::class, 'destroy']);
+
+        // === БИБЛИОТЕКА: ДНИ РОЖДЕНИЯ ===
+        Route::get('/birthdays', [BirthdayController::class, 'all']);
+        Route::post('/birthdays', [BirthdayController::class, 'store']);
+        Route::put('/birthdays/{birthday}', [BirthdayController::class, 'update']);
+        Route::delete('/birthdays/{birthday}', [BirthdayController::class, 'destroy']);
+
+        // === БИБЛИОТЕКА: КНИГИ ===
+        Route::get('/books', [BookController::class, 'all']);
+        Route::post('/books', [BookController::class, 'store']);
+        Route::put('/books/{book}', [BookController::class, 'update']);
+        Route::delete('/books/{book}', [BookController::class, 'destroy']);
+        Route::delete('/books/{book}/cover', [BookController::class, 'deleteCover']);
+
+        // === БИБЛИОТЕКА: ФИЛЬМЫ ===
+        Route::get('/films', [FilmController::class, 'all']);
+        Route::post('/films', [FilmController::class, 'store']);
+        Route::put('/films/{film}', [FilmController::class, 'update']);
+        Route::delete('/films/{film}', [FilmController::class, 'destroy']);
+        Route::delete('/films/{film}/poster', [FilmController::class, 'deletePoster']);
+
+        // === БИБЛИОТЕКА: ПАПКИ СТАТЕЙ ===
+        Route::get('/article-folders', [ArticleFolderController::class, 'all']);
+        Route::post('/article-folders', [ArticleFolderController::class, 'store']);
+        Route::put('/article-folders/{article_folder}', [ArticleFolderController::class, 'update']);
+        Route::delete('/article-folders/{article_folder}', [ArticleFolderController::class, 'destroy']);
+
+        // === БИБЛИОТЕКА: СТАТЬИ ===
+        Route::get('/articles', [ArticleController::class, 'all']);
+        Route::post('/articles', [ArticleController::class, 'store']);
+        Route::put('/articles/{article}', [ArticleController::class, 'update']);
+        Route::delete('/articles/{article}', [ArticleController::class, 'destroy']);
 
         // === КОММЕНТАРИИ ===
         Route::get('/tasks/{task}/comments', [CommentController::class, 'index']);
