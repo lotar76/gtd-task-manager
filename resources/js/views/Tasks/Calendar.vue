@@ -83,7 +83,10 @@
       </div>
 
       <!-- Month View -->
-      <div v-if="viewMode === 'month'" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div v-if="viewMode === 'month'" class="flex flex-col lg:flex-row gap-6 items-start">
+        <!-- Right: Calendar / Top on mobile -->
+        <div class="w-full lg:w-1/2 lg:sticky lg:top-4 order-1 lg:order-2">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
         <!-- Days Header -->
         <div class="grid grid-cols-7 border-b border-gray-200 dark:border-gray-700">
           <div
@@ -100,9 +103,16 @@
           <div
             v-for="(day, index) in calendarDays"
             :key="index"
+            :data-drop-date="day.date"
             @click="handleDayClick(day.date)"
-            class="group/day relative min-h-[60px] sm:min-h-[80px] lg:min-h-[100px] border-b border-r border-gray-200 dark:border-gray-700 last:border-r-0 p-1 sm:p-2 cursor-pointer touch-manipulation transition-colors"
-            :class="getDayCellClass(day)"
+            @dragover.prevent="onDragOver($event, day.date)"
+            @dragleave="onDragLeave($event, day.date)"
+            @drop.prevent="onDropDay($event, day.date)"
+            class="group/day relative min-h-[60px] sm:min-h-[70px] lg:min-h-[70px] border-b border-r border-gray-200 dark:border-gray-700 last:border-r-0 p-1.5 cursor-pointer touch-manipulation transition-colors"
+            :class="[
+              getDayCellClass(day),
+              dropTargetDate === day.date ? 'ring-2 ring-primary-400 ring-inset bg-primary-100 dark:bg-primary-900/40' : '',
+            ]"
           >
             <div class="flex flex-col h-full">
               <div class="flex justify-between items-start mb-1">
@@ -157,7 +167,7 @@
       </div>
 
       <!-- Sphere filter chips -->
-      <div v-if="viewMode === 'month'" class="mt-2 flex flex-wrap gap-1">
+      <div class="mt-2 flex flex-wrap gap-1">
         <button
           @click="calOnlyMine = !calOnlyMine"
           class="px-1.5 py-0.5 text-[10px] rounded-full transition-all"
@@ -190,9 +200,12 @@
           :style="!calHideNoSphere ? { background: 'rgba(156,163,175,0.1)' } : {}"
         >Без сферы</button>
       </div>
+        </div>
 
+        <!-- Left: Tasks / Bottom on mobile -->
+        <div class="w-full lg:w-1/2 min-w-0 order-2 lg:order-1">
       <!-- Month Day Tasks Panel -->
-      <div v-if="viewMode === 'month'" class="mt-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
         <div class="p-3 sm:p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
           <h3 class="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">
             {{ dayjs(selectedMonthDay).format('D MMMM YYYY') }}
@@ -218,13 +231,24 @@
         </div>
         <div class="p-3 sm:p-4">
           <div class="space-y-2">
-            <TaskItem
+            <div
               v-for="task in selectedMonthDayTasks"
               :key="task.id"
-              :task="task"
-              @task-click="handleTaskClick"
-              @toggle-complete="handleToggleComplete"
-            />
+              :data-task-id="task.id"
+              draggable="true"
+              @dragstart="onDragStart($event, task)"
+              @dragend="onDragEnd"
+              @touchstart="onTouchStart($event, task)"
+              @touchmove="onTouchMove($event)"
+              @touchend="onTouchEnd"
+              class="cursor-grab active:cursor-grabbing"
+            >
+              <TaskItem
+                :task="task"
+                @task-click="handleTaskClick"
+                @toggle-complete="handleToggleComplete"
+              />
+            </div>
             <div v-if="selectedMonthDayTasks.length === 0 && selectedMonthDayCompleted.length === 0" class="text-center py-6 text-gray-400 dark:text-gray-500 text-sm">
               Нет задач на этот день
             </div>
@@ -256,6 +280,8 @@
               />
             </div>
           </div>
+        </div>
+      </div>
         </div>
       </div>
 
