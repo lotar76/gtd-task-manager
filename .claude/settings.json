@@ -24,7 +24,9 @@
       "Bash(git -C /home/igor/projects/gtd-task-manager status public/ --short)",
       "WebFetch(domain:raw.githubusercontent.com)",
       "WebFetch(domain:unpkg.com)",
-      "Bash(find /home/igor/projects/gtd-task-manager -type f -name *habit* -o -name *Habit*)"
+      "Bash(find /home/igor/projects/gtd-task-manager -type f -name *habit* -o -name *Habit*)",
+      "Bash(mv /home/igor/projects/gtd-task-manager/logo.png /home/igor/projects/gtd-task-manager/resources/js/assets/images/logo.png)",
+      "Bash(mv /home/igor/projects/gtd-task-manager/logo_small.png /home/igor/projects/gtd-task-manager/resources/js/assets/images/logo_small.png)"
     ],
     "additionalDirectories": [
       "/home/igor/projects/gtd-task-manager",

@@ -287,29 +287,29 @@
             <!-- Add menu popup -->
             <Teleport to="body">
               <div v-if="showAddMenu" class="fixed inset-0 z-40" @click="showAddMenu = false" />
+              <Transition name="fade">
+                <div v-if="showAddMenu" class="fixed bottom-16 left-1/2 -translate-x-1/2 z-50 bg-white dark:bg-gray-700 rounded-xl shadow-lg border border-gray-200 dark:border-gray-600 py-2 w-48">
+                  <button
+                    @click="showAddMenu = false; handleQuickAddTask()"
+                    class="w-full px-4 py-2.5 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 flex items-center gap-2.5"
+                  >
+                    <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                    </svg>
+                    Задача
+                  </button>
+                  <button
+                    @click="showAddMenu = false; showQuickAiInput = true"
+                    class="w-full px-4 py-2.5 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 flex items-center gap-2.5"
+                  >
+                    <svg class="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z" />
+                    </svg>
+                    AI задача
+                  </button>
+                </div>
+              </Transition>
             </Teleport>
-            <Transition name="fade">
-              <div v-if="showAddMenu" class="absolute bottom-14 left-1/2 -translate-x-1/2 z-50 bg-white dark:bg-gray-700 rounded-xl shadow-lg border border-gray-200 dark:border-gray-600 py-2 w-48">
-                <button
-                  @click="showAddMenu = false; handleQuickAddTask()"
-                  class="w-full px-4 py-2.5 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 flex items-center gap-2.5"
-                >
-                  <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                  </svg>
-                  Задача
-                </button>
-                <button
-                  @click="showAddMenu = false; showQuickAiInput = true"
-                  class="w-full px-4 py-2.5 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 flex items-center gap-2.5"
-                >
-                  <svg class="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z" />
-                  </svg>
-                  AI задача
-                </button>
-              </div>
-            </Transition>
           </div>
 
           <!-- Habits -->
