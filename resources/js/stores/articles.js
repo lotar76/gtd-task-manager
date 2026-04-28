@@ -5,6 +5,7 @@ import api from '@/services/api'
 export const useArticlesStore = defineStore('articles', () => {
   const allArticles = ref([])
   const allFolders = ref([])
+  const allAuthors = ref([])
   const loading = ref(false)
   const loaded = ref(false)
 
@@ -12,12 +13,14 @@ export const useArticlesStore = defineStore('articles', () => {
     if (loaded.value && !force) return
     loading.value = true
     try {
-      const [articlesRes, foldersRes] = await Promise.all([
+      const [articlesRes, foldersRes, authorsRes] = await Promise.all([
         api.get('/v1/articles'),
         api.get('/v1/article-folders'),
+        api.get('/v1/article-authors'),
       ])
       allArticles.value = articlesRes.data.data || articlesRes.data || []
       allFolders.value = foldersRes.data.data || foldersRes.data || []
+      allAuthors.value = authorsRes.data.data || authorsRes.data || []
       loaded.value = true
     } finally {
       loading.value = false
@@ -66,9 +69,31 @@ export const useArticlesStore = defineStore('articles', () => {
     allFolders.value = allFolders.value.filter(f => f.id !== id)
   }
 
+  // Authors
+  const createAuthor = async (data) => {
+    const response = await api.post('/v1/article-authors', data)
+    const item = response.data.data || response.data
+    allAuthors.value.push(item)
+    return item
+  }
+
+  const updateAuthor = async (id, data) => {
+    const response = await api.put(`/v1/article-authors/${id}`, data)
+    const updated = response.data.data || response.data
+    const idx = allAuthors.value.findIndex(a => a.id === id)
+    if (idx !== -1) allAuthors.value[idx] = updated
+    return updated
+  }
+
+  const removeAuthor = async (id) => {
+    await api.delete(`/v1/article-authors/${id}`)
+    allAuthors.value = allAuthors.value.filter(a => a.id !== id)
+  }
+
   return {
     allArticles,
     allFolders,
+    allAuthors,
     loading,
     loaded,
     fetchAll,
@@ -78,5 +103,8 @@ export const useArticlesStore = defineStore('articles', () => {
     createFolder,
     updateFolder,
     removeFolder,
+    createAuthor,
+    updateAuthor,
+    removeAuthor,
   }
 })

@@ -23,6 +23,7 @@ use App\Http\Controllers\Api\V1\BookController;
 use App\Http\Controllers\Api\V1\FilmController;
 use App\Http\Controllers\Api\V1\ArticleFolderController;
 use App\Http\Controllers\Api\V1\ArticleController;
+use App\Http\Controllers\Api\V1\ArticleAuthorController;
 use App\Http\Controllers\Api\V1\PrincipleController;
 use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\PushSubscriptionController;
@@ -183,6 +184,12 @@ Route::prefix('v1')->group(function () {
         Route::post('/article-folders', [ArticleFolderController::class, 'store']);
         Route::put('/article-folders/{article_folder}', [ArticleFolderController::class, 'update']);
         Route::delete('/article-folders/{article_folder}', [ArticleFolderController::class, 'destroy']);
+
+        // === БИБЛИОТЕКА: АВТОРЫ СТАТЕЙ ===
+        Route::get('/article-authors', [ArticleAuthorController::class, 'all']);
+        Route::post('/article-authors', [ArticleAuthorController::class, 'store']);
+        Route::put('/article-authors/{article_author}', [ArticleAuthorController::class, 'update']);
+        Route::delete('/article-authors/{article_author}', [ArticleAuthorController::class, 'destroy']);
 
         // === БИБЛИОТЕКА: СТАТЬИ ===
         Route::get('/articles', [ArticleController::class, 'all']);

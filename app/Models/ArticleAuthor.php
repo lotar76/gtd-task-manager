@@ -7,19 +7,24 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class Article extends Model
+class ArticleAuthor extends Model
 {
     use HasFactory;
 
     protected $fillable = [
-        'title',
-        'content',
-        'article_author_id',
+        'name',
+        'description',
         'article_folder_id',
         'workspace_id',
         'created_by',
     ];
+
+    public function folder(): BelongsTo
+    {
+        return $this->belongsTo(ArticleFolder::class, 'article_folder_id');
+    }
 
     public function workspace(): BelongsTo
     {
@@ -31,13 +36,8 @@ class Article extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    public function folder(): BelongsTo
+    public function articles(): HasMany
     {
-        return $this->belongsTo(ArticleFolder::class, 'article_folder_id');
-    }
-
-    public function author(): BelongsTo
-    {
-        return $this->belongsTo(ArticleAuthor::class, 'article_author_id');
+        return $this->hasMany(Article::class);
     }
 }

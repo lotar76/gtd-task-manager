@@ -18,7 +18,7 @@ class ArticleController extends Controller
         $workspace = $request->user()->defaultWorkspace();
 
         $query = Article::where('workspace_id', $workspace->id)
-            ->with(['creator:id,name', 'folder:id,name'])
+            ->with(['creator:id,name', 'folder:id,name', 'author:id,name'])
             ->orderBy('updated_at', 'desc');
 
         if ($request->has('article_folder_id')) {
@@ -34,9 +34,9 @@ class ArticleController extends Controller
     {
         $validated = $request->validate([
             'title' => 'required|string|max:255',
-            'author' => 'nullable|string|max:255',
-            'link' => 'nullable|string|max:2048',
-            'article_folder_id' => 'nullable|exists:article_folders,id',
+            'content' => 'nullable|string',
+            'article_author_id' => 'nullable|exists:article_authors,id',
+            'article_folder_id' => 'required|exists:article_folders,id',
         ]);
 
         $workspace = $request->user()->defaultWorkspace();
@@ -44,7 +44,7 @@ class ArticleController extends Controller
         $validated['created_by'] = Auth::id();
 
         $article = Article::create($validated);
-        $article->load(['creator:id,name', 'folder:id,name']);
+        $article->load(['creator:id,name', 'folder:id,name', 'author:id,name']);
 
         return ApiResponse::success($article, 'Статья добавлена', 201);
     }
@@ -53,15 +53,15 @@ class ArticleController extends Controller
     {
         $validated = $request->validate([
             'title' => 'sometimes|string|max:255',
-            'author' => 'nullable|string|max:255',
-            'link' => 'nullable|string|max:2048',
-            'article_folder_id' => 'nullable|exists:article_folders,id',
+            'content' => 'nullable|string',
+            'article_author_id' => 'nullable|exists:article_authors,id',
+            'article_folder_id' => 'sometimes|exists:article_folders,id',
         ]);
 
         $article->update($validated);
 
         $fresh = $article->fresh();
-        $fresh->load(['creator:id,name', 'folder:id,name']);
+        $fresh->load(['creator:id,name', 'folder:id,name', 'author:id,name']);
 
         return ApiResponse::success($fresh, 'Статья обновлена');
     }

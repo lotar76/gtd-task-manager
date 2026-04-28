@@ -33,4 +33,9 @@ class ArticleFolder extends Model
     {
         return $this->hasMany(Article::class);
     }
+
+    public function authors(): HasMany
+    {
+        return $this->hasMany(ArticleAuthor::class);
+    }
 }
