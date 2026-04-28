@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use SocialiteProviders\Manager\SocialiteWasCalled;
 use SocialiteProviders\Yandex\YandexExtendSocialite;
-use SocialiteProviders\MailRu\MailRuExtendSocialite;
+use SocialiteProviders\MailRu\MailruExtendSocialite;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -35,7 +35,7 @@ class AppServiceProvider extends ServiceProvider
     {
         // Socialite providers
         Event::listen(SocialiteWasCalled::class, YandexExtendSocialite::class);
-        Event::listen(SocialiteWasCalled::class, MailRuExtendSocialite::class);
+        Event::listen(SocialiteWasCalled::class, MailruExtendSocialite::class);
 
         // Регистрация Observers для автоматической инвалидации AI кэша
         Task::observe(TaskObserver::class);
