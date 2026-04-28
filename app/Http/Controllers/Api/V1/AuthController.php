@@ -10,6 +10,7 @@ use App\Http\Requests\Api\V1\RegisterRequest;
 use App\Http\Requests\Api\V1\UpdatePasswordRequest;
 use App\Http\Requests\Api\V1\UpdateProfileRequest;
 use App\Http\Responses\ApiResponse;
+use App\Http\Controllers\Api\V1\EmailVerificationController;
 use App\Models\User;
 use App\Services\WorkspaceService;
 use Illuminate\Http\JsonResponse;
@@ -45,10 +46,14 @@ class AuthController extends Controller
 
         $token = $user->createToken('auth_token')->plainTextToken;
 
+        // Отправляем код верификации
+        EmailVerificationController::sendVerificationCode($user);
+
         return ApiResponse::success([
             'user' => $user,
             'token' => $token,
             'personal_workspace' => $personalWorkspace,
+            'requires_verification' => true,
         ], 'User registered successfully', 201);
     }
 
@@ -90,6 +95,7 @@ class AuthController extends Controller
             'user' => $request->user(),
             'roles' => $request->user()->getRoleNames(),
             'permissions' => $request->user()->getAllPermissions()->pluck('name'),
+            'email_verified' => $request->user()->hasVerifiedEmail(),
         ]);
     }
 

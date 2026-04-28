@@ -6,6 +6,7 @@ export const useAuthStore = defineStore('auth', () => {
   const user = ref(null)
   const token = ref(localStorage.getItem('token'))
   const loading = ref(false)
+  const emailVerified = ref(true)
 
   const setToken = (newToken) => {
     token.value = newToken
@@ -56,10 +57,8 @@ export const useAuthStore = defineStore('auth', () => {
 
     try {
       const response = await api.get('/v1/me')
-      console.log('Full response from /v1/me:', response.data)
-      console.log('User object:', response.data.user)
-      console.log('User email:', response.data.user?.email)
       user.value = response.data.user || response.data
+      emailVerified.value = response.data.email_verified !== false
       return true
     } catch {
       clearAuth()
@@ -82,6 +81,7 @@ export const useAuthStore = defineStore('auth', () => {
     user,
     token,
     loading,
+    emailVerified,
     setToken,
     login,
     register,

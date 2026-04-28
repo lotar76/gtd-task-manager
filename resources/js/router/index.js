@@ -20,6 +20,12 @@ const routes = [
     component: () => import('@/views/Auth/OAuthCallback.vue'),
   },
   {
+    path: '/verify-email',
+    name: 'VerifyEmail',
+    component: () => import('@/views/Auth/VerifyEmail.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
     path: '/',
     component: () => import('@/views/Layout/MainLayout.vue'),
     meta: { requiresAuth: true },
@@ -174,7 +180,7 @@ const router = createRouter({
 })
 
 // Navigation guards
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore()
   const isAuthenticated = !!localStorage.getItem('token')
 
@@ -182,6 +188,16 @@ router.beforeEach((to, from, next) => {
     next({ name: 'Login' })
   } else if (to.meta.guest && isAuthenticated) {
     next({ name: 'Dashboard' })
+  } else if (isAuthenticated && to.meta.requiresAuth && to.name !== 'VerifyEmail') {
+    // Проверяем верификацию email
+    if (!authStore.user) {
+      await authStore.checkAuth()
+    }
+    if (!authStore.emailVerified) {
+      next({ name: 'VerifyEmail' })
+    } else {
+      next()
+    }
   } else {
     next()
   }

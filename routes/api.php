@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\V1\AttachmentController;
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\EmailVerificationController;
 use App\Http\Controllers\Api\V1\SocialAuthController;
 use App\Http\Controllers\Api\V1\CommentController;
 use App\Http\Controllers\Api\V1\ContactController;
@@ -72,6 +73,11 @@ Route::prefix('v1')->group(function () {
         // Аутентификация
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::get('/me', [AuthController::class, 'me']);
+
+        // Верификация email
+        Route::post('/email/verify', [EmailVerificationController::class, 'verify']);
+        Route::post('/email/resend', [EmailVerificationController::class, 'resend'])
+            ->middleware('throttle:6,1');
 
         // Профиль
         Route::put('/profile', [AuthController::class, 'updateProfile']);

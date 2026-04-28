@@ -81,19 +81,25 @@ class SocialAuthController extends Controller
         if ($email) {
             $user = User::where('email', $email)->first();
             if ($user) {
-                $user->update([
+                $update = [
                     'provider' => $provider,
                     'provider_id' => $socialUser->getId(),
                     'avatar' => $socialUser->getAvatar() ?? $user->avatar,
-                ]);
+                ];
+                // Авто-верификация через OAuth
+                if (!$user->hasVerifiedEmail()) {
+                    $update['email_verified_at'] = now();
+                }
+                $user->update($update);
                 return $user;
             }
         }
 
-        // 3. Создаём нового пользователя
+        // 3. Создаём нового пользователя (авто-верификация)
         $user = User::create([
             'name' => $socialUser->getName() ?? $socialUser->getNickname() ?? 'User',
             'email' => $email,
+            'email_verified_at' => now(),
             'password' => null,
             'provider' => $provider,
             'provider_id' => $socialUser->getId(),

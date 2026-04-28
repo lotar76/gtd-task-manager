@@ -137,8 +137,12 @@ const handleSubmit = async () => {
   loading.value = true
 
   try {
-    await authStore.register(form.value)
-    router.push('/')
+    const response = await authStore.register(form.value)
+    if (response.requires_verification) {
+      router.push('/verify-email')
+    } else {
+      router.push('/')
+    }
   } catch (err) {
     error.value = err.response?.data?.message || 'Ошибка регистрации'
   } finally {
