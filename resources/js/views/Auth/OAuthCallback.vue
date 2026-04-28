@@ -38,30 +38,36 @@ const errorMessages = {
 }
 
 onMounted(async () => {
-  const token = route.query.token
-  const errorCode = route.query.error
+  try {
+    // Получаем токен из query или из hash (fallback)
+    const token = route.query.token || new URLSearchParams(window.location.search).get('token')
+    const errorCode = route.query.error
 
-  if (errorCode) {
+    if (errorCode) {
+      error.value = true
+      errorMessage.value = errorMessages[errorCode] || 'Неизвестная ошибка'
+      return
+    }
+
+    if (!token) {
+      error.value = true
+      errorMessage.value = 'Токен не получен'
+      return
+    }
+
+    // Сохраняем токен и загружаем данные пользователя
+    authStore.setToken(token)
+    const success = await authStore.checkAuth()
+
+    if (success) {
+      router.push('/')
+    } else {
+      error.value = true
+      errorMessage.value = 'Не удалось авторизоваться'
+    }
+  } catch (e) {
     error.value = true
-    errorMessage.value = errorMessages[errorCode] || 'Неизвестная ошибка'
-    return
-  }
-
-  if (!token) {
-    error.value = true
-    errorMessage.value = 'Токен не получен'
-    return
-  }
-
-  // Сохраняем токен и загружаем данные пользователя
-  authStore.setToken(token)
-  const success = await authStore.checkAuth()
-
-  if (success) {
-    router.push('/')
-  } else {
-    error.value = true
-    errorMessage.value = 'Не удалось авторизоваться'
+    errorMessage.value = e.message || 'Неизвестная ошибка'
   }
 })
 </script>
