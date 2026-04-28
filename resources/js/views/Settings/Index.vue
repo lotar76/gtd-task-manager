@@ -31,7 +31,16 @@
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
-              <input :value="authStore.user?.email" type="email" class="input opacity-60" disabled />
+              <input v-if="authStore.user?.email" :value="authStore.user?.email" type="email" class="input opacity-60" disabled />
+              <div v-else class="text-sm text-gray-500 dark:text-gray-400 py-2">
+                Не указан
+              </div>
+            </div>
+            <div v-if="authStore.user?.provider">
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Способ входа</label>
+              <div class="text-sm text-gray-700 dark:text-gray-300 py-2">
+                {{ providerLabels[authStore.user.provider] || authStore.user.provider }}
+              </div>
             </div>
             <div class="flex items-center space-x-3">
               <button type="submit" class="btn btn-primary" :disabled="profileLoading">
@@ -232,6 +241,12 @@ const tabs = [
   { key: 'contexts', label: 'Контексты' },
   { key: 'telegram', label: 'Telegram' },
 ]
+
+const providerLabels = {
+  google: 'Google',
+  yandex: 'Yandex',
+  telegram: 'Telegram',
+}
 
 const activeTab = ref('profile')
 

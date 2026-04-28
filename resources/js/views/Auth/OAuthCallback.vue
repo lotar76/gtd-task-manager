@@ -33,8 +33,6 @@ const errorMessage = ref('')
 const errorMessages = {
   oauth_failed: 'Не удалось получить данные от провайдера',
   unsupported_provider: 'Неподдерживаемый провайдер авторизации',
-  telegram_auth_failed: 'Не удалось проверить данные Telegram',
-  telegram_auth_expired: 'Данные авторизации Telegram устарели',
 }
 
 onMounted(async () => {

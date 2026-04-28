@@ -32,17 +32,6 @@
       </svg>
       Yandex
     </a>
-
-    <button
-      type="button"
-      @click="handleTelegram"
-      class="w-full flex items-center justify-center gap-3 px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm font-medium text-gray-700 dark:text-gray-300"
-    >
-      <svg class="w-5 h-5" viewBox="0 0 24 24" fill="#26A5E4">
-        <path d="M12 0C5.37 0 0 5.37 0 12s5.37 12 12 12 12-5.37 12-12S18.63 0 12 0zm5.94 7.3l-2.02 9.52c-.15.68-.56.85-1.13.53l-3.12-2.3-1.5 1.45c-.17.17-.31.31-.63.31l.22-3.16 5.73-5.18c.25-.22-.05-.35-.39-.13l-7.09 4.47-3.05-.95c-.66-.21-.68-.66.14-.98l11.92-4.6c.55-.2 1.04.13.86.98z"/>
-      </svg>
-      Telegram
-    </button>
   </div>
 </template>
 
@@ -53,9 +42,4 @@ const apiUrl = import.meta.env.VITE_API_URL || '/api'
 
 const googleUrl = computed(() => `${apiUrl}/v1/auth/google/redirect`)
 const yandexUrl = computed(() => `${apiUrl}/v1/auth/yandex/redirect`)
-
-const handleTelegram = () => {
-  // Редирект на серверный endpoint, который вернет страницу с Telegram Login Widget
-  window.location.href = `${apiUrl}/v1/auth/telegram/redirect`
-}
 </script>

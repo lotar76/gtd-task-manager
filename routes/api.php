@@ -66,10 +66,6 @@ Route::prefix('v1')->group(function () {
     Route::get('/auth/{provider}/callback', [SocialAuthController::class, 'callback'])
         ->where('provider', 'google|yandex');
 
-    // Telegram OAuth
-    Route::get('/auth/telegram/redirect', [SocialAuthController::class, 'telegramRedirect']);
-    Route::get('/auth/telegram/callback', [SocialAuthController::class, 'telegramCallback']);
-
     // Защищённые маршруты (требуют аутентификации)
     Route::middleware('auth:sanctum')->group(function () {
 
