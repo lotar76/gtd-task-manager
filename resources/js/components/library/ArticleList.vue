@@ -228,11 +228,8 @@
 
 <script setup>
 import { computed, onMounted, ref, reactive } from 'vue'
-import { marked } from 'marked'
 import { useArticlesStore } from '@/stores/articles'
 import ArticleModal from './ArticleModal.vue'
-
-marked.setOptions({ breaks: true, gfm: true })
 
 const store = useArticlesStore()
 const showModal = ref(false)
@@ -244,8 +241,7 @@ const folderSorts = reactive({})
 const previewItem = ref(null)
 
 const previewHtml = computed(() => {
-  if (!previewItem.value?.content) return ''
-  return marked.parse(previewItem.value.content)
+  return previewItem.value?.content || ''
 })
 
 const openPreview = (article) => {
@@ -296,7 +292,7 @@ const setSortForFolder = (folderId, sort) => {
 
 const contentPreview = (content) => {
   if (!content) return ''
-  return content.replace(/[#*`~>\[\]()_\-]/g, '').replace(/\n+/g, ' ').trim()
+  return content.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim()
 }
 
 const formatDate = (dateStr) => {

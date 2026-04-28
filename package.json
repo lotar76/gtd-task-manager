@@ -10,6 +10,11 @@
   },
   "dependencies": {
     "@tailwindcss/typography": "^0.5.19",
+    "@tiptap/extension-link": "^3.22.5",
+    "@tiptap/extension-underline": "^3.22.5",
+    "@tiptap/pm": "^3.22.5",
+    "@tiptap/starter-kit": "^3.22.5",
+    "@tiptap/vue-3": "^3.22.5",
     "axios": "^1.6.2",
     "cropperjs": "^1.6.2",
     "dayjs": "^1.11.10",

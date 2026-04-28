@@ -47,16 +47,10 @@
               </div>
             </div>
 
-            <!-- Content (Markdown Editor) -->
+            <!-- Content (Rich Text Editor) -->
             <div>
               <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Текст статьи</label>
-              <MarkdownEditor
-                v-model="form.content"
-                :preview="showPreview"
-                placeholder="Текст статьи в формате Markdown..."
-                :rows="14"
-                @toggle-preview="showPreview = !showPreview"
-              />
+              <RichTextEditor v-model="form.content" />
             </div>
 
             <div v-if="error" class="text-red-500 text-xs">{{ error }}</div>
@@ -85,7 +79,7 @@
 
 <script setup>
 import { ref, watch, computed } from 'vue'
-import MarkdownEditor from './MarkdownEditor.vue'
+import RichTextEditor from './RichTextEditor.vue'
 
 const props = defineProps({
   show: { type: Boolean, default: false },
@@ -99,7 +93,6 @@ const emit = defineEmits(['close', 'submit', 'delete'])
 const form = ref({ title: '', content: '', article_author_id: null, article_folder_id: null })
 const saving = ref(false)
 const error = ref('')
-const showPreview = ref(false)
 
 const availableAuthors = computed(() => {
   if (!form.value.article_folder_id) return []
@@ -118,7 +111,6 @@ watch(() => form.value.article_folder_id, (newFolderId, oldFolderId) => {
 watch(() => props.show, (val) => {
   if (val) {
     error.value = ''
-    showPreview.value = false
     if (props.item) {
       form.value = {
         title: props.item.title || '',
