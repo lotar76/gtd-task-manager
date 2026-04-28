@@ -68,9 +68,14 @@
             <div
               v-for="a in sortedArticles(folder)" :key="a.id"
               @click="openEdit(a)"
-              class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 cursor-pointer hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 transition-all"
+              class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 cursor-pointer hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 transition-all flex flex-col"
             >
-              <div class="font-medium text-sm text-gray-900 dark:text-white line-clamp-2 mb-2">{{ a.title }}</div>
+              <div class="flex items-start justify-between gap-2 mb-2">
+                <div class="font-medium text-sm text-gray-900 dark:text-white line-clamp-2">{{ a.title }}</div>
+                <button v-if="a.content" @click.stop="openPreview(a)" class="p-1 text-gray-400 hover:text-primary-600 flex-shrink-0 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" title="Читать">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                </button>
+              </div>
               <div v-if="a.content" class="text-xs text-gray-500 dark:text-gray-400 line-clamp-3 mb-3">{{ contentPreview(a.content) }}</div>
               <div class="flex items-center justify-between mt-auto">
                 <div v-if="a.author" class="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[60%]">{{ a.author.name }}</div>
@@ -94,11 +99,9 @@
                   <span class="text-[10px] text-gray-400 flex-shrink-0">{{ formatDate(a.created_at) }}</span>
                 </div>
               </div>
-              <div v-if="a.content" class="text-gray-400 flex-shrink-0">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25H12" />
-                </svg>
-              </div>
+              <button v-if="a.content" @click.stop="openPreview(a)" class="p-1.5 text-gray-400 hover:text-primary-600 flex-shrink-0">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+              </button>
             </div>
           </div>
         </div>
@@ -193,13 +196,43 @@
         </div>
       </Transition>
     </Teleport>
+    <!-- Article preview modal -->
+    <Teleport to="body">
+      <Transition name="fade">
+        <div v-if="previewItem" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm overflow-y-auto" @click.self="previewItem = null">
+          <div class="bg-white dark:bg-gray-900 rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden my-6">
+            <div class="flex items-center justify-between px-5 py-3 border-b border-gray-100 dark:border-gray-800">
+              <div class="min-w-0 flex-1">
+                <div class="font-semibold text-gray-900 dark:text-white truncate">{{ previewItem.title }}</div>
+                <div v-if="previewItem.author" class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ previewItem.author.name }}</div>
+              </div>
+              <div class="flex items-center gap-2 flex-shrink-0 ml-3">
+                <button @click="openEdit(previewItem); previewItem = null" class="p-1.5 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800" title="Редактировать">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" /></svg>
+                </button>
+                <button @click="previewItem = null" class="p-1.5 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+              </div>
+            </div>
+            <div class="px-5 py-4 prose prose-sm dark:prose-invert max-w-none overflow-y-auto max-h-[70vh]" v-html="previewHtml"></div>
+            <div class="px-5 py-2 border-t border-gray-100 dark:border-gray-800 text-[10px] text-gray-400">
+              {{ formatDate(previewItem.created_at) }}
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
   </div>
 </template>
 
 <script setup>
 import { computed, onMounted, ref, reactive } from 'vue'
+import { marked } from 'marked'
 import { useArticlesStore } from '@/stores/articles'
 import ArticleModal from './ArticleModal.vue'
+
+marked.setOptions({ breaks: true, gfm: true })
 
 const store = useArticlesStore()
 const showModal = ref(false)
@@ -208,6 +241,17 @@ const openFolders = reactive(new Set())
 const folderSorts = reactive({})
 
 // Folder modal
+const previewItem = ref(null)
+
+const previewHtml = computed(() => {
+  if (!previewItem.value?.content) return ''
+  return marked.parse(previewItem.value.content)
+})
+
+const openPreview = (article) => {
+  previewItem.value = article
+}
+
 const showFolderModal = ref(false)
 const folderForm = ref({ id: null, name: '' })
 

@@ -71,6 +71,8 @@
 import { ref, computed } from 'vue'
 import { marked } from 'marked'
 
+marked.setOptions({ breaks: true, gfm: true })
+
 const props = defineProps({
   modelValue: { type: String, default: '' },
   placeholder: { type: String, default: '' },
@@ -83,7 +85,7 @@ const textarea = ref(null)
 
 const renderedContent = computed(() => {
   if (!props.modelValue) return '<p style="color: #999;">Нет содержимого</p>'
-  return marked(props.modelValue)
+  return marked.parse(props.modelValue)
 })
 
 const wrap = (before, after) => {
