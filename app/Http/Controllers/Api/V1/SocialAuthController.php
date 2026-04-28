@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Services\WorkspaceService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Log;
 use Laravel\Socialite\Facades\Socialite;
 
 class SocialAuthController extends Controller
@@ -46,11 +47,21 @@ class SocialAuthController extends Controller
 
         try {
             $socialUser = Socialite::driver($provider)->stateless()->user();
+            Log::info("OAuth {$provider}: got user", [
+                'id' => $socialUser->getId(),
+                'email' => $socialUser->getEmail(),
+                'name' => $socialUser->getName(),
+            ]);
         } catch (\Exception $e) {
+            Log::error("OAuth {$provider} failed", [
+                'error' => $e->getMessage(),
+                'code' => $e->getCode(),
+            ]);
             return redirect(config('app.frontend_url', '/') . '/login?error=oauth_failed');
         }
 
         $user = $this->findOrCreateUser($socialUser, $provider);
+        Log::info("OAuth {$provider}: user resolved", ['user_id' => $user->id, 'email' => $user->email]);
 
         $token = $user->createToken('auth_token')->plainTextToken;
 
