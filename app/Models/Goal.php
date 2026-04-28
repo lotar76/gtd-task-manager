@@ -21,6 +21,8 @@ class Goal extends Model
         'description',
         'color',
         'status',
+        'achievement_review',
+        'completed_at',
         'deadline',
         'bible_verse',
         'image_path',
@@ -30,6 +32,7 @@ class Goal extends Model
 
     protected $casts = [
         'deadline' => 'date',
+        'completed_at' => 'datetime',
     ];
 
     public function workspace(): BelongsTo

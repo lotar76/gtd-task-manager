@@ -282,7 +282,7 @@ const formatDate = (dateStr) => {
   return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })
 }
 
-const goals = computed(() => sphere.value?.goals || [])
+const goals = computed(() => (sphere.value?.goals || []).filter(g => g.status === 'active' || !g.status))
 const tasks = computed(() => sphere.value?.tasks || [])
 const activeTasks = computed(() => tasks.value.filter(t => !t.completed_at))
 const completedTasks = computed(() => tasks.value.filter(t => t.completed_at))

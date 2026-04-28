@@ -134,6 +134,29 @@ class GoalController extends Controller
         return ApiResponse::success($fresh, 'Цель обновлена');
     }
 
+    // Отметить цель как достигнутую
+    public function complete(Request $request, Goal $goal): JsonResponse
+    {
+        $this->authorize('update', $goal);
+
+        $validated = $request->validate([
+            'achievement_review' => 'nullable|string|max:5000',
+        ]);
+
+        $goal->update([
+            'status' => 'completed',
+            'achievement_review' => $validated['achievement_review'] ?? null,
+            'completed_at' => now(),
+        ]);
+
+        $fresh = $goal->fresh();
+        $fresh->load(['creator', 'lifeSphere:id,name,color', 'contacts']);
+        $fresh->loadCount(['projects', 'directTasks']);
+        $fresh->append('progress');
+
+        return ApiResponse::success($fresh, 'Цель достигнута');
+    }
+
     // Удаление цели
     public function destroy(Goal $goal): JsonResponse
     {

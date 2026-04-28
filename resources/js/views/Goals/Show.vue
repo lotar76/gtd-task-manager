@@ -27,10 +27,14 @@
                 class="lg:hidden text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
               >· {{ goalSphere.name }}</router-link>
               <span v-if="goal?.status === 'archived'" class="text-xs text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full">Архив</span>
+              <span v-if="goal?.status === 'completed'" class="text-xs text-green-600 bg-green-50 dark:bg-green-900/30 dark:text-green-400 px-2 py-0.5 rounded-full">Достигнута</span>
             </div>
             <div class="flex items-center gap-1">
               <button @click.stop="handleEditGoal" class="p-1.5 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800" title="Редактировать">
                 <PencilIcon class="w-4 h-4" />
+              </button>
+              <button v-if="goal?.status === 'active'" @click.stop="showCompleteModal = true" class="p-1.5 text-gray-400 hover:text-green-600 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800" title="Цель достигнута">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
               </button>
               <button v-if="goal?.status !== 'archived'" @click.stop="handleArchiveGoal" class="p-1.5 text-gray-400 hover:text-red-500 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800" title="Архивировать">
                 <ArchiveBoxArrowDownIcon class="w-4 h-4" />
@@ -45,6 +49,16 @@
           <h1 class="text-xl lg:text-2xl font-semibold text-gray-900 dark:text-white">
             {{ goal?.name || 'Загрузка...' }}
           </h1>
+
+          <!-- Achievement review -->
+          <div v-if="goal?.status === 'completed'" class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+            <div class="flex items-center gap-2 mb-1">
+              <svg class="w-4 h-4 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              <span class="text-sm font-medium text-green-700 dark:text-green-300">Цель достигнута</span>
+              <span v-if="goal.completed_at" class="text-xs text-green-600/60 dark:text-green-400/60 ml-auto">{{ formatDeadline(goal.completed_at) }}</span>
+            </div>
+            <p v-if="goal.achievement_review" class="text-sm text-green-800 dark:text-green-200 mt-2 whitespace-pre-line">{{ goal.achievement_review }}</p>
+          </div>
 
           <!-- Description (скрыто) -->
 
@@ -382,6 +396,33 @@
           @submit="handleSaveGoal"
         />
 
+        <!-- Complete goal modal -->
+        <Teleport to="body">
+          <Transition name="fade">
+            <div v-if="showCompleteModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" @click.self="showCompleteModal = false">
+              <div class="bg-white dark:bg-gray-900 rounded-xl shadow-2xl w-full max-w-md p-5">
+                <div class="flex items-center gap-2 mb-4">
+                  <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                  <span class="text-sm font-medium text-gray-900 dark:text-white">Цель достигнута</span>
+                </div>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">Опишите коротко, как была достигнута цель (необязательно)</p>
+                <textarea
+                  v-model="achievementReview"
+                  placeholder="Что получилось, как достигли..."
+                  rows="4"
+                  class="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-white resize-y mb-4"
+                ></textarea>
+                <div class="flex justify-end gap-2">
+                  <button @click="showCompleteModal = false" class="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md">Отмена</button>
+                  <button @click="handleCompleteGoal" :disabled="completingGoal" class="px-4 py-1.5 text-sm bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50">
+                    {{ completingGoal ? 'Сохранение...' : 'Подтвердить' }}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </Transition>
+        </Teleport>
+
         <!-- Draft task view -->
         <TaskView
           :show="showDraftTask"
@@ -546,6 +587,10 @@ const participants = ref([])
 const allContacts = ref([])
 const pickerOpen = ref(false)
 const contactCardData = ref(null)
+
+const showCompleteModal = ref(false)
+const achievementReview = ref('')
+const completingGoal = ref(false)
 
 const currentGoalId = computed(() => parseInt(route.params.goalId))
 const goal = computed(() => goalsStore.allGoals.find(g => g.id === currentGoalId.value) || null)
@@ -764,6 +809,20 @@ const handleArchiveGoal = async () => {
 }
 const handleUnarchiveGoal = async () => {
   await goalsStore.updateGoal(goal.value.id, { status: 'active' })
+}
+
+const handleCompleteGoal = async () => {
+  completingGoal.value = true
+  try {
+    await goalsStore.completeGoal(goal.value.id, achievementReview.value.trim() || null)
+    showCompleteModal.value = false
+    achievementReview.value = ''
+    await loadGoalData()
+  } catch (e) {
+    console.error(e)
+  } finally {
+    completingGoal.value = false
+  }
 }
 
 const taskAssignees = (task) =>

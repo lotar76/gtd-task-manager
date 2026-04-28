@@ -109,6 +109,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/goals/{goal}', [GoalController::class, 'show']);
         Route::put('/goals/{goal}', [GoalController::class, 'update']);
         Route::delete('/goals/{goal}', [GoalController::class, 'destroy']);
+        Route::post('/goals/{goal}/complete', [GoalController::class, 'complete']);
         Route::delete('/goals/{goal}/image', [GoalController::class, 'deleteImage']);
         Route::post('/goals/generate-bible-verse', [GoalController::class, 'generateBibleVerse']);
 

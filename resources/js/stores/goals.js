@@ -99,6 +99,18 @@ export const useGoalsStore = defineStore('goals', () => {
     allGoals.value = allGoals.value.filter(g => g.id !== goalId)
   }
 
+  const completeGoal = async (goalId, achievementReview = null) => {
+    const response = await api.post(`/v1/goals/${goalId}/complete`, {
+      achievement_review: achievementReview,
+    })
+    const updated = response.data.data || response.data
+    const index = allGoals.value.findIndex(g => g.id === goalId)
+    if (index !== -1) {
+      allGoals.value[index] = updated
+    }
+    return updated
+  }
+
   const deleteGoalImage = async (goalId) => {
     const response = await api.delete(`/v1/goals/${goalId}/image`)
     const updated = response.data.data || response.data
@@ -122,6 +134,7 @@ export const useGoalsStore = defineStore('goals', () => {
     createGoal,
     updateGoal,
     deleteGoal,
+    completeGoal,
     deleteGoalImage,
   }
 })
