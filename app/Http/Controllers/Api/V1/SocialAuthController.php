@@ -29,14 +29,10 @@ class SocialAuthController extends Controller
             return response()->json(['message' => 'Unsupported provider'], 422);
         }
 
-        // Mail.ru требует параметр state даже в stateless-режиме
-        if ($provider === 'mailru') {
-            return Socialite::driver($provider)
-                ->with(['state' => bin2hex(random_bytes(16))])
-                ->redirect();
-        }
-
-        return Socialite::driver($provider)->stateless()->redirect();
+        return Socialite::driver($provider)
+            ->stateless()
+            ->with($provider === 'mailru' ? ['state' => bin2hex(random_bytes(16))] : [])
+            ->redirect();
     }
 
     /**
