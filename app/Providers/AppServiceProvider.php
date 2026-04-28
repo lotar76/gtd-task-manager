@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use SocialiteProviders\Manager\SocialiteWasCalled;
 use SocialiteProviders\Yandex\YandexExtendSocialite;
-use SocialiteProviders\MailRu\MailruExtendSocialite;
+use SocialiteProviders\Mailru\MailruExtendSocialite;
 
 class AppServiceProvider extends ServiceProvider
 {
