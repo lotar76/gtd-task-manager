@@ -13,7 +13,7 @@ use Laravel\Socialite\Facades\Socialite;
 
 class SocialAuthController extends Controller
 {
-    private const ALLOWED_PROVIDERS = ['google', 'yandex'];
+    private const ALLOWED_PROVIDERS = ['google', 'yandex', 'mailru'];
 
     public function __construct(
         private readonly WorkspaceService $workspaceService

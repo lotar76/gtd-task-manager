@@ -245,7 +245,7 @@ const tabs = [
 const providerLabels = {
   google: 'Google',
   yandex: 'Yandex',
-  telegram: 'Telegram',
+  mailru: 'Mail.ru',
 }
 
 const activeTab = ref('profile')

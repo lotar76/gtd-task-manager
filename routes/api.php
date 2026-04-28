@@ -62,9 +62,9 @@ Route::prefix('v1')->group(function () {
 
     // OAuth маршруты (Google, Yandex)
     Route::get('/auth/{provider}/redirect', [SocialAuthController::class, 'redirect'])
-        ->where('provider', 'google|yandex');
+        ->where('provider', 'google|yandex|mailru');
     Route::get('/auth/{provider}/callback', [SocialAuthController::class, 'callback'])
-        ->where('provider', 'google|yandex');
+        ->where('provider', 'google|yandex|mailru');
 
     // Защищённые маршруты (требуют аутентификации)
     Route::middleware('auth:sanctum')->group(function () {

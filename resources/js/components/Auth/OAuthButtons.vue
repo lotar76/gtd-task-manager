@@ -32,6 +32,17 @@
       </svg>
       Yandex
     </a>
+
+    <a
+      :href="mailruUrl"
+      class="w-full flex items-center justify-center gap-3 px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm font-medium text-gray-700 dark:text-gray-300"
+    >
+      <svg class="w-5 h-5" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="12" fill="#005FF9"/>
+        <path d="M12 7.2c-2.65 0-4.8 2.15-4.8 4.8s2.15 4.8 4.8 4.8c1.58 0 2.98-.76 3.86-1.94l.01-.01c.17-.23.13-.56-.1-.73-.23-.17-.56-.13-.73.1-.68.91-1.76 1.5-2.97 1.5-2.04 0-3.7-1.66-3.7-3.7s1.66-3.7 3.7-3.7 3.7 1.66 3.7 3.7v.55c0 .61-.49 1.1-1.1 1.1-.61 0-1.1-.49-1.1-1.1V12c0-1.38-1.12-2.5-2.5-2.5S9.57 10.62 9.57 12s1.12 2.5 2.5 2.5c.83 0 1.56-.41 2.01-1.03.39.62 1.08 1.03 1.86 1.03 1.21 0 2.2-.99 2.2-2.2v-.55c-.07-2.58-2.2-4.55-4.87-4.55h-.27zM12 13.43c-.79 0-1.43-.64-1.43-1.43s.64-1.43 1.43-1.43 1.43.64 1.43 1.43-.64 1.43-1.43 1.43z" fill="white"/>
+      </svg>
+      Mail.ru
+    </a>
   </div>
 </template>
 
@@ -42,4 +53,5 @@ const apiUrl = import.meta.env.VITE_API_URL || '/api'
 
 const googleUrl = computed(() => `${apiUrl}/v1/auth/google/redirect`)
 const yandexUrl = computed(() => `${apiUrl}/v1/auth/yandex/redirect`)
+const mailruUrl = computed(() => `${apiUrl}/v1/auth/mailru/redirect`)
 </script>

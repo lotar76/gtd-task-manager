@@ -18,4 +18,10 @@ return [
         'client_secret' => env('YANDEX_CLIENT_SECRET'),
         'redirect' => env('YANDEX_REDIRECT_URI'),
     ],
+
+    'mailru' => [
+        'client_id' => env('MAILRU_CLIENT_ID'),
+        'client_secret' => env('MAILRU_CLIENT_SECRET'),
+        'redirect' => env('MAILRU_REDIRECT_URI'),
+    ],
 ];

@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "7a794a1549c3e2bf3ac1fda398dd83ce",
+    "content-hash": "4fbd941f2ef9130ba191ce8602276140",
     "packages": [
         {
             "name": "aws/aws-crt-php",
@@ -4442,6 +4442,56 @@
                 "source": "https://github.com/ramsey/uuid/tree/4.9.1"
             },
             "time": "2025-09-04T20:59:21+00:00"
+        },
+        {
+            "name": "socialiteproviders/mailru",
+            "version": "4.1.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/SocialiteProviders/Mailru.git",
+                "reference": "10ede8420956e81e040b68a6c7658fa45e1d1a14"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/SocialiteProviders/Mailru/zipball/10ede8420956e81e040b68a6c7658fa45e1d1a14",
+                "reference": "10ede8420956e81e040b68a6c7658fa45e1d1a14",
+                "shasum": ""
+            },
+            "require": {
+                "ext-json": "*",
+                "php": "^7.4 || ^8.0",
+                "socialiteproviders/manager": "~4.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "SocialiteProviders\\Mailru\\": ""
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Sergey Panteleev",
+                    "email": "sergey@php.net"
+                }
+            ],
+            "description": "Mail.ru OAuth2 Provider for Laravel Socialite",
+            "keywords": [
+                "laravel",
+                "mailru",
+                "oauth",
+                "provider",
+                "socialite"
+            ],
+            "support": {
+                "docs": "https://socialiteproviders.com/mailru",
+                "issues": "https://github.com/socialiteproviders/providers/issues",
+                "source": "https://github.com/socialiteproviders/providers"
+            },
+            "time": "2022-05-23T00:23:23+00:00"
         },
         {
             "name": "socialiteproviders/manager",
