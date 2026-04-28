@@ -115,6 +115,31 @@ const routes = [
         component: () => import('@/views/Documents/Index.vue'),
       },
       {
+        path: 'documents/notes',
+        name: 'DocumentsNotes',
+        component: () => import('@/views/Documents/Notes.vue'),
+      },
+      {
+        path: 'documents/birthdays',
+        name: 'DocumentsBirthdays',
+        component: () => import('@/views/Documents/Birthdays.vue'),
+      },
+      {
+        path: 'documents/books',
+        name: 'DocumentsBooks',
+        component: () => import('@/views/Documents/Books.vue'),
+      },
+      {
+        path: 'documents/films',
+        name: 'DocumentsFilms',
+        component: () => import('@/views/Documents/Films.vue'),
+      },
+      {
+        path: 'documents/articles',
+        name: 'DocumentsArticles',
+        component: () => import('@/views/Documents/Articles.vue'),
+      },
+      {
         path: 'contacts',
         name: 'Contacts',
         component: () => import('@/views/Contacts/Index.vue'),

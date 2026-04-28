@@ -1,174 +1,60 @@
 <template>
   <div class="p-4 lg:p-8">
-    <div class="flex items-center justify-between mb-3">
-      <h1 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Библиотека</h1>
-    </div>
+    <h1 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-6">Библиотека</h1>
 
-    <!-- Tabs -->
-    <div class="flex gap-1.5 mb-5 overflow-x-auto pb-0.5 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-hide">
-      <button
-        v-for="tab in tabs" :key="tab.key"
-        @click="activeTab = tab.key"
-        class="px-3 py-1.5 text-xs sm:text-sm font-medium rounded-full whitespace-nowrap transition-colors flex-shrink-0"
-        :class="activeTab === tab.key ? 'bg-primary-600 text-white' : 'text-gray-500 dark:text-gray-400 active:text-gray-700 dark:active:text-gray-200'"
-      >{{ tab.label }}</button>
-    </div>
-
-    <!-- Notes tab -->
-    <div v-if="activeTab === 'notes'">
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Заметки</h2>
-        <button @click="openNewNote" class="w-8 h-8 flex items-center justify-center rounded-full bg-primary-600 active:bg-primary-700 text-white transition-colors">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
-        </button>
-      </div>
-
-      <div v-if="noteFolders.length > 0" class="space-y-6">
-        <div v-for="folder in noteFolders" :key="folder.key">
-          <button
-            @click="toggleNoteFolder(folder.key)"
-            class="flex items-center gap-2 mb-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white"
-          >
-            <svg class="w-4 h-4 transition-transform" :class="{ 'rotate-90': openNoteFolders[folder.key] }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-            </svg>
-            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-            </svg>
-            {{ folder.label }}
-            <span class="text-[11px] text-gray-400">{{ folder.notes.length }}</span>
-          </button>
-
-          <div v-if="openNoteFolders[folder.key]" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 ml-6">
-            <div
-              v-for="note in folder.notes"
-              :key="note.id"
-              class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 hover:shadow-md transition-shadow cursor-pointer"
-              @click="openEditNote(note)"
-            >
-              <h3 class="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">{{ note.title }}</h3>
-              <p v-if="note.content" class="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-3">{{ note.content }}</p>
-              <div class="flex items-center gap-2 mt-2 text-[10px] text-gray-400">
-                <span v-if="note.task" class="truncate">{{ note.task.title }}</span>
-                <span>{{ formatDate(note.updated_at) }}</span>
-              </div>
-            </div>
-          </div>
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+      <router-link
+        v-for="section in sections" :key="section.route"
+        :to="section.route"
+        class="group flex flex-col items-center justify-center p-6 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:shadow-lg hover:border-primary-300 dark:hover:border-primary-600 transition-all cursor-pointer"
+      >
+        <div class="w-12 h-12 flex items-center justify-center rounded-full mb-3 transition-colors" :class="section.bgClass">
+          <svg class="w-6 h-6" :class="section.iconClass" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" :d="section.icon" />
+          </svg>
         </div>
-      </div>
-
-      <div v-else-if="!notesStore.loading" class="text-center py-8 text-gray-400 dark:text-gray-500 text-sm">
-        Нет заметок
-      </div>
-
-      <NoteModal
-        :show="showNoteModal"
-        :note="noteForModal"
-        @close="showNoteModal = false; noteForModal = null"
-        @submit="handleSaveNote"
-        @delete="handleDeleteNote"
-      />
+        <span class="text-sm font-medium text-gray-700 dark:text-gray-200 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">{{ section.label }}</span>
+      </router-link>
     </div>
-
-    <!-- Birthdays tab -->
-    <BirthdayList v-if="activeTab === 'birthdays'" />
-
-    <!-- Books tab -->
-    <BookList v-if="activeTab === 'books'" />
-
-    <!-- Films tab -->
-    <FilmList v-if="activeTab === 'films'" />
-
-    <!-- Articles tab -->
-    <ArticleList v-if="activeTab === 'articles'" />
   </div>
 </template>
 
 <script setup>
-import { ref, computed, reactive, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { useNotesStore } from '@/stores/notes'
-import { useGoalsStore } from '@/stores/goals'
-import NoteModal from '@/components/notes/NoteModal.vue'
-import BirthdayList from '@/components/library/BirthdayList.vue'
-import BookList from '@/components/library/BookList.vue'
-import FilmList from '@/components/library/FilmList.vue'
-import ArticleList from '@/components/library/ArticleList.vue'
-
-const route = useRoute()
-const router = useRouter()
-const notesStore = useNotesStore()
-const goalsStore = useGoalsStore()
-
-const tabs = [
-  { key: 'notes', label: 'Заметки' },
-  { key: 'birthdays', label: 'Дни рождения' },
-  { key: 'books', label: 'Книги' },
-  { key: 'films', label: 'Фильмы' },
-  { key: 'articles', label: 'Статьи' },
+const sections = [
+  {
+    route: '/documents/notes',
+    label: 'Заметки',
+    icon: 'M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z',
+    bgClass: 'bg-blue-50 dark:bg-blue-900/30',
+    iconClass: 'text-blue-500',
+  },
+  {
+    route: '/documents/birthdays',
+    label: 'Дни рождения',
+    icon: 'M12 8.25v-1.5m0 1.5c-1.355 0-2.697.056-4.024.166C6.845 8.51 6 9.473 6 10.608v2.513m6-4.871c1.355 0 2.697.056 4.024.166C17.155 8.51 18 9.473 18 10.608v2.513M15 8.25v-1.5m-6 1.5v-1.5m12 9.75l-1.5.75a3.354 3.354 0 01-3 0 3.354 3.354 0 00-3 0 3.354 3.354 0 01-3 0 3.354 3.354 0 00-3 0 3.354 3.354 0 01-3 0L3 16.5m15-3.379a48.474 48.474 0 00-6-.371c-2.032 0-4.034.126-6 .371m12 0c.39.049.777.102 1.163.16 1.07.16 1.837 1.094 1.837 2.175v5.169c0 .621-.504 1.125-1.125 1.125H4.125A1.125 1.125 0 013 20.625v-5.17c0-1.08.768-2.014 1.837-2.174A47.78 47.78 0 016 13.12M12.265 3.11a.375.375 0 11-.53 0L12 2.845l.265.265z',
+    bgClass: 'bg-pink-50 dark:bg-pink-900/30',
+    iconClass: 'text-pink-500',
+  },
+  {
+    route: '/documents/books',
+    label: 'Книги',
+    icon: 'M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25',
+    bgClass: 'bg-amber-50 dark:bg-amber-900/30',
+    iconClass: 'text-amber-500',
+  },
+  {
+    route: '/documents/films',
+    label: 'Фильмы',
+    icon: 'M3.375 19.5h17.25m-17.25 0a1.125 1.125 0 01-1.125-1.125M3.375 19.5h1.5C5.496 19.5 6 18.996 6 18.375m-3.75 0V5.625m0 12.75v-1.5c0-.621.504-1.125 1.125-1.125m18.375 2.625V5.625m0 12.75c0 .621-.504 1.125-1.125 1.125m1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125m0 3.75h-1.5A1.125 1.125 0 0118 18.375M20.625 4.5H3.375m17.25 0c.621 0 1.125.504 1.125 1.125M20.625 4.5h-1.5C18.504 4.5 18 5.004 18 5.625m3.75 0v1.5c0 .621-.504 1.125-1.125 1.125M3.375 4.5c-.621 0-1.125.504-1.125 1.125M3.375 4.5h1.5C5.496 4.5 6 5.004 6 5.625m-3.75 0v1.5c0 .621.504 1.125 1.125 1.125m0 0h1.5m-1.5 0c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125m1.5-3.75C5.496 8.25 6 7.746 6 7.125v-1.5M4.875 8.25C5.496 8.25 6 8.754 6 9.375v1.5m0-5.25v5.25m0-5.25C6 5.004 6.504 4.5 7.125 4.5h9.75c.621 0 1.125.504 1.125 1.125m1.125 2.625h1.5m-1.5 0A1.125 1.125 0 0118 7.125v-1.5m1.125 2.625c-.621 0-1.125.504-1.125 1.125v1.5m2.625-2.625c.621 0 1.125.504 1.125 1.125v1.5c0 .621-.504 1.125-1.125 1.125M18 5.625v5.25M7.125 12h9.75m-9.75 0A1.125 1.125 0 016 10.875M7.125 12C6.504 12 6 12.504 6 13.125m0-2.25c0 .621.504 1.125 1.125 1.125M18 10.875c0 .621-.504 1.125-1.125 1.125M18 10.875c0 .621.504 1.125 1.125 1.125m-2.25 0c.621 0 1.125.504 1.125 1.125m-12 5.25v-5.25m0 5.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125m-12 0v-1.5c0-.621-.504-1.125-1.125-1.125M18 18.375v-5.25m0 5.25v-1.5c0-.621.504-1.125 1.125-1.125M18 13.125v1.5c0 .621.504 1.125 1.125 1.125M18 13.125c0-.621.504-1.125 1.125-1.125M6 13.125v1.5c0 .621-.504 1.125-1.125 1.125M6 13.125C6 12.504 5.496 12 4.875 12m-1.5 0h1.5m-1.5 0c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125M19.125 12h1.5m0 0c.621 0 1.125.504 1.125 1.125v1.5c0 .621-.504 1.125-1.125 1.125m-17.25 0h1.5m14.25 0h1.5',
+    bgClass: 'bg-purple-50 dark:bg-purple-900/30',
+    iconClass: 'text-purple-500',
+  },
+  {
+    route: '/documents/articles',
+    label: 'Статьи',
+    icon: 'M12 7.5h1.5m-1.5 3h1.5m-7.5 3h7.5m-7.5 3h7.5m3-9h3.375c.621 0 1.125.504 1.125 1.125V18a2.25 2.25 0 01-2.25 2.25M16.5 7.5V18a2.25 2.25 0 002.25 2.25M16.5 7.5V4.875c0-.621-.504-1.125-1.125-1.125H4.125C3.504 3.75 3 4.254 3 4.875V18a2.25 2.25 0 002.25 2.25h13.5M6 7.5h3v3H6v-3z',
+    bgClass: 'bg-green-50 dark:bg-green-900/30',
+    iconClass: 'text-green-500',
+  },
 ]
-
-const activeTab = ref(route.query.tab || 'notes')
-
-const showNoteModal = ref(false)
-const noteForModal = ref(null)
-const openNoteFolders = reactive({})
-
-// Notes grouping
-const noteFolders = computed(() => {
-  const result = []
-  const goalMap = {}
-
-  for (const note of notesStore.allNotes) {
-    const goalId = note.goal_id
-    if (goalId) {
-      if (!goalMap[goalId]) {
-        const goalName = note.goal?.name || goalsStore.allGoals.find(g => g.id === goalId)?.name || 'Цель'
-        goalMap[goalId] = { key: 'goal-' + goalId, label: goalName, notes: [] }
-      }
-      goalMap[goalId].notes.push(note)
-    }
-  }
-
-  const ungrouped = notesStore.allNotes.filter(n => !n.goal_id)
-
-  for (const g of Object.values(goalMap)) result.push(g)
-  if (ungrouped.length > 0) result.push({ key: 'no-goal', label: 'Без цели', notes: ungrouped })
-
-  for (const f of result) {
-    if (!(f.key in openNoteFolders)) openNoteFolders[f.key] = true
-  }
-
-  return result
-})
-
-const toggleNoteFolder = (key) => { openNoteFolders[key] = !openNoteFolders[key] }
-
-const formatDate = (dateStr) => {
-  if (!dateStr) return ''
-  return new Date(dateStr).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })
-}
-
-const openNewNote = () => { noteForModal.value = null; showNoteModal.value = true }
-const openEditNote = (note) => { noteForModal.value = note; showNoteModal.value = true }
-
-const handleSaveNote = async (data) => {
-  try {
-    if (data.id) await notesStore.updateNote(data.id, data)
-    else await notesStore.createNote(data)
-    showNoteModal.value = false
-    noteForModal.value = null
-  } catch (e) { console.error(e) }
-}
-
-const handleDeleteNote = async (note) => {
-  if (!confirm(`Удалить заметку "${note.title}"?`)) return
-  await notesStore.deleteNote(note.id)
-  showNoteModal.value = false
-  noteForModal.value = null
-}
-
-onMounted(async () => {
-  await Promise.all([notesStore.fetchAllNotes(), goalsStore.fetchAllGoals()])
-})
 </script>
