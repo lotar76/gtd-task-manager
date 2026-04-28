@@ -3,6 +3,12 @@ import { useAuthStore } from '@/stores/auth'
 
 const routes = [
   {
+    path: '/welcome',
+    name: 'Landing',
+    component: () => import('@/views/Landing.vue'),
+    meta: { guest: true },
+  },
+  {
     path: '/login',
     name: 'Login',
     component: () => import('@/views/Auth/Login.vue'),
@@ -185,11 +191,10 @@ router.beforeEach(async (to, from, next) => {
   const isAuthenticated = !!localStorage.getItem('token')
 
   if (to.meta.requiresAuth && !isAuthenticated) {
-    next({ name: 'Login' })
+    next({ name: 'Landing' })
   } else if (to.meta.guest && isAuthenticated) {
     next({ name: 'Dashboard' })
   } else if (isAuthenticated && to.meta.requiresAuth && to.name !== 'VerifyEmail') {
-    // Проверяем верификацию email
     if (!authStore.user) {
       await authStore.checkAuth()
     }
