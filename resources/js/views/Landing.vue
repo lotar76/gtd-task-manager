@@ -4,12 +4,7 @@
     <nav class="nav">
       <div class="nav__inner">
         <div class="nav__logo">
-          <svg class="nav__logo-icon" viewBox="0 0 32 32" fill="none">
-            <rect width="32" height="32" rx="8" fill="url(#logo-grad)"/>
-            <path d="M16 6L22 10V22L16 26L10 22V10L16 6Z" fill="white" fill-opacity="0.9"/>
-            <path d="M16 12L19 14V20L16 22L13 20V14L16 12Z" fill="url(#logo-grad)"/>
-            <defs><linearGradient id="logo-grad" x1="0" y1="0" x2="32" y2="32"><stop stop-color="#6366f1"/><stop offset="1" stop-color="#8b5cf6"/></linearGradient></defs>
-          </svg>
+          <img :src="logoImg" alt="Крепкая Башня" class="nav__logo-icon" />
           <span>Крепкая Башня</span>
         </div>
         <div class="nav__actions">
@@ -280,6 +275,8 @@
 </template>
 
 <script setup>
+import logoImg from '@/assets/images/logo_small.png'
+
 const features = [
   {
     icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 2L3 7v10l9 5 9-5V7l-9-5z" stroke="white" stroke-width="2"/><path d="M12 12l9-5M12 12v10M12 12L3 7" stroke="white" stroke-width="2"/></svg>',
@@ -360,7 +357,7 @@ const reviews = [
 .nav { position: fixed; top: 0; width: 100%; z-index: 100; background: rgba(255,255,255,.85); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(0,0,0,.06); }
 .nav__inner { max-width: 1200px; margin: 0 auto; padding: 0 24px; height: 64px; display: flex; align-items: center; justify-content: space-between; }
 .nav__logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; color: #0f172a; }
-.nav__logo-icon { width: 32px; height: 32px; }
+.nav__logo-icon { width: 36px; height: 36px; border-radius: 8px; }
 .nav__actions { display: flex; align-items: center; gap: 8px; }
 .nav__link { font-size: 14px; font-weight: 500; color: #64748b; padding: 8px 16px; text-decoration: none; transition: color .2s; }
 .nav__link:hover { color: #0f172a; }
@@ -522,21 +519,50 @@ const reviews = [
 
 /* ===== Responsive ===== */
 @media (max-width: 1024px) {
-  .hero__inner { grid-template-columns: 1fr; text-align: center; }
+  .hero { padding: 100px 16px 60px; min-height: auto; }
+  .hero__inner { grid-template-columns: 1fr; text-align: center; gap: 40px; }
   .hero__subtitle { margin-left: auto; margin-right: auto; }
   .hero__buttons { justify-content: center; }
-  .hero__stats { justify-content: center; }
+  .hero__stats { justify-content: center; flex-wrap: wrap; }
   .hero__visual { display: none; }
   .features__grid { grid-template-columns: repeat(2, 1fr); }
   .how__steps { flex-wrap: wrap; }
   .how__step { flex: 1 1 calc(50% - 8px); }
   .screens__showcase { flex-direction: column; align-items: center; }
   .screen-frame--desktop { width: 100%; max-width: 640px; }
+  .features, .how, .screens, .reviews, .cta { padding: 60px 16px; }
 }
 @media (max-width: 640px) {
-  .features__grid, .reviews__grid { grid-template-columns: 1fr; }
-  .how__steps { flex-direction: column; }
-  .how__step { flex: 1 1 100%; }
+  .hero { padding: 80px 16px 40px; }
+  .hero__badge { font-size: 11px; padding: 4px 12px; }
+  .hero__title { font-size: 28px; letter-spacing: -1px; }
+  .hero__subtitle { font-size: 15px; }
+  .hero__cta { padding: 12px 24px; font-size: 15px; width: 100%; justify-content: center; }
+  .hero__stats { gap: 16px; }
+  .hero__stat-num { font-size: 20px; }
+  .hero__stat-label { font-size: 10px; }
+  .hero__stat-divider { height: 24px; }
+  .nav__inner { padding: 0 16px; }
+  .nav__logo span { font-size: 15px; }
   .nav__link { display: none; }
+  .nav__btn { font-size: 13px; padding: 6px 14px; }
+  .section__header { margin-bottom: 32px; }
+  .section__tag { font-size: 11px; }
+  .section__title { font-size: 24px; }
+  .section__desc { font-size: 14px; }
+  .features__grid, .reviews__grid { grid-template-columns: 1fr; gap: 16px; }
+  .feature-card { padding: 24px; }
+  .how__steps { flex-direction: column; gap: 12px; }
+  .how__step { flex: 1 1 100%; padding: 20px 16px; }
+  .screen-frame--phone { width: 160px; }
+  .screen-mock__sidebar { width: 120px; }
+  .sm-item { font-size: 11px; padding: 6px 12px; }
+  .review-card { padding: 24px; }
+  .review-card__text { font-size: 14px; }
+  .cta__inner { padding: 48px 24px; border-radius: 20px; }
+  .cta__title { font-size: 22px; }
+  .cta__desc { font-size: 14px; }
+  .cta__btn { width: 100%; justify-content: center; padding: 12px 24px; font-size: 15px; }
+  .footer__inner { flex-direction: column; align-items: center; gap: 4px; }
 }
 </style>
