@@ -58,7 +58,7 @@ class SocialAuthController extends Controller
         // Редирект на фронтенд с токеном
         $frontendUrl = config('app.frontend_url', '');
 
-        return redirect($frontendUrl . '/auth/callback?token=' . $token);
+        return redirect($frontendUrl . '/auth/callback?token=' . urlencode($token));
     }
 
     /**
@@ -149,7 +149,7 @@ HTML;
 
         $frontendUrl = config('app.frontend_url', '');
 
-        return redirect($frontendUrl . '/auth/callback?token=' . $token);
+        return redirect($frontendUrl . '/auth/callback?token=' . urlencode($token));
     }
 
     /**
