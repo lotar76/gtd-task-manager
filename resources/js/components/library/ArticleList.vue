@@ -45,24 +45,60 @@
             </button>
           </div>
         </button>
-        <div v-if="openFolders.has(folder.id)" class="space-y-2 ml-6">
+
+        <div v-if="openFolders.has(folder.id)" class="ml-6">
+          <!-- Sort controls -->
+          <div v-if="folder.articles.length > 1" class="flex gap-2 mb-3">
+            <button
+              @click="setSortForFolder(folder.id, 'date')"
+              class="text-xs px-2 py-1 rounded-md transition-colors"
+              :class="(folderSorts[folder.id] || 'date') === 'date' ? 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'"
+            >По дате</button>
+            <button
+              @click="setSortForFolder(folder.id, 'author')"
+              class="text-xs px-2 py-1 rounded-md transition-colors"
+              :class="(folderSorts[folder.id]) === 'author' ? 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'"
+            >По автору</button>
+          </div>
+
           <div v-if="folder.articles.length === 0" class="text-xs text-gray-400 dark:text-gray-500 py-2">Нет статей в этой папке</div>
-          <div
-            v-for="a in folder.articles" :key="a.id"
-            @click="openEdit(a)"
-            class="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors"
-          >
-            <svg class="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-            </svg>
-            <div class="min-w-0 flex-1">
-              <div class="font-medium text-sm text-gray-900 dark:text-white truncate">{{ a.title }}</div>
-              <div v-if="a.author" class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ a.author.name }}</div>
+
+          <!-- Cards on desktop, list on mobile -->
+          <div class="hidden sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <div
+              v-for="a in sortedArticles(folder)" :key="a.id"
+              @click="openEdit(a)"
+              class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 cursor-pointer hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 transition-all"
+            >
+              <div class="font-medium text-sm text-gray-900 dark:text-white line-clamp-2 mb-2">{{ a.title }}</div>
+              <div v-if="a.content" class="text-xs text-gray-500 dark:text-gray-400 line-clamp-3 mb-3">{{ contentPreview(a.content) }}</div>
+              <div class="flex items-center justify-between mt-auto">
+                <div v-if="a.author" class="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[60%]">{{ a.author.name }}</div>
+                <div v-else class="text-xs text-gray-400">--</div>
+                <div class="text-[10px] text-gray-400 flex-shrink-0">{{ formatDate(a.created_at) }}</div>
+              </div>
             </div>
-            <div v-if="a.content" class="text-xs text-gray-400 flex-shrink-0">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25H12" />
-              </svg>
+          </div>
+
+          <!-- List on mobile -->
+          <div class="sm:hidden space-y-2">
+            <div
+              v-for="a in sortedArticles(folder)" :key="a.id"
+              @click="openEdit(a)"
+              class="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer active:bg-gray-50 dark:active:bg-gray-750 transition-colors"
+            >
+              <div class="min-w-0 flex-1">
+                <div class="font-medium text-sm text-gray-900 dark:text-white truncate">{{ a.title }}</div>
+                <div class="flex items-center gap-2 mt-0.5">
+                  <span v-if="a.author" class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ a.author.name }}</span>
+                  <span class="text-[10px] text-gray-400 flex-shrink-0">{{ formatDate(a.created_at) }}</span>
+                </div>
+              </div>
+              <div v-if="a.content" class="text-gray-400 flex-shrink-0">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25H12" />
+                </svg>
+              </div>
             </div>
           </div>
         </div>
@@ -169,6 +205,7 @@ const store = useArticlesStore()
 const showModal = ref(false)
 const editItem = ref(null)
 const openFolders = reactive(new Set())
+const folderSorts = reactive({})
 
 // Folder modal
 const showFolderModal = ref(false)
@@ -195,6 +232,33 @@ const folderAuthors = computed(() => {
   if (!authorsFolder.value) return []
   return store.allAuthors.filter(a => a.article_folder_id === authorsFolder.value.id)
 })
+
+const sortedArticles = (folder) => {
+  const sort = folderSorts[folder.id] || 'date'
+  const articles = [...folder.articles]
+  if (sort === 'author') {
+    return articles.sort((a, b) => {
+      const nameA = a.author?.name || ''
+      const nameB = b.author?.name || ''
+      return nameA.localeCompare(nameB, 'ru') || new Date(b.created_at) - new Date(a.created_at)
+    })
+  }
+  return articles.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+}
+
+const setSortForFolder = (folderId, sort) => {
+  folderSorts[folderId] = sort
+}
+
+const contentPreview = (content) => {
+  if (!content) return ''
+  return content.replace(/[#*`~>\[\]()_\-]/g, '').replace(/\n+/g, ' ').trim()
+}
+
+const formatDate = (dateStr) => {
+  if (!dateStr) return ''
+  return new Date(dateStr).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' })
+}
 
 const toggleFolder = (id) => {
   if (openFolders.has(id)) openFolders.delete(id)

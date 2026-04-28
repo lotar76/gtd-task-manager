@@ -19,54 +19,44 @@
               class="w-full bg-transparent border-0 outline-none text-xl font-semibold placeholder-gray-300 dark:placeholder-gray-600 text-gray-900 dark:text-white px-0"
             />
 
-            <!-- Folder -->
-            <div>
-              <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Папка</label>
-              <select
-                v-model="form.article_folder_id"
-                required
-                class="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-white"
-              >
-                <option :value="null" disabled>Выберите папку</option>
-                <option v-for="f in folders" :key="f.id" :value="f.id">{{ f.name }}</option>
-              </select>
-            </div>
-
-            <!-- Author (filtered by selected folder) -->
-            <div>
-              <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Автор</label>
-              <select
-                v-model="form.article_author_id"
-                class="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-white"
-              >
-                <option :value="null">Без автора</option>
-                <option v-for="a in availableAuthors" :key="a.id" :value="a.id">{{ a.name }}</option>
-              </select>
-              <div v-if="form.article_folder_id && availableAuthors.length === 0" class="text-xs text-gray-400 mt-1">
-                Нет авторов в этой папке. Добавьте через иконку автора на папке.
+            <!-- Folder + Author row -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Папка</label>
+                <select
+                  v-model="form.article_folder_id"
+                  required
+                  class="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-white"
+                >
+                  <option :value="null" disabled>Выберите папку</option>
+                  <option v-for="f in folders" :key="f.id" :value="f.id">{{ f.name }}</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Автор</label>
+                <select
+                  v-model="form.article_author_id"
+                  class="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-white"
+                >
+                  <option :value="null">Без автора</option>
+                  <option v-for="a in availableAuthors" :key="a.id" :value="a.id">{{ a.name }}</option>
+                </select>
+                <div v-if="form.article_folder_id && availableAuthors.length === 0" class="text-xs text-gray-400 mt-1">
+                  Нет авторов в этой папке.
+                </div>
               </div>
             </div>
 
-            <!-- Content (Markdown) -->
+            <!-- Content (Markdown Editor) -->
             <div>
-              <div class="flex items-center justify-between mb-1">
-                <label class="block text-xs text-gray-500 dark:text-gray-400">Текст статьи (Markdown)</label>
-                <button type="button" @click="showPreview = !showPreview" class="text-xs text-primary-600 hover:text-primary-700">
-                  {{ showPreview ? 'Редактор' : 'Предпросмотр' }}
-                </button>
-              </div>
-              <textarea
-                v-if="!showPreview"
+              <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Текст статьи</label>
+              <MarkdownEditor
                 v-model="form.content"
+                :preview="showPreview"
                 placeholder="Текст статьи в формате Markdown..."
-                rows="12"
-                class="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-white font-mono resize-y"
-              ></textarea>
-              <div
-                v-else
-                class="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-3 text-sm text-gray-900 dark:text-white min-h-[200px] prose prose-sm dark:prose-invert max-w-none overflow-y-auto"
-                v-html="renderedContent"
-              ></div>
+                :rows="14"
+                @toggle-preview="showPreview = !showPreview"
+              />
             </div>
 
             <div v-if="error" class="text-red-500 text-xs">{{ error }}</div>
@@ -95,7 +85,7 @@
 
 <script setup>
 import { ref, watch, computed } from 'vue'
-import { marked } from 'marked'
+import MarkdownEditor from './MarkdownEditor.vue'
 
 const props = defineProps({
   show: { type: Boolean, default: false },
@@ -114,11 +104,6 @@ const showPreview = ref(false)
 const availableAuthors = computed(() => {
   if (!form.value.article_folder_id) return []
   return props.authors.filter(a => a.article_folder_id === form.value.article_folder_id)
-})
-
-const renderedContent = computed(() => {
-  if (!form.value.content) return '<p style="color: #999;">Нет содержимого</p>'
-  return marked(form.value.content)
 })
 
 watch(() => form.value.article_folder_id, (newFolderId, oldFolderId) => {
