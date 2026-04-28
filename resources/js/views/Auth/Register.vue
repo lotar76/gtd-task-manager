@@ -90,6 +90,8 @@
           </button>
         </form>
 
+        <OAuthButtons class="mt-6" />
+
         <div class="mt-6 text-center">
           <p class="text-sm text-gray-600 dark:text-gray-400">
             Уже есть аккаунт?
@@ -107,6 +109,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import OAuthButtons from '@/components/Auth/OAuthButtons.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()

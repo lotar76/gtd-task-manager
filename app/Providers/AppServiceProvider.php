@@ -12,7 +12,10 @@ use App\Observers\GoalObserver;
 use App\Observers\LifeSphereObserver;
 use App\Observers\ProjectObserver;
 use App\Observers\TaskObserver;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
+use SocialiteProviders\Manager\SocialiteWasCalled;
+use SocialiteProviders\Yandex\YandexExtendSocialite;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -29,6 +32,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Socialite Yandex provider
+        Event::listen(SocialiteWasCalled::class, YandexExtendSocialite::class);
+
         // Регистрация Observers для автоматической инвалидации AI кэша
         Task::observe(TaskObserver::class);
         Project::observe(ProjectObserver::class);

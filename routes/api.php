@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\V1\AttachmentController;
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\SocialAuthController;
 use App\Http\Controllers\Api\V1\CommentController;
 use App\Http\Controllers\Api\V1\ContactController;
 use App\Http\Controllers\Api\V1\ContextController;
@@ -58,6 +59,16 @@ Route::prefix('v1')->group(function () {
 
     Route::post('/login', [AuthController::class, 'login'])
         ->middleware('throttle:auth');
+
+    // OAuth маршруты (Google, Yandex)
+    Route::get('/auth/{provider}/redirect', [SocialAuthController::class, 'redirect'])
+        ->where('provider', 'google|yandex');
+    Route::get('/auth/{provider}/callback', [SocialAuthController::class, 'callback'])
+        ->where('provider', 'google|yandex');
+
+    // Telegram OAuth
+    Route::get('/auth/telegram/redirect', [SocialAuthController::class, 'telegramRedirect']);
+    Route::get('/auth/telegram/callback', [SocialAuthController::class, 'telegramCallback']);
 
     // Защищённые маршруты (требуют аутентификации)
     Route::middleware('auth:sanctum')->group(function () {
