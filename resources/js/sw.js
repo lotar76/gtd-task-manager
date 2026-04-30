@@ -1,43 +1,79 @@
 import { precacheAndRoute } from 'workbox-precaching'
 import { registerRoute } from 'workbox-routing'
-import { CacheFirst, NetworkFirst } from 'workbox-strategies'
+import { CacheFirst, NetworkFirst, StaleWhileRevalidate } from 'workbox-strategies'
 import { ExpirationPlugin } from 'workbox-expiration'
 
-// Precache (пустой, но нужен для injectManifest)
+const SW_VERSION = 'v2'
+const ALLOWED_CACHES = new Set([
+  `static-assets-${SW_VERSION}`,
+  `images-${SW_VERSION}`,
+  `api-cache-${SW_VERSION}`,
+  `pages-${SW_VERSION}`,
+])
+
 precacheAndRoute(self.__WB_MANIFEST)
 
-// Кэш статики
+self.addEventListener('install', () => {
+  self.skipWaiting()
+})
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    (async () => {
+      const keys = await caches.keys()
+      await Promise.all(
+        keys.filter((key) => !ALLOWED_CACHES.has(key)).map((key) => caches.delete(key))
+      )
+      await self.clients.claim()
+    })()
+  )
+})
+
 registerRoute(
-  ({ request }) => ['style', 'script', 'font'].includes(request.destination),
-  new CacheFirst({
-    cacheName: 'static-assets',
-    plugins: [new ExpirationPlugin({ maxEntries: 60, maxAgeSeconds: 30 * 24 * 60 * 60 })],
+  ({ request }) => ['style', 'script'].includes(request.destination),
+  new NetworkFirst({
+    cacheName: `static-assets-${SW_VERSION}`,
+    networkTimeoutSeconds: 4,
+    plugins: [new ExpirationPlugin({ maxEntries: 60, maxAgeSeconds: 7 * 24 * 60 * 60 })],
   })
 )
 
-// Кэш изображений
+registerRoute(
+  ({ request }) => request.destination === 'font',
+  new StaleWhileRevalidate({
+    cacheName: `static-assets-${SW_VERSION}`,
+    plugins: [new ExpirationPlugin({ maxEntries: 30, maxAgeSeconds: 30 * 24 * 60 * 60 })],
+  })
+)
+
 registerRoute(
   ({ request }) => request.destination === 'image',
   new CacheFirst({
-    cacheName: 'images',
+    cacheName: `images-${SW_VERSION}`,
     plugins: [new ExpirationPlugin({ maxEntries: 60, maxAgeSeconds: 30 * 24 * 60 * 60 })],
   })
 )
 
-// API — сеть с фолбэком на кэш
 registerRoute(
   ({ url }) => url.pathname.startsWith('/api/'),
   new NetworkFirst({
-    cacheName: 'api-cache',
+    cacheName: `api-cache-${SW_VERSION}`,
+    networkTimeoutSeconds: 6,
     plugins: [new ExpirationPlugin({ maxEntries: 100, maxAgeSeconds: 300 })],
   })
 )
 
-// Навигация
 registerRoute(
   ({ request }) => request.mode === 'navigate',
-  new NetworkFirst({ cacheName: 'pages' })
+  new NetworkFirst({
+    cacheName: `pages-${SW_VERSION}`,
+    networkTimeoutSeconds: 4,
+  })
 )
+
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'SKIP_WAITING') self.skipWaiting()
+})
 
 // === PUSH NOTIFICATIONS ===
 
