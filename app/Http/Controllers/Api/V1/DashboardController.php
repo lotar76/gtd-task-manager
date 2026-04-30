@@ -41,6 +41,9 @@ class DashboardController extends Controller
 
     /**
      * AI-сообщение для дашборда
+     *
+     * Временно отключено через config('services.ai_mirror.enabled') — см. docs/ai-advisor.md.
+     * Без флага возвращаем пустой ответ, чтобы не дёргать OpenRouter и не тратить токены.
      */
     public function getAiMessage(Request $request): JsonResponse
     {
@@ -48,6 +51,10 @@ class DashboardController extends Controller
             'period' => 'required|string|in:day,week,month,year',
             'force' => 'sometimes|boolean',
         ]);
+
+        if (! config('services.ai_mirror.enabled', false)) {
+            return ApiResponse::success(['disabled' => true], 'AI-советчик отключён');
+        }
 
         $workspaceId = $request->user()->defaultWorkspace()->id;
         $period = $request->input('period');

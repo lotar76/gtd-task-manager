@@ -24,4 +24,9 @@ return [
         'client_secret' => env('MAILRU_CLIENT_SECRET'),
         'redirect' => env('MAILRU_REDIRECT_URI'),
     ],
+
+    // AI-советчик (зеркало жизни) — временно отключён, см. docs/ai-advisor.md
+    'ai_mirror' => [
+        'enabled' => env('AI_MIRROR_ENABLED', false),
+    ],
 ];

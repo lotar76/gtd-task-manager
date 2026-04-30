@@ -2,6 +2,9 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import api from '@/services/api'
 
+// AI-советчик временно отключён — см. docs/ai-advisor.md
+const AI_MIRROR_ENABLED = false
+
 export const useDashboardStore = defineStore('dashboard', () => {
   const lifeMirror = ref(null)
   const aiMessage = ref(null)
@@ -9,6 +12,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
   const aiLoading = ref(false)
   const aiSilentLoading = ref(false)
   const selectedPeriod = ref(localStorage.getItem('dashboardPeriod') || 'day')
+  const aiEnabled = ref(AI_MIRROR_ENABLED)
 
   const fetchLifeMirror = async () => {
     loading.value = true
@@ -26,6 +30,10 @@ export const useDashboardStore = defineStore('dashboard', () => {
   }
 
   const fetchAiMessage = async (force = false, silent = false) => {
+    if (!AI_MIRROR_ENABLED) {
+      aiMessage.value = null
+      return
+    }
     if (silent) {
       aiSilentLoading.value = true
     } else {
@@ -73,6 +81,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
     aiLoading,
     aiSilentLoading,
     selectedPeriod,
+    aiEnabled,
     fetchLifeMirror,
     fetchAiMessage,
     fetchAll,

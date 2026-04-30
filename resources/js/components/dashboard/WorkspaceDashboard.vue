@@ -17,9 +17,10 @@
   <template v-else>
     <!-- For "day" period: 3-column compact layout -->
     <template v-if="period === 'day'">
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
-        <!-- 1. Рекомендации ИИ -->
+      <div :class="[dashboardStore.aiEnabled ? 'grid grid-cols-1 lg:grid-cols-3' : 'grid grid-cols-1 lg:grid-cols-2', 'gap-4 mb-6']">
+        <!-- 1. Рекомендации ИИ (отключено — см. docs/ai-advisor.md) -->
         <AiHeroBanner
+          v-if="dashboardStore.aiEnabled"
           :message="data.aiMessage"
           :loading="data.aiLoading"
           :silent-loading="data.aiSilentLoading"
@@ -178,9 +179,10 @@
       />
     </template>
 
-    <!-- For other periods: AI banner at the top -->
+    <!-- For other periods: AI banner at the top (отключено — см. docs/ai-advisor.md) -->
     <template v-else>
       <AiHeroBanner
+        v-if="dashboardStore.aiEnabled"
         :message="data.aiMessage"
         :loading="data.aiLoading"
         @analyze="handleAnalyze"
