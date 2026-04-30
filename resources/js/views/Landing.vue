@@ -357,7 +357,7 @@ const reviews = [
 .nav { position: fixed; top: 0; width: 100%; z-index: 100; background: rgba(255,255,255,.85); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(0,0,0,.06); }
 .nav__inner { max-width: 1200px; margin: 0 auto; padding: 0 24px; height: 64px; display: flex; align-items: center; justify-content: space-between; }
 .nav__logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; color: #0f172a; }
-.nav__logo-icon { width: 36px; height: 36px; border-radius: 8px; }
+.nav__logo-icon { width: auto; height: 36px; border-radius: 8px; object-fit: contain; flex-shrink: 0; }
 .nav__actions { display: flex; align-items: center; gap: 8px; }
 .nav__link { font-size: 14px; font-weight: 500; color: #64748b; padding: 8px 16px; text-decoration: none; transition: color .2s; }
 .nav__link:hover { color: #0f172a; }

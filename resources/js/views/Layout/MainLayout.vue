@@ -42,7 +42,7 @@
               <img
                 :src="sidebarLogo"
                 alt="Крепкая Башня"
-                class="h-10 w-10 object-contain"
+                class="h-10 w-auto object-contain flex-shrink-0"
               />
               <h1 class="text-xl font-bold text-gray-900 dark:text-white">Крепкая Башня</h1>
             </div>

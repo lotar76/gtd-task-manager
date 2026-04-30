@@ -26,7 +26,14 @@
       "WebFetch(domain:unpkg.com)",
       "Bash(find /home/igor/projects/gtd-task-manager -type f -name *habit* -o -name *Habit*)",
       "Bash(mv /home/igor/projects/gtd-task-manager/logo.png /home/igor/projects/gtd-task-manager/resources/js/assets/images/logo.png)",
-      "Bash(mv /home/igor/projects/gtd-task-manager/logo_small.png /home/igor/projects/gtd-task-manager/resources/js/assets/images/logo_small.png)"
+      "Bash(mv /home/igor/projects/gtd-task-manager/logo_small.png /home/igor/projects/gtd-task-manager/resources/js/assets/images/logo_small.png)",
+      "Bash(cp /home/lara/gtd-task-manager/logo.png /home/lara/gtd-task-manager/resources/js/assets/images/logo.png)",
+      "Bash(cp /home/lara/gtd-task-manager/logo_small.png /home/lara/gtd-task-manager/resources/js/assets/images/logo_small.png)",
+      "Bash(rm /home/lara/gtd-task-manager/logo.png /home/lara/gtd-task-manager/logo_small.png)",
+      "Bash(rm -rf favicons_extract)",
+      "Bash(mkdir favicons_extract)",
+      "Bash(rm -f /home/lara/gtd-task-manager/public/favicon-128x128.png /home/lara/gtd-task-manager/public/favicon-256x256.png /home/lara/gtd-task-manager/public/favicon-512x512.png /home/lara/gtd-task-manager/public/favicon-64x64.png /home/lara/gtd-task-manager/public/apple-touch-icon-180x180.png)",
+      "Bash(cp /tmp/favicons_extract/favicon.ico /tmp/favicons_extract/favicon-16x16.png /tmp/favicons_extract/favicon-32x32.png /tmp/favicons_extract/favicon-48x48.png /tmp/favicons_extract/favicon-96x96.png /tmp/favicons_extract/favicon-192x192.png /tmp/favicons_extract/android-chrome-192x192.png /tmp/favicons_extract/android-chrome-512x512.png /tmp/favicons_extract/apple-touch-icon.png /tmp/favicons_extract/mstile-150x150.png /home/lara/gtd-task-manager/public/)"
     ],
     "additionalDirectories": [
       "/home/igor/projects/gtd-task-manager",
