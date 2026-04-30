@@ -515,8 +515,19 @@
       <div v-if="reportModal.open" class="fixed inset-0 z-50 flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-black/50" @click="reportModal.open = false" />
         <div class="relative bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-sm p-6">
-          <h3 class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-4">{{ reportModal.challenge?.title }}</h3>
+          <div class="mb-4">
+            <h3 class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ reportModal.challenge?.title }}</h3>
+            <p v-if="reportModal.readonly && reportModal.date" class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ formatReportDate(reportModal.date) }}</p>
+          </div>
+          <div
+            v-if="reportModal.readonly"
+            class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-sm text-gray-900 dark:text-gray-100 whitespace-pre-wrap min-h-[6rem] max-h-[40vh] overflow-y-auto"
+          >
+            <span v-if="reportModal.text">{{ reportModal.text }}</span>
+            <span v-else class="text-gray-400 dark:text-gray-500 italic">Отчёт не заполнен</span>
+          </div>
           <textarea
+            v-else
             v-model="reportModal.text"
             rows="4"
             placeholder="Напиши свой отчёт..."
@@ -524,7 +535,7 @@
           />
           <div class="mt-4 flex justify-between">
             <button
-              v-if="reportModal.text.trim()"
+              v-if="!reportModal.readonly && reportModal.text.trim()"
               @click="reportModal.text = ''"
               class="px-4 py-2 text-sm text-red-500 hover:text-red-600 transition-colors"
             >
@@ -533,19 +544,28 @@
             <div v-else />
             <div class="flex space-x-2">
               <button
+                v-if="reportModal.readonly"
                 @click="reportModal.open = false"
-                class="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
+                class="px-4 py-2 text-sm font-medium text-white bg-primary-500 rounded-lg hover:bg-primary-600 transition-colors"
               >
-                Отмена
+                Закрыть
               </button>
-              <button
-                @click="saveReport"
-                :disabled="reportModal.saving"
-                class="px-4 py-2 text-sm font-medium text-white bg-primary-500 rounded-lg hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center"
-              >
-                <div v-if="reportModal.saving" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                Сохранить
-              </button>
+              <template v-else>
+                <button
+                  @click="reportModal.open = false"
+                  class="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
+                >
+                  Отмена
+                </button>
+                <button
+                  @click="saveReport"
+                  :disabled="reportModal.saving"
+                  class="px-4 py-2 text-sm font-medium text-white bg-primary-500 rounded-lg hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center"
+                >
+                  <div v-if="reportModal.saving" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                  Сохранить
+                </button>
+              </template>
             </div>
           </div>
         </div>
@@ -888,7 +908,7 @@ let timerInterval = null
 const compositeModal = ref({ open: false, challenge: null, states: [] })
 
 // Report modal state
-const reportModal = ref({ open: false, challenge: null, text: '', saving: false })
+const reportModal = ref({ open: false, challenge: null, text: '', saving: false, readonly: false, date: '' })
 
 const SHORT_DAYS = ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб']
 
@@ -931,6 +951,12 @@ function isToday(day) {
 
 function isMissed(day) {
   return dateStr(day) < todayStr.value
+}
+
+function formatReportDate(ds) {
+  if (!ds) return ''
+  const [y, m, d] = ds.split('-')
+  return `${d}.${m}.${y}`
 }
 
 function challengeStartDate(challenge) {
@@ -1156,7 +1182,12 @@ function nextMonth() {
 }
 
 function handleCellClick(challenge, day) {
-  if (!isToday(day)) return
+  if (!isToday(day)) {
+    if (challenge.type === 'report' && isDayCompleted(challenge, day)) {
+      openReport(challenge, day, true)
+    }
+    return
+  }
   if (challenge.type === 'timer' && !isDayCompleted(challenge, day)) {
     openTimer(challenge)
   } else if (challenge.type === 'composite') {
@@ -1455,16 +1486,19 @@ function openProgressiveSets(challenge) {
 }
 
 // Report functions
-function openReport(challenge) {
+function openReport(challenge, day = null, readonly = false) {
+  const targetDate = day ? dateStr(day) : todayStr.value
   const entry = challenge.entries?.find(e => {
     const ed = typeof e.date === 'string' ? e.date.substring(0, 10) : ''
-    return ed === todayStr.value
+    return ed === targetDate
   })
   reportModal.value = {
     open: true,
     challenge,
     text: entry?.report_text || '',
     saving: false,
+    readonly,
+    date: targetDate,
   }
 }
 
