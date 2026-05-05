@@ -210,7 +210,7 @@ class TaskService
             $task->contacts()->sync($sync);
         }
 
-        $task->load(['project', 'context', 'assignee', 'tags', 'creator', 'contacts', 'assignees', 'watchers', 'checklistItems']);
+        $task->load(['project', 'goal', 'lifeSphere', 'context', 'assignee', 'tags', 'creator', 'contacts', 'assignees', 'watchers', 'checklistItems']);
 
         // Уведомляем
         $this->notifyMembers($task, $userId, 'created');
@@ -255,9 +255,10 @@ class TaskService
             );
         }
 
-        // Загружаем связи
         $relations = ['tags', 'contacts'];
         if ($task->project_id) $relations[] = 'project';
+        if ($task->goal_id) $relations[] = 'goal';
+        if ($task->life_sphere_id) $relations[] = 'lifeSphere';
         if ($task->context_id) $relations[] = 'context';
         if ($task->assigned_to) $relations[] = 'assignee';
         if ($task->created_by) $relations[] = 'creator';
