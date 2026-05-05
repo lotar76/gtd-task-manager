@@ -80,6 +80,22 @@
           >
             <PencilIcon class="w-5 h-5" />
           </button>
+          <button
+            v-if="!project?.archived_at"
+            @click="handleArchiveProject"
+            class="p-2 text-gray-400 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition-colors"
+            title="Архивировать поток"
+          >
+            <ArchiveBoxArrowDownIcon class="w-5 h-5" />
+          </button>
+          <button
+            v-else
+            @click="handleUnarchiveProject"
+            class="p-2 text-amber-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            title="Восстановить из архива"
+          >
+            <ArrowUturnLeftIcon class="w-5 h-5" />
+          </button>
         </div>
       </div>
 
@@ -349,6 +365,7 @@ import { useProjectsStore } from '@/stores/projects'
 import { useTasksStore } from '@/stores/tasks'
 import { useGoalsStore } from '@/stores/goals'
 import { useLifeSpheresStore } from '@/stores/lifeSpheres'
+import { useConfirmStore } from '@/stores/confirm'
 import { PencilIcon, ArchiveBoxArrowDownIcon, ArrowUturnLeftIcon, ChevronRightIcon } from '@heroicons/vue/24/outline'
 import { PlusIcon } from '@heroicons/vue/24/solid'
 import TaskList from '@/components/tasks/TaskList.vue'
@@ -362,6 +379,7 @@ const projectsStore = useProjectsStore()
 const tasksStore = useTasksStore()
 const goalsStore = useGoalsStore()
 const lifeSpheresStore = useLifeSpheresStore()
+const confirmStore = useConfirmStore()
 
 const project = ref(null)
 const loading = ref(false)
@@ -515,26 +533,34 @@ const handleEditProject = () => {
 }
 
 const handleArchiveProject = async () => {
-  if (!confirm(`Архивировать поток "${project.value?.name}"?`)) {
-    return
-  }
+  const ok = await confirmStore.ask({
+    title: 'Архивировать поток?',
+    message: project.value?.name || '',
+    confirmText: 'Архивировать',
+  })
+  if (!ok) return
 
   try {
     await projectsStore.archiveProject(project.value.id)
     router.push('/projects')
   } catch (error) {
     console.error('Error archiving project:', error)
-    alert('Ошибка при архивировании потока')
   }
 }
 
 const handleUnarchiveProject = async () => {
+  const ok = await confirmStore.ask({
+    title: 'Восстановить поток из архива?',
+    message: project.value?.name || '',
+    confirmText: 'Восстановить',
+  })
+  if (!ok) return
+
   try {
     await projectsStore.unarchiveProject(project.value.id)
     await loadProject()
   } catch (error) {
     console.error('Error unarchiving project:', error)
-    alert('Ошибка при восстановлении потока')
   }
 }
 
