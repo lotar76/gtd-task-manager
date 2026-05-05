@@ -235,7 +235,9 @@
                   :class="[
                     getDayCellClass(day),
                     dragOverDate === day.date ? 'ring-2 ring-primary-400 ring-inset bg-primary-100 dark:bg-primary-900/40' : '',
+                    selectedCalendarDate === day.date ? 'ring-2 ring-primary-500 ring-inset' : '',
                   ]"
+                  @click="selectedCalendarDate = (selectedCalendarDate === day.date ? null : day.date)"
                   @dragover.prevent="handleCalendarDragOver($event, day.date)"
                   @dragleave="handleCalendarDragLeave"
                   @drop.prevent="handleCalendarDrop($event, day.date)"
@@ -271,6 +273,40 @@
                 </div>
               </div>
             </div>
+
+            <!-- Selected day tasks -->
+            <Transition name="slide-down">
+              <div v-if="selectedCalendarDate" class="mt-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                <div class="flex items-center justify-between px-3 py-2 border-b border-gray-100 dark:border-gray-700">
+                  <h4 class="text-sm font-medium text-gray-800 dark:text-gray-200">
+                    {{ dayjs(selectedCalendarDate).format('D MMMM YYYY') }}
+                  </h4>
+                  <div class="flex items-center gap-2">
+                    <button
+                      @click="handleCreateTaskForDay(selectedCalendarDate)"
+                      class="w-6 h-6 flex items-center justify-center rounded-full text-gray-400 hover:text-green-500 hover:bg-green-50 dark:hover:bg-green-900/30 transition-colors"
+                      title="Добавить задачу"
+                    >
+                      <PlusIcon class="w-4 h-4" />
+                    </button>
+                    <button @click="selectedCalendarDate = null" class="text-gray-300 hover:text-gray-500 dark:text-gray-600 dark:hover:text-gray-400 transition-colors">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                  </div>
+                </div>
+                <div v-if="selectedDayTasks.length > 0" class="p-2">
+                  <TaskList
+                    :tasks="selectedDayTasks"
+                    @task-click="handleTaskClick"
+                    @toggle-complete="handleToggleComplete"
+                    @touch-drop="handleTouchDrop"
+                  />
+                </div>
+                <div v-else class="px-3 py-4 text-center text-sm text-gray-400 dark:text-gray-500">
+                  Задач нет
+                </div>
+              </div>
+            </Transition>
           </div>
         </div>
       </template>
@@ -337,6 +373,7 @@ const showCompleted = ref(false)
 const calendarMonth = ref(dayjs())
 const dragOverDate = ref(null)
 const filterOnlyProject = ref(true)
+const selectedCalendarDate = ref(null)
 
 const allTasks = computed(() => {
   const projectId = parseInt(route.params.projectId)
@@ -377,6 +414,14 @@ const calendarDays = computed(() => {
 const calendarSourceTasks = computed(() => {
   if (filterOnlyProject.value) return activeTasks.value
   return tasksStore.allTasks.filter(t => !t.completed_at && t.due_date)
+})
+
+const selectedDayTasks = computed(() => {
+  if (!selectedCalendarDate.value) return []
+  const source = filterOnlyProject.value
+    ? allTasks.value
+    : tasksStore.allTasks
+  return source.filter(t => t.due_date && dayjs(t.due_date).format('YYYY-MM-DD') === selectedCalendarDate.value)
 })
 
 const makeDayObj = (date, currentMonth) => {
@@ -506,6 +551,16 @@ const handleCreateTask = () => {
   })
 }
 
+const handleCreateTaskForDay = (date) => {
+  if (!project.value) return
+  startDraft({
+    project_id: project.value.id,
+    goal_id: project.value.goal_id || projectGoal.value?.id || null,
+    life_sphere_id: project.value.life_sphere_id || projectGoal.value?.life_sphere_id || null,
+    due_date: date,
+  })
+}
+
 const projectGoal = computed(() => {
   const gid = project.value?.goal_id
   if (!gid) return null
@@ -572,3 +627,19 @@ watch(() => [route.params.projectId, route.params.id], () => {
   loadProject()
 }, { immediate: true })
 </script>
+
+<style scoped>
+.slide-down-enter-active, .slide-down-leave-active {
+  transition: all 0.2s ease;
+  overflow: hidden;
+}
+.slide-down-enter-from, .slide-down-leave-to {
+  opacity: 0;
+  max-height: 0;
+  transform: translateY(-6px);
+}
+.slide-down-enter-to, .slide-down-leave-from {
+  opacity: 1;
+  max-height: 600px;
+}
+</style>
