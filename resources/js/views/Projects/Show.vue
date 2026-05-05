@@ -188,6 +188,22 @@
 
           <!-- Calendar -->
           <div class="w-full lg:w-1/2 lg:sticky lg:top-4 order-2 lg:order-2">
+            <!-- Calendar filter -->
+            <div class="flex items-center justify-end mb-2 gap-3">
+              <span class="text-xs text-gray-400 dark:text-gray-500">показывать:</span>
+              <button
+                @click="filterOnlyProject = true"
+                class="text-xs transition-colors"
+                :class="filterOnlyProject ? 'text-primary-600 dark:text-primary-400 font-medium' : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'"
+              >только поток</button>
+              <span class="text-xs text-gray-300 dark:text-gray-600">·</span>
+              <button
+                @click="filterOnlyProject = false"
+                class="text-xs transition-colors"
+                :class="!filterOnlyProject ? 'text-primary-600 dark:text-primary-400 font-medium' : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'"
+              >все задачи</button>
+            </div>
+
             <!-- Month nav -->
             <div class="flex items-center justify-between mb-3">
               <button @click="calendarMonth = calendarMonth.subtract(1, 'month')" class="p-1.5 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700">
@@ -320,6 +336,7 @@ const projectError = ref('')
 const showCompleted = ref(false)
 const calendarMonth = ref(dayjs())
 const dragOverDate = ref(null)
+const filterOnlyProject = ref(true)
 
 const allTasks = computed(() => {
   const projectId = parseInt(route.params.projectId)
@@ -357,9 +374,14 @@ const calendarDays = computed(() => {
   return days
 })
 
+const calendarSourceTasks = computed(() => {
+  if (filterOnlyProject.value) return activeTasks.value
+  return tasksStore.allTasks.filter(t => !t.completed_at && t.due_date)
+})
+
 const makeDayObj = (date, currentMonth) => {
   const dateStr = date.format('YYYY-MM-DD')
-  const dayTasks = activeTasks.value.filter(t => t.due_date && dayjs(t.due_date).format('YYYY-MM-DD') === dateStr)
+  const dayTasks = calendarSourceTasks.value.filter(t => t.due_date && dayjs(t.due_date).format('YYYY-MM-DD') === dateStr)
   return {
     day: date.date(),
     date: dateStr,

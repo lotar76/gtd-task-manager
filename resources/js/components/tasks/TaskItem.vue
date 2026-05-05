@@ -117,14 +117,34 @@
             <template v-else>до {{ formatTime(task.end_time) }}</template>
           </span>
 
-          <span v-if="task.project && !hideProject" class="inline-flex items-center gap-1">
+          <span
+            v-if="task.project && !hideProject"
+            class="group/link inline-flex items-center gap-1 hover:text-primary-600 dark:hover:text-primary-400 cursor-pointer transition-colors"
+            @click.stop="router.push(`/projects/${task.project.id}`)"
+          >
             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 6v12M9 4v16M14 8v8M19 5v14" /></svg>
             {{ task.project.name }}
+            <svg class="w-2.5 h-2.5 opacity-0 group-hover/link:opacity-100 transition-opacity flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
           </span>
 
-          <span v-if="task.life_sphere" class="inline-flex items-center gap-1">
+          <span
+            v-if="task.goal"
+            class="group/link inline-flex items-center gap-1 hover:text-primary-600 dark:hover:text-primary-400 cursor-pointer transition-colors"
+            @click.stop="router.push(`/goals/${task.goal.id}`)"
+          >
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" stroke-width="1.8" /><circle cx="12" cy="12" r="4" stroke-width="1.8" /></svg>
+            {{ task.goal.name }}
+            <svg class="w-2.5 h-2.5 opacity-0 group-hover/link:opacity-100 transition-opacity flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+          </span>
+
+          <span
+            v-if="task.life_sphere"
+            class="group/link inline-flex items-center gap-1 hover:text-primary-600 dark:hover:text-primary-400 cursor-pointer transition-colors"
+            @click.stop="router.push(`/spheres/${task.life_sphere.id}`)"
+          >
             <span class="w-1.5 h-1.5 rounded-full flex-shrink-0" :style="{ backgroundColor: task.life_sphere.color }"></span>
             {{ task.life_sphere.name }}
+            <svg class="w-2.5 h-2.5 opacity-0 group-hover/link:opacity-100 transition-opacity flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
           </span>
 
           <span v-if="assigneeNames.length" class="inline-flex items-center gap-1 text-indigo-600 dark:text-indigo-300" title="Исполнители">
@@ -159,6 +179,7 @@
 
 <script setup>
 import { computed } from 'vue'
+import { useRouter } from 'vue-router'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
 import relativeTime from 'dayjs/plugin/relativeTime'
@@ -189,6 +210,7 @@ const props = defineProps({
 
 defineEmits(['task-click', 'toggle-complete'])
 
+const router = useRouter()
 const authStore = useAuthStore()
 
 const role = computed(() => {
